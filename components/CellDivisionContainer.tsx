@@ -106,7 +106,7 @@ export default function CellDivisionContainer({
         className="relative flex items-stretch"
         style={{ minHeight: '72px', gap: 0 }}
       >
-        {/* ===================== INPUT 1 ===================== */}
+        {/* ===================== INPUT 2 (emerges from left) ===================== */}
         <motion.div
           className="relative overflow-hidden"
           style={{
@@ -114,18 +114,23 @@ export default function CellDivisionContainer({
             transformStyle: 'preserve-3d',
           }}
           animate={{
-            flex: input1Flex,
+            width: input2Width,
+            opacity: input2Opacity,
             borderTopRightRadius: innerRadius,
             borderBottomRightRadius: innerRadius,
             rotateX: isSliding ? -1 : isMerging ? 0.5 : 0,
-            scale: isAnimating ? 1.005 : 1,
           }}
           transition={{
-            flex: { type: 'spring', stiffness: 220, damping: 24, mass: 0.8 },
+            width: {
+              type: 'spring',
+              stiffness: isSliding ? 180 : 250,
+              damping: isSliding ? 20 : 22,
+              mass: 0.6,
+            },
+            opacity: { duration: isSliding ? 0.3 : 0.25, ease: 'easeOut' },
             borderTopRightRadius: { duration: 0.25, ease: 'easeOut' },
             borderBottomRightRadius: { duration: 0.25, ease: 'easeOut' },
             rotateX: { duration: 0.35 },
-            scale: { type: 'spring', stiffness: 400, damping: 25 },
           }}
         >
           {/* Blob glow on right edge during slide-out */}
@@ -133,16 +138,32 @@ export default function CellDivisionContainer({
             <motion.div
               className="absolute top-0 right-0 bottom-0 w-8 pointer-events-none"
               initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 0.7, 0.3] }}
+              animate={{ opacity: [0, 0.6, 0.2] }}
               transition={{ duration: 0.7, ease: 'easeOut' }}
               style={{
-                background: `linear-gradient(90deg, transparent 0%, ${accentColor}30 60%, ${accentColor}15 100%)`,
+                background: `linear-gradient(90deg, transparent 0%, ${accentColor}25 60%, ${accentColor}10 100%)`,
                 borderRadius: `0 ${innerRadius}px ${innerRadius}px 0`,
               }}
             />
           )}
 
-          {firstChild}
+          {/* Clip entrance during slide — reveal from right to left */}
+          {isSliding && (
+            <motion.div
+              className="absolute inset-0 pointer-events-none"
+              initial={{ clipPath: 'inset(0 0 0 100%)' }}
+              animate={{ clipPath: 'inset(0 0 0 0)' }}
+              transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1], delay: 0.05 }}
+              style={{
+                background: `linear-gradient(270deg, ${accentColor}08, transparent)`,
+              }}
+            />
+          )}
+
+          {/* Invisible placeholder when width is 0 — keeps DOM node for smooth animation */}
+          <div style={{ opacity: isIdle ? 0 : 1, pointerEvents: isIdle ? 'none' : 'auto' }}>
+            {secondChild}
+          </div>
         </motion.div>
 
         {/* ===================== BRIDGE / CHANNEL ===================== */}
@@ -218,14 +239,14 @@ export default function CellDivisionContainer({
         <AnimatePresence>
           {snapFlash && (
             <>
-              {/* Expanding ring at snap point */}
+              {/* Expanding ring at snap point — positioned at left edge of Input1 */}
               <motion.div
                 className="absolute top-1/2 -translate-y-1/2 pointer-events-none rounded-full"
                 style={{
-                  left: 'calc(48% + 60px)',
+                  right: 'calc(48% + 60px)',
                   width: 6,
                   height: 6,
-                  marginLeft: -3,
+                  marginRight: -3,
                   border: `2px solid ${accentColor}`,
                   zIndex: 10,
                 }}
@@ -261,7 +282,7 @@ export default function CellDivisionContainer({
           )}
         </AnimatePresence>
 
-        {/* ===================== INPUT 2 ===================== */}
+        {/* ===================== INPUT 1 (shrinks to right) ===================== */}
         <motion.div
           className="relative overflow-hidden"
           style={{
@@ -269,23 +290,18 @@ export default function CellDivisionContainer({
             transformStyle: 'preserve-3d',
           }}
           animate={{
-            width: input2Width,
-            opacity: input2Opacity,
+            flex: input1Flex,
             borderTopLeftRadius: innerRadius,
             borderBottomLeftRadius: innerRadius,
             rotateX: isSliding ? 1 : isMerging ? -0.5 : 0,
+            scale: isAnimating ? 1.005 : 1,
           }}
           transition={{
-            width: {
-              type: 'spring',
-              stiffness: isSliding ? 180 : 250,
-              damping: isSliding ? 20 : 22,
-              mass: 0.6,
-            },
-            opacity: { duration: isSliding ? 0.3 : 0.25, ease: 'easeOut' },
+            flex: { type: 'spring', stiffness: 220, damping: 24, mass: 0.8 },
             borderTopLeftRadius: { duration: 0.25, ease: 'easeOut' },
             borderBottomLeftRadius: { duration: 0.25, ease: 'easeOut' },
             rotateX: { duration: 0.35 },
+            scale: { type: 'spring', stiffness: 400, damping: 25 },
           }}
         >
           {/* Blob glow on left edge during slide-out */}
@@ -293,32 +309,16 @@ export default function CellDivisionContainer({
             <motion.div
               className="absolute top-0 left-0 bottom-0 w-8 pointer-events-none"
               initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 0.6, 0.2] }}
+              animate={{ opacity: [0, 0.7, 0.3] }}
               transition={{ duration: 0.7, ease: 'easeOut' }}
               style={{
-                background: `linear-gradient(270deg, transparent 0%, ${accentColor}25 60%, ${accentColor}10 100%)`,
+                background: `linear-gradient(270deg, transparent 0%, ${accentColor}30 60%, ${accentColor}15 100%)`,
                 borderRadius: `${innerRadius}px 0 0 ${innerRadius}px`,
               }}
             />
           )}
 
-          {/* Clip entrance during slide */}
-          {isSliding && (
-            <motion.div
-              className="absolute inset-0 pointer-events-none"
-              initial={{ clipPath: 'inset(0 100% 0 0)' }}
-              animate={{ clipPath: 'inset(0 0% 0 0)' }}
-              transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1], delay: 0.05 }}
-              style={{
-                background: `linear-gradient(90deg, ${accentColor}08, transparent)`,
-              }}
-            />
-          )}
-
-          {/* Invisible placeholder when width is 0 — keeps DOM node for smooth animation */}
-          <div style={{ opacity: isIdle ? 0 : 1, pointerEvents: isIdle ? 'none' : 'auto' }}>
-            {secondChild}
-          </div>
+          {firstChild}
         </motion.div>
       </div>
     </div>

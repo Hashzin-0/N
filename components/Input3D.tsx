@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { motion, useMotionValue, useTransform } from 'motion/react';
+import MorphText from '@/components/MorphText';
 
 interface Input3DProps {
   id?: string;
@@ -9,6 +10,7 @@ interface Input3DProps {
   onChange: (val: number) => void;
   onBlurCustom?: (val: number) => void;
   label?: string;
+  labelMorph?: boolean;
   unit?: string;
   step?: number;
   min?: number;
@@ -31,6 +33,7 @@ export default function Input3D({
   onChange,
   onBlurCustom,
   label,
+  labelMorph = false,
   unit = '',
   step = 1,
   min,
@@ -102,7 +105,15 @@ export default function Input3D({
       {label && (
         <div className="flex justify-between items-center mb-1.5">
           <label className="text-[11px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#A6A395]">
-            {label}
+            {labelMorph ? (
+              <MorphText
+                text={label}
+                accentColor={accentColor}
+                darkAccentColor={isDark ? '#9CB386' : '#5A5A40'}
+              />
+            ) : (
+              label
+            )}
           </label>
           {unit && (
             <span className="text-xs font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A]">

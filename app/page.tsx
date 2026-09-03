@@ -791,8 +791,15 @@ export default function Home() {
                     <Select3D
                       value={baseDoseMode}
                       onChange={(v) => handleCustomInputChange(() => {
-                        setBaseDoseMode(v as 'single' | 'range');
-                        if (v === 'single') setBaseDose2(0);
+                        const newMode = v as 'single' | 'range';
+                        setBaseDoseMode(newMode);
+                        if (newMode === 'single') {
+                          setBaseDose2(0);
+                          setV4v6Mode('single');
+                          setV4v6Percent2(0);
+                          setV8v10Mode('single');
+                          setV8v10Percent2(0);
+                        }
                       })}
                       isDark={isDark}
                       accentColor="#D4A373"
@@ -808,13 +815,20 @@ export default function Home() {
                     mode={baseDoseMode}
                     onModeChange={(m) => handleCustomInputChange(() => {
                       setBaseDoseMode(m);
-                      if (m === 'single') setBaseDose2(0);
+                      if (m === 'single') {
+                        setBaseDose2(0);
+                        setV4v6Mode('single');
+                        setV4v6Percent2(0);
+                        setV8v10Mode('single');
+                        setV8v10Percent2(0);
+                      }
                     })}
                     accentColor="#D4A373"
                     isDark={isDark}
                   >
                     <Input3D
                       label={baseDoseMode === 'range' ? 'Min (kg N/ha)' : 'Valor (kg N/ha)'}
+                      labelMorph
                       unit="kg N/ha"
                       value={baseDose}
                       onChange={(v) => handleCustomInputChange(() => setBaseDose(v))}
@@ -852,25 +866,34 @@ export default function Home() {
                     <span className="text-sm font-semibold text-[#3D3D3D] dark:text-[#E8E6DF]">
                       2ª Aplicação (V4-V6) — Percentual
                     </span>
-                    <Select3D
-                      value={v4v6Mode}
-                      onChange={(v) => handleCustomInputChange(() => {
-                        setV4v6Mode(v as 'single' | 'range');
-                        if (v === 'single') setV4v6Percent2(0);
-                      })}
-                      isDark={isDark}
-                      accentColor="#5A5A40"
-                      options={[
-                        { value: 'single', label: '1 valor %' },
-                        { value: 'range', label: '2 valores %' },
-                      ]}
-                      className="!inline-flex !w-auto"
-                    />
+                    {baseDoseMode === 'single' ? (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        isDark ? 'bg-[#2C3328] text-[#9CB386]' : 'bg-[#F0EDE5] text-[#5A5A40]'
+                      }`}>
+                        1 valor %
+                      </span>
+                    ) : (
+                      <Select3D
+                        value={v4v6Mode}
+                        onChange={(v) => handleCustomInputChange(() => {
+                          setV4v6Mode(v as 'single' | 'range');
+                          if (v === 'single') setV4v6Percent2(0);
+                        })}
+                        isDark={isDark}
+                        accentColor="#5A5A40"
+                        options={[
+                          { value: 'single', label: '1 valor %' },
+                          { value: 'range', label: '2 valores %' },
+                        ]}
+                        className="!inline-flex !w-auto"
+                      />
+                    )}
                   </div>
 
                   <CellDivisionContainer
-                    mode={v4v6Mode}
+                    mode={baseDoseMode === 'single' ? 'single' : v4v6Mode}
                     onModeChange={(m) => handleCustomInputChange(() => {
+                      if (baseDoseMode === 'single') return;
                       setV4v6Mode(m);
                       if (m === 'single') setV4v6Percent2(0);
                     })}
@@ -878,7 +901,8 @@ export default function Home() {
                     isDark={isDark}
                   >
                     <Input3D
-                      label={`${v4v6Mode === 'range' ? 'Min %' : '% do total'}`}
+                      label={baseDoseMode === 'single' ? '% do total' : (v4v6Mode === 'range' ? 'Min %' : '% do total')}
+                      labelMorph
                       unit="%"
                       value={v4v6Percent}
                       onChange={(v) => handleCustomInputChange(() => setV4v6Percent(v))}
@@ -890,19 +914,22 @@ export default function Home() {
                       accentColor="#5A5A40"
                       filling={fillingFields.has('v4v6Percent')}
                     />
-                    <Input3D
-                      label="Max %"
-                      unit="%"
-                      value={v4v6Percent2}
-                      onChange={(v) => handleCustomInputChange(() => setV4v6Percent2(v))}
-                      step={1}
-                      min={0}
-                      max={100}
-                      placeholder="0"
-                      isDark={isDark}
-                      accentColor="#5A5A40"
-                      filling={fillingFields.has('v4v6Percent2')}
-                    />
+                    {baseDoseMode !== 'single' && (
+                      <Input3D
+                        label="Max %"
+                        labelMorph
+                        unit="%"
+                        value={v4v6Percent2}
+                        onChange={(v) => handleCustomInputChange(() => setV4v6Percent2(v))}
+                        step={1}
+                        min={0}
+                        max={100}
+                        placeholder="0"
+                        isDark={isDark}
+                        accentColor="#5A5A40"
+                        filling={fillingFields.has('v4v6Percent2')}
+                      />
+                    )}
                   </CellDivisionContainer>
 
                   <div className={`p-3 rounded-xl border text-xs font-semibold ${
@@ -925,62 +952,90 @@ export default function Home() {
                     <span className="text-sm font-semibold text-[#3D3D3D] dark:text-[#E8E6DF]">
                       3ª Aplicação (V8-V10) — Percentual
                     </span>
-                    <Select3D
-                      value={v8v10Mode}
-                      onChange={(v) => handleCustomInputChange(() => {
-                        setV8v10Mode(v as 'single' | 'range');
-                        if (v === 'single') setV8v10Percent2(0);
-                      })}
-                      isDark={isDark}
-                      accentColor="#8D6E63"
-                      options={[
-                        { value: 'single', label: '1 valor %' },
-                        { value: 'range', label: '2 valores %' },
-                      ]}
-                      className="!inline-flex !w-auto"
-                    />
+                    {baseDoseMode === 'single' ? (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        isDark ? 'bg-[#2C3328] text-[#D4A373]' : 'bg-[#F0EDE5] text-[#8D6E63]'
+                      }`}>
+                        Auto-calculado
+                      </span>
+                    ) : (
+                      <Select3D
+                        value={v8v10Mode}
+                        onChange={(v) => handleCustomInputChange(() => {
+                          setV8v10Mode(v as 'single' | 'range');
+                          if (v === 'single') setV8v10Percent2(0);
+                        })}
+                        isDark={isDark}
+                        accentColor="#8D6E63"
+                        options={[
+                          { value: 'single', label: '1 valor %' },
+                          { value: 'range', label: '2 valores %' },
+                        ]}
+                        className="!inline-flex !w-auto"
+                      />
+                    )}
                   </div>
 
-                  <CellDivisionContainer
-                    mode={v8v10Mode}
-                    onModeChange={(m) => handleCustomInputChange(() => {
-                      setV8v10Mode(m);
-                      if (m === 'single') setV8v10Percent2(0);
-                    })}
-                    accentColor="#8D6E63"
-                    isDark={isDark}
-                  >
-                    <Input3D
-                      label={v8v10Mode === 'range' ? 'Min %' : '% do total'}
-                      unit="%"
-                      value={v8v10Percent}
-                      onChange={(v) => handleCustomInputChange(() => setV8v10Percent(v))}
-                      step={1}
-                      min={0}
-                      max={100}
-                      placeholder="Ex: 20"
-                      isDark={isDark}
+                  {baseDoseMode === 'single' ? (
+                    <>
+                      <div className={`p-4 rounded-xl border text-center ${
+                        isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
+                      }`}>
+                        <span className={`text-[10px] font-bold block mb-1 ${
+                          isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'
+                        }`}>Auto-calculado para fechar o balanço</span>
+                        <span className="text-lg font-bold text-[#8D6E63] dark:text-[#D4A373]">
+                          {calculations.v8v10_1_auto}%
+                        </span>
+                        <span className={`text-xs ml-2 ${
+                          isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'
+                        }`}>do total</span>
+                      </div>
+                    </>
+                  ) : (
+                    <CellDivisionContainer
+                      mode={v8v10Mode}
+                      onModeChange={(m) => handleCustomInputChange(() => {
+                        setV8v10Mode(m);
+                        if (m === 'single') setV8v10Percent2(0);
+                      })}
                       accentColor="#8D6E63"
-                      derived={v8v10Percent === 0}
-                      hint={v8v10Percent === 0 ? `Auto-calculado: ${calculations.v8v10_1_auto}%` : undefined}
-                      filling={fillingFields.has('v8v10Percent')}
-                    />
-                    <Input3D
-                      label="Max %"
-                      unit="%"
-                      value={v8v10Percent2}
-                      onChange={(v) => handleCustomInputChange(() => setV8v10Percent2(v))}
-                      step={1}
-                      min={0}
-                      max={100}
-                      placeholder="0"
                       isDark={isDark}
-                      accentColor="#8D6E63"
-                      derived={v8v10Percent2 === 0 && v4v6Percent2 > 0}
-                      hint={v8v10Percent2 === 0 && v4v6Percent2 > 0 ? `Auto-calculado: ${calculations.v8v10_2_auto}%` : undefined}
-                      filling={fillingFields.has('v8v10Percent2')}
-                    />
-                  </CellDivisionContainer>
+                    >
+                      <Input3D
+                        label={v8v10Mode === 'range' ? 'Min %' : '% do total'}
+                        labelMorph
+                        unit="%"
+                        value={v8v10Percent}
+                        onChange={(v) => handleCustomInputChange(() => setV8v10Percent(v))}
+                        step={1}
+                        min={0}
+                        max={100}
+                        placeholder="Ex: 20"
+                        isDark={isDark}
+                        accentColor="#8D6E63"
+                        derived={v8v10Percent === 0}
+                        hint={v8v10Percent === 0 ? `Auto-calculado: ${calculations.v8v10_1_auto}%` : undefined}
+                        filling={fillingFields.has('v8v10Percent')}
+                      />
+                      <Input3D
+                        label="Max %"
+                        labelMorph
+                        unit="%"
+                        value={v8v10Percent2}
+                        onChange={(v) => handleCustomInputChange(() => setV8v10Percent2(v))}
+                        step={1}
+                        min={0}
+                        max={100}
+                        placeholder="0"
+                        isDark={isDark}
+                        accentColor="#8D6E63"
+                        derived={v8v10Percent2 === 0 && v4v6Percent2 > 0}
+                        hint={v8v10Percent2 === 0 && v4v6Percent2 > 0 ? `Auto-calculado: ${calculations.v8v10_2_auto}%` : undefined}
+                        filling={fillingFields.has('v8v10Percent2')}
+                      />
+                    </CellDivisionContainer>
+                  )}
 
                   <div className={`p-3 rounded-xl border text-xs font-semibold ${
                     isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
@@ -1047,6 +1102,7 @@ export default function Home() {
               v8v10Percent={v8v10Percent}
               v8v10Mode={v8v10Mode}
               v8v10Percent2={v8v10Percent2}
+              baseDoseMode={baseDoseMode}
             />
 
             {/* BALANCO SECTION */}

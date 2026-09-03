@@ -51,6 +51,40 @@ function createGeometry(type: SectionConfig['geometry']): THREE.BufferGeometry {
   }
 }
 
+/* Sample random surface points from a geometry (for particle morph targets) */
+function sampleGeometryPoints(type: SectionConfig['geometry'], count: number): Float32Array {
+  const geo = createGeometry(type);
+  const posAttr = geo.getAttribute('position');
+  const index = geo.getIndex();
+  const out = new Float32Array(count * 3);
+
+  if (index) {
+    const triCount = index.count / 3;
+    for (let i = 0; i < count; i++) {
+      const tri = Math.floor(Math.random() * triCount);
+      const i0 = index.getX(tri * 3);
+      const i1 = index.getX(tri * 3 + 1);
+      const i2 = index.getX(tri * 3 + 2);
+      const u = Math.random();
+      const v = Math.random() * (1 - u);
+      const w = 1 - u - v;
+      out[i * 3]     = posAttr.getX(i0) * u + posAttr.getX(i1) * v + posAttr.getX(i2) * w;
+      out[i * 3 + 1] = posAttr.getY(i0) * u + posAttr.getY(i1) * v + posAttr.getY(i2) * w;
+      out[i * 3 + 2] = posAttr.getZ(i0) * u + posAttr.getZ(i1) * v + posAttr.getZ(i2) * w;
+    }
+  } else {
+    for (let i = 0; i < count; i++) {
+      const idx = Math.floor(Math.random() * posAttr.count);
+      out[i * 3]     = posAttr.getX(idx);
+      out[i * 3 + 1] = posAttr.getY(idx);
+      out[i * 3 + 2] = posAttr.getZ(idx);
+    }
+  }
+
+  geo.dispose();
+  return out;
+}
+
 /* ─── Single 3D Icon Canvas ─── */
 function NavIcon3D({
   config,
@@ -232,17 +266,23 @@ function NavIcon3D({
   );
 }
 
-/* ─── Transition Particles Canvas ─── */
-function TransitionEffect({
+/* ─── Morphing Particle Transition ─── */
+function MorphTransitionEffect({
   active,
   isDark,
   onComplete,
   vertical,
+  fromSections,
+  toSections,
+  iconPositions,
 }: {
   active: boolean;
   isDark: boolean;
   onComplete: () => void;
   vertical: boolean;
+  fromSections: SectionConfig[];
+  toSections: SectionConfig[];
+  iconPositions: Map<string, number>;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animRef = useRef<number | null>(null);
@@ -260,8 +300,9 @@ function TransitionEffect({
       const height = vertical ? (parent?.clientHeight || 400) : 90;
 
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 200);
-      camera.position.z = 30;
+      const aspect = width / height;
+      const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 200);
+      camera.position.z = 20;
 
       renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
       renderer.setSize(width, height);
@@ -272,94 +313,240 @@ function TransitionEffect({
         if (animRef.current) cancelAnimationFrame(animRef.current);
         onComplete();
       };
-
-      const onContextRestored = () => {
-        onComplete();
-      };
+      const onContextRestored = () => onComplete();
 
       canvas.addEventListener('webglcontextlost', onContextLost);
       canvas.addEventListener('webglcontextrestored', onContextRestored);
 
-      const particleCount = 100;
-      const positions = new Float32Array(particleCount * 3);
-      const velocities = new Float32Array(particleCount * 3);
-      const colors = new Float32Array(particleCount * 3);
+      /* ── Camera frustum dimensions ── */
+      const vFov = (50 * Math.PI) / 180;
+      const frustumHeight = 2 * Math.tan(vFov / 2) * camera.position.z;
+      const frustumWidth = frustumHeight * aspect;
+
+      /* ── Map icon fractional positions → 3D world coords ── */
+      const toWorldPos = (frac: number) => {
+        if (vertical) {
+          return { x: 0, y: (0.5 - frac) * frustumHeight * 0.85, z: 0 };
+        }
+        return { x: (frac - 0.5) * frustumWidth * 0.85, y: 0, z: 0 };
+      };
+
+      /* ── Particle setup: 50 per icon slot ── */
+      const PARTICLES_PER_ICON = 50;
+      const maxIcons = Math.max(fromSections.length, toSections.length, 1);
+      const totalParticles = PARTICLES_PER_ICON * maxIcons;
+
+      const positions = new Float32Array(totalParticles * 3);
+      const startPositions = new Float32Array(totalParticles * 3);
+      const endPositions = new Float32Array(totalParticles * 3);
+      const velocities = new Float32Array(totalParticles * 3);
+      const baseColors = new Float32Array(totalParticles * 3);
+      const targetColors = new Float32Array(totalParticles * 3);
+      const particleSizes = new Float32Array(totalParticles);
 
       const fromColor = isDark ? new THREE.Color(0x9CB386) : new THREE.Color(0x5A5A40);
       const toColor = isDark ? new THREE.Color(0xD4A373) : new THREE.Color(0xC19262);
 
-      for (let i = 0; i < particleCount; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const radius = 3 + Math.random() * 18;
-        positions[i * 3] = (Math.random() - 0.5) * width * 0.5;
-        positions[i * 3 + 1] = (Math.random() - 0.5) * height * 0.7;
-        positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+      for (let iconIdx = 0; iconIdx < maxIcons; iconIdx++) {
+        const fromConfig = fromSections[iconIdx] || fromSections[fromSections.length - 1];
+        const toConfig = toSections[iconIdx] || toSections[toSections.length - 1];
 
-        velocities[i * 3] = Math.cos(angle) * radius;
-        velocities[i * 3 + 1] = Math.sin(angle) * radius;
-        velocities[i * 3 + 2] = (Math.random() - 0.5) * 8;
+        const fromPos = iconPositions.get(fromConfig.id);
+        const toConfigFromNew = toSections[iconIdx] || toSections[0];
+        const toPos = iconPositions.get(toConfigFromNew.id);
 
-        const mixFactor = i / particleCount;
-        const c = fromColor.clone().lerp(toColor, mixFactor);
-        colors[i * 3] = c.r;
-        colors[i * 3 + 1] = c.g;
-        colors[i * 3 + 2] = c.b;
+        const fromWorld = fromPos !== undefined ? toWorldPos(fromPos) : toWorldPos(0.5);
+        const toWorld = toPos !== undefined ? toWorldPos(toPos) : toWorldPos(0.5);
+
+        const fromPts = sampleGeometryPoints(fromConfig.geometry, PARTICLES_PER_ICON);
+        const toPts = sampleGeometryPoints(toConfig.geometry, PARTICLES_PER_ICON);
+
+        const fromCol = new THREE.Color(
+          parseInt((isDark ? fromConfig.colorDark : fromConfig.color).replace('#', ''), 16)
+        );
+        const toCol = new THREE.Color(
+          parseInt((isDark ? toConfig.colorDark : toConfig.color).replace('#', ''), 16)
+        );
+
+        for (let p = 0; p < PARTICLES_PER_ICON; p++) {
+          const i = iconIdx * PARTICLES_PER_ICON + p;
+          const i3 = i * 3;
+
+          const sx = fromWorld.x + fromPts[p * 3] * 0.6;
+          const sy = fromWorld.y + fromPts[p * 3 + 1] * 0.6;
+          const sz = fromWorld.z + fromPts[p * 3 + 2] * 0.6;
+
+          positions[i3] = sx;
+          positions[i3 + 1] = sy;
+          positions[i3 + 2] = sz;
+
+          startPositions[i3] = sx;
+          startPositions[i3 + 1] = sy;
+          startPositions[i3 + 2] = sz;
+
+          endPositions[i3] = toWorld.x + toPts[p * 3] * 0.6;
+          endPositions[i3 + 1] = toWorld.y + toPts[p * 3 + 1] * 0.6;
+          endPositions[i3 + 2] = toWorld.z + toPts[p * 3 + 2] * 0.6;
+
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 3 + Math.random() * 8;
+          const zVel = (Math.random() - 0.5) * 4;
+          velocities[i3] = Math.cos(angle) * speed;
+          velocities[i3 + 1] = Math.sin(angle) * speed;
+          velocities[i3 + 2] = zVel;
+
+          baseColors[i3] = fromCol.r;
+          baseColors[i3 + 1] = fromCol.g;
+          baseColors[i3 + 2] = fromCol.b;
+
+          targetColors[i3] = toCol.r;
+          targetColors[i3 + 1] = toCol.g;
+          targetColors[i3 + 2] = toCol.b;
+
+          particleSizes[i] = 0.8 + Math.random() * 1.2;
+        }
       }
 
+      /* ── Points geometry ── */
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(baseColors.slice(), 3));
 
       const mat = new THREE.PointsMaterial({
-        size: 2.5,
+        size: 2.0,
         transparent: true,
-        opacity: 0.9,
+        opacity: 0.95,
         vertexColors: true,
         blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
       });
       const points = new THREE.Points(geo, mat);
       scene.add(points);
 
-      const ringGeo = new THREE.TorusGeometry(4, 0.4, 12, 48);
+      /* ── Shockwave rings (one per phase) ── */
+      const ringGeo = new THREE.TorusGeometry(3, 0.3, 12, 48);
       const ringMat = new THREE.MeshBasicMaterial({
         color: isDark ? 0xD4A373 : 0x5A5A40,
         transparent: true,
-        opacity: 0.6,
+        opacity: 0,
         wireframe: true,
         blending: THREE.AdditiveBlending,
       });
       const ring = new THREE.Mesh(ringGeo, ringMat);
       scene.add(ring);
 
+      /* ── Second ring for reform phase ── */
+      const ring2Geo = new THREE.TorusGeometry(2, 0.2, 12, 48);
+      const ring2Mat = new THREE.MeshBasicMaterial({
+        color: isDark ? 0x9CB386 : 0x2E6F40,
+        transparent: true,
+        opacity: 0,
+        wireframe: true,
+        blending: THREE.AdditiveBlending,
+      });
+      const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+      scene.add(ring2);
+
+      /* ── Animation timing ── */
+      const DURATION = 1200;
+      const DISSOLVE_END = 0.35;
+      const HOLD_END = 0.50;
       const startTime = performance.now();
-      const duration = 700;
+
+      const colorAttr = geo.getAttribute('color') as THREE.BufferAttribute;
+      const colorArr = colorAttr.array as Float32Array;
 
       const animate = (now: number) => {
         const elapsed = now - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const ease = 1 - Math.pow(1 - progress, 3);
+        const t = Math.min(elapsed / DURATION, 1);
 
-        const pos = geo.attributes.position as THREE.BufferAttribute;
-        const arr = pos.array as Float32Array;
-        const dt = 0.016;
-        for (let i = 0; i < particleCount; i++) {
-          arr[i * 3] += velocities[i * 3] * dt * (1 - ease * 0.5);
-          arr[i * 3 + 1] += velocities[i * 3 + 1] * dt * (1 - ease * 0.5);
-          arr[i * 3 + 2] += velocities[i * 3 + 2] * dt;
+        const posAttr = geo.attributes.position as THREE.BufferAttribute;
+        const posArr = posAttr.array as Float32Array;
+
+        for (let i = 0; i < totalParticles; i++) {
+          const i3 = i * 3;
+
+          if (t <= DISSOLVE_END) {
+            /* ── Phase 1: DISSOLVE — particles fly outward from source ── */
+            const phaseT = t / DISSOLVE_END;
+            const ease = 1 - Math.pow(1 - phaseT, 3);
+
+            posArr[i3]     += velocities[i3]     * 0.016 * (1 + ease * 2);
+            posArr[i3 + 1] += velocities[i3 + 1] * 0.016 * (1 + ease * 2);
+            posArr[i3 + 2] += velocities[i3 + 2] * 0.016;
+
+            particleSizes[i] = (0.8 + Math.random() * 0.4) * (1 + ease * 0.5);
+
+          } else if (t <= HOLD_END) {
+            /* ── Phase 2: HOLD — particles drift gently, almost frozen ── */
+            const holdT = (t - DISSOLVE_END) / (HOLD_END - DISSOLVE_END);
+
+            posArr[i3]     += velocities[i3]     * 0.002 * (1 - holdT);
+            posArr[i3 + 1] += velocities[i3 + 1] * 0.002 * (1 - holdT);
+            posArr[i3 + 2] += Math.sin(now * 0.003 + i) * 0.003;
+
+            particleSizes[i] = 2.0 + Math.sin(now * 0.004 + i * 0.5) * 0.3;
+
+          } else {
+            /* ── Phase 3: REFORM — particles converge to target positions ── */
+            const phaseT = (t - HOLD_END) / (1 - HOLD_END);
+            const ease = phaseT < 0.5
+              ? 4 * phaseT * phaseT * phaseT
+              : 1 - Math.pow(-2 * phaseT + 2, 3) / 2;
+
+            const lerpFactor = ease * 0.08;
+            posArr[i3]     += (endPositions[i3]     - posArr[i3])     * lerpFactor;
+            posArr[i3 + 1] += (endPositions[i3 + 1] - posArr[i3 + 1]) * lerpFactor;
+            posArr[i3 + 2] += (endPositions[i3 + 2] - posArr[i3 + 2]) * lerpFactor;
+
+            particleSizes[i] = 2.0 * (1 - phaseT * 0.3);
+          }
+
+          /* ── Color interpolation per particle ── */
+          const colorMix = t <= DISSOLVE_END ? 0 : Math.min((t - DISSOLVE_END) / 0.4, 1);
+          colorArr[i3]     = baseColors[i3]     + (targetColors[i3]     - baseColors[i3])     * colorMix;
+          colorArr[i3 + 1] = baseColors[i3 + 1] + (targetColors[i3 + 1] - baseColors[i3 + 1]) * colorMix;
+          colorArr[i3 + 2] = baseColors[i3 + 2] + (targetColors[i3 + 2] - baseColors[i3 + 2]) * colorMix;
         }
-        pos.needsUpdate = true;
 
-        const scale = 1 + ease * 10;
-        ring.scale.set(scale, scale, scale);
-        ring.rotation.z += 0.03;
-        ring.rotation.x = Math.PI / 4;
-        ringMat.opacity = (1 - progress) * 0.5;
+        posAttr.needsUpdate = true;
+        colorAttr.needsUpdate = true;
 
-        mat.opacity = (1 - progress) * 0.85;
+        /* ── Shockwave ring: expands during dissolve, collapses during reform ── */
+        if (t <= DISSOLVE_END) {
+          const ringT = t / DISSOLVE_END;
+          const ringEase = 1 - Math.pow(1 - ringT, 2);
+          const s = 1 + ringEase * 8;
+          ring.scale.set(s, s, s);
+          ring.rotation.z += 0.04;
+          ring.rotation.x = Math.PI / 4;
+          ringMat.opacity = (1 - ringT) * 0.5;
+        } else if (t <= HOLD_END) {
+          ringMat.opacity *= 0.95;
+        } else {
+          ringMat.opacity = 0;
+        }
+
+        /* ── Reform ring: appears during reformation ── */
+        if (t > HOLD_END) {
+          const ring2T = (t - HOLD_END) / (1 - HOLD_END);
+          const s2 = 8 * (1 - ring2T) + 0.5;
+          ring2.scale.set(s2, s2, s2);
+          ring2.rotation.z -= 0.03;
+          ring2.rotation.x = Math.PI / 3;
+          ring2Mat.opacity = Math.sin(ring2T * Math.PI) * 0.4;
+        } else {
+          ring2Mat.opacity = 0;
+        }
+
+        /* ── Overall opacity: fade in at start, fade out at end ── */
+        const fadeIn = Math.min(t / 0.05, 1);
+        const fadeOut = t > 0.9 ? (1 - t) / 0.1 : 1;
+        mat.opacity = fadeIn * fadeOut * 0.9;
 
         renderer!.render(scene, camera);
 
-        if (progress < 1) {
+        if (t < 1) {
           animRef.current = requestAnimationFrame(animate);
         } else {
           onComplete();
@@ -368,6 +555,8 @@ function TransitionEffect({
           mat.dispose();
           ringGeo.dispose();
           ringMat.dispose();
+          ring2Geo.dispose();
+          ring2Mat.dispose();
         }
       };
 
@@ -385,7 +574,7 @@ function TransitionEffect({
       if (animRef.current) cancelAnimationFrame(animRef.current);
       renderer?.dispose();
     };
-  }, [active, isDark, onComplete, vertical]);
+  }, [active, isDark, onComplete, vertical, fromSections, toSections, iconPositions]);
 
   if (!active) return null;
 
@@ -415,6 +604,8 @@ export default function SectionNav3D({
   const containerRef = useRef<HTMLDivElement>(null);
   const iconRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const [iconPositions, setIconPositions] = useState<Map<string, number>>(new Map());
+  const [transitionFromSections, setTransitionFromSections] = useState<SectionConfig[]>(NITROGEN_SECTIONS);
+  const prevSectionsRef = useRef<SectionConfig[]>(NITROGEN_SECTIONS);
 
   const sections = useMemo(() => {
     if (activeTab === 'estimativa_milho') return CORN_SECTIONS;
@@ -494,10 +685,12 @@ export default function SectionNav3D({
   // Transition effect when tab changes
   useEffect(() => {
     if (prevTabRef.current !== activeTab) {
+      setTransitionFromSections(prevSectionsRef.current);
       setIsTransitioning(true);
       prevTabRef.current = activeTab;
+      prevSectionsRef.current = sections;
     }
-  }, [activeTab]);
+  }, [activeTab, sections]);
 
   const handleTransitionComplete = useCallback(() => {
     setIsTransitioning(false);
@@ -517,11 +710,14 @@ export default function SectionNav3D({
       role="tablist"
       aria-label="Navegação de seções"
     >
-      <TransitionEffect
+      <MorphTransitionEffect
         active={isTransitioning}
         isDark={isDark}
         onComplete={handleTransitionComplete}
         vertical={!isMobile}
+        fromSections={transitionFromSections}
+        toSections={sections}
+        iconPositions={iconPositions}
       />
 
       {/* Icons + Progress Track */}
@@ -613,14 +809,15 @@ export default function SectionNav3D({
             >
               {/* 3D Icon */}
               <div
-                className="transition-transform duration-400"
+                className="transition-all duration-300"
                 style={{
                   transform: isActive
                     ? isMobile ? 'translateY(-4px)' : 'translateX(-4px)'
                     : isHoveredBtn
                       ? isMobile ? 'translateY(-2px)' : 'translateX(-2px)'
                       : 'translate(0)',
-                  transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease',
+                  opacity: isTransitioning ? 0 : 1,
                 }}
               >
                 <NavIcon3D

@@ -10,11 +10,9 @@ import {
   RotateCcw,
   Layers,
   ChevronDown,
-  Info,
-  AlertTriangle
+  Info
 } from 'lucide-react';
 import CornEar3DVisualizer from './CornEar3DVisualizer';
-import CornAlert3D from './CornAlert3D';
 import Elastic3DSlider from './Elastic3DSlider';
 import Input3D from './Input3D';
 import Button3D from './Button3D';
@@ -279,30 +277,6 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
     });
   }, []);
 
-  const handleFixAll = () => {
-    setPlantasPorMetro(4.0);
-    setEspacamentoLinhas(0.50);
-    setFileiras(16);
-    setGraosPorFileira(35);
-    setEspigas(1.0);
-    setPmg(300);
-    setQuebraDecimal(0.05);
-    setActivePreset('personalizado');
-  };
-
-  const handleFixField = (field: string, val: number) => {
-    setActivePreset('personalizado');
-    switch (field) {
-      case 'plantasPorMetro': setPlantasPorMetro(val); break;
-      case 'espacamentoLinhas': setEspacamentoLinhas(val); break;
-      case 'fileiras': setFileiras(val); break;
-      case 'graosPorFileira': setGraosPorFileira(val); break;
-      case 'espigas': setEspigas(val); break;
-      case 'pmg': setPmg(val); break;
-      case 'quebraDecimal': setQuebraDecimal(val); break;
-    }
-  };
-
   const handleApplyToNitrogenCalculator = () => {
     if (onApplyYieldGoal) {
       onApplyYieldGoal(Math.round(produtividadeLiquida));
@@ -396,16 +370,6 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
         )}
       </motion.div>
 
-      {/* 3D ALERT: AGRONOMIC VALIDATION */}
-      <div id="corn_yield_alerts">
-        <CornAlert3D
-          issues={agronomicIssues}
-          onFixAll={handleFixAll}
-          onFixField={handleFixField}
-          isDark={isDark}
-        />
-      </div>
-
       {/* TWO COLUMN GRID: INPUTS & 3D / RESULTS */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
@@ -484,26 +448,6 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
               />
             </div>
 
-            {/* ELASTIC SLIDER: PLANTAS POR METRO */}
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#A6A395] uppercase tracking-wider">
-                Ajuste rápido (Plantas/m):
-              </span>
-              <Elastic3DSlider
-                id="slider_plantas_por_metro"
-                value={plantasPorMetro}
-                min={1.5}
-                max={7.0}
-                step={0.1}
-                onChange={(v) => { setPlantasPorMetro(v); setActivePreset('personalizado'); }}
-                unit="pl/m"
-                isDark={isDark}
-                accentColor="#5A5A40"
-                minLabel="1.5 pl/m"
-                maxLabel="7.0 pl/m"
-              />
-            </div>
-
             {/* ESTANDE RESULT CALLOUT */}
             <motion.div
               className={`p-3.5 rounded-2xl border flex items-center justify-between text-xs transition-colors ${
@@ -559,32 +503,6 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                 warning={getFieldSeverity('graosPorFileira') === 'warning'}
                 hint="Contagem média longitudinal de grãos."
                 filling={fillingFields.has('graosPorFileira')}
-              />
-            </div>
-
-            {/* ELASTIC SLIDERS: FILEIRAS & GRÃOS */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Elastic3DSlider
-                id="slider_fileiras"
-                value={fileiras}
-                min={12}
-                max={22}
-                step={2}
-                onChange={(v) => { setFileiras(v); setActivePreset('personalizado'); }}
-                unit="fileiras"
-                isDark={isDark}
-                accentColor="#5A5A40"
-              />
-              <Elastic3DSlider
-                id="slider_graos"
-                value={graosPorFileira}
-                min={20}
-                max={50}
-                step={1}
-                onChange={(v) => { setGraosPorFileira(v); setActivePreset('personalizado'); }}
-                unit="grãos"
-                isDark={isDark}
-                accentColor="#5A5A40"
               />
             </div>
 

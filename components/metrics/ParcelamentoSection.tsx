@@ -171,6 +171,7 @@ interface Props {
   v8v10Percent: number;
   v8v10Mode: 'single' | 'range';
   v8v10Percent2: number;
+  baseDoseMode: 'single' | 'range';
 }
 
 export default function ParcelamentoSection({
@@ -182,6 +183,7 @@ export default function ParcelamentoSection({
   v8v10Percent,
   v8v10Mode,
   v8v10Percent2,
+  baseDoseMode,
 }: Props) {
   const { isDark } = useTheme();
   const [showCalc, setShowCalc] = useState(false);
@@ -247,8 +249,8 @@ export default function ParcelamentoSection({
           className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#5A5A40] dark:border-[#4B5E40] space-y-3 relative"
           style={{ perspective: '800px' }}
         >
-          {/* Toggle button for agronomic default */}
-          {v4v6UserDiffersFromDefault && (
+          {/* Toggle button for agronomic default — hidden when baseDoseMode is single */}
+          {baseDoseMode !== 'single' && v4v6UserDiffersFromDefault && (
             <SwapToggle3D
               isActive={showAgronomicV4V6}
               defaultLabel="50-60"
@@ -267,13 +269,40 @@ export default function ParcelamentoSection({
                 2ª Aplicação: V4-V6
               </span>
               <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
-                Padrão agronômico: <strong>50% a 60%</strong> da meta ({baseLabel})
+                {baseDoseMode === 'single' ? (
+                  <>Modo único: <strong>{v4v6Percent}%</strong> da meta ({baseLabel})</>
+                ) : (
+                  <>Padrão agronômico: <strong>50% a 60%</strong> da meta ({baseLabel})</>
+                )}
               </p>
             </div>
           </div>
 
           <AnimatePresence mode="wait">
-            {showAgronomicV4V6 ? (
+            {baseDoseMode === 'single' ? (
+              <motion.div
+                key="locked-single-v4v6"
+                initial={{ rotateX: -90, opacity: 0 }}
+                animate={{ rotateX: 0, opacity: 1 }}
+                exit={{ rotateX: 90, opacity: 0 }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 200,
+                  damping: 22,
+                  mass: 0.8,
+                  opacity: { duration: 0.2 },
+                }}
+                style={{ transformOrigin: 'top center' }}
+                className="pt-2 border-t border-[#F0EDE5] dark:border-[#2C3328] text-center"
+              >
+                <div className="bg-white dark:bg-[#232821] p-3 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328]">
+                  <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] block">Com {v4v6Percent}%</span>
+                  <span className="text-xl font-bold text-[#3D3D3D] dark:text-[#E8E6DF] mt-0.5 block">
+                    {calculations.v4v6_1_kg.toFixed(2)} <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
+                  </span>
+                </div>
+              </motion.div>
+            ) : showAgronomicV4V6 ? (
               <motion.div
                 key="agronomic-v4v6"
                 initial={{ rotateX: -90, opacity: 0 }}
@@ -363,8 +392,8 @@ export default function ParcelamentoSection({
           className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#8D6E63] dark:border-[#6D544C] space-y-3 relative"
           style={{ perspective: '800px' }}
         >
-          {/* Toggle button for agronomic default */}
-          {v8v10UserDiffersFromDefault && (
+          {/* Toggle button for agronomic default — hidden when baseDoseMode is single */}
+          {baseDoseMode !== 'single' && v8v10UserDiffersFromDefault && (
             <SwapToggle3D
               isActive={showAgronomicV8V10}
               defaultLabel="20-30"
@@ -383,13 +412,40 @@ export default function ParcelamentoSection({
                 3ª Aplicação: V8-V10
               </span>
               <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
-                Padrão agronômico: <strong>20% a 30%</strong> da meta ({baseLabel})
+                {baseDoseMode === 'single' ? (
+                  <>Auto-calculado: <strong>{calculations.v8v10_1_auto}%</strong> da meta ({baseLabel})</>
+                ) : (
+                  <>Padrão agronômico: <strong>20% a 30%</strong> da meta ({baseLabel})</>
+                )}
               </p>
             </div>
           </div>
 
           <AnimatePresence mode="wait">
-            {showAgronomicV8V10 ? (
+            {baseDoseMode === 'single' ? (
+              <motion.div
+                key="auto-v8v10"
+                initial={{ rotateX: -90, opacity: 0 }}
+                animate={{ rotateX: 0, opacity: 1 }}
+                exit={{ rotateX: 90, opacity: 0 }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 200,
+                  damping: 22,
+                  mass: 0.8,
+                  opacity: { duration: 0.2 },
+                }}
+                style={{ transformOrigin: 'top center' }}
+                className="pt-2 border-t border-[#F0EDE5] dark:border-[#2C3328] text-center"
+              >
+                <div className="bg-white dark:bg-[#232821] p-3 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328]">
+                  <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] block">Auto-calculado: {calculations.v8v10_1_auto}%</span>
+                  <span className="text-xl font-bold text-[#8D6E63] dark:text-[#D4A373] mt-0.5 block">
+                    {calculations.v8v10_1_kg.toFixed(2)} <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
+                  </span>
+                </div>
+              </motion.div>
+            ) : showAgronomicV8V10 ? (
               <motion.div
                 key="agronomic-v8v10"
                 initial={{ rotateX: -90, opacity: 0 }}
