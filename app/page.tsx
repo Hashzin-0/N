@@ -26,7 +26,6 @@ import VoiceAssistantHUD from '@/components/VoiceAssistantHUD';
 import DarkMode3DToggle from '@/components/DarkMode3DToggle';
 import SectionNav3D from '@/components/SectionNav3D';
 import CornYieldCalculator from '@/components/CornYieldCalculator';
-import CornAlert3D, { AgronomicValidationIssue } from '@/components/CornAlert3D';
 import Input3D from '@/components/Input3D';
 import Button3D from '@/components/Button3D';
 import Select3D from '@/components/Select3D';
@@ -493,7 +492,7 @@ export default function Home() {
             >
               <Calculator className="h-4 w-4" />
               <span>Estimativa de Produtividade (Milho)</span>
-              <span className="text-[10px] bg-black/10 dark:bg-white/20 px-1.5 py-0.5 rounded-md font-bold uppercase">3D</span>
+
             </button>
             <button
               id="tab_btn_comparator"
@@ -583,7 +582,7 @@ export default function Home() {
                   Precisa calcular a produtividade estimada da lavoura primeiro?
                 </h4>
                 <p className="text-xs text-[#8C897E] dark:text-[#9EA399]">
-                  Estime sacas por hectare a partir de plantas/metro, espaçamento, espigas, grãos e PMG com visualização 3D.
+                  Estime sacas por hectare a partir de plantas/metro, espaçamento, espigas, grãos e PMG com visualização.
                 </p>
               </div>
             </div>
@@ -591,7 +590,7 @@ export default function Home() {
               onClick={() => setActiveTab('estimativa_milho')}
               className="flex items-center gap-1.5 text-xs font-bold bg-[#D4A373] hover:bg-[#C19262] text-white px-4 py-2 rounded-xl transition-all shrink-0 shadow-sm"
             >
-              <span>Abrir Calculadora de Espigas 3D</span>
+              <span>Abrir Calculadora de Espigas</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -736,7 +735,8 @@ export default function Home() {
                   label="Eficiência de Aplicação (%)"
                   unit="%"
                   value={efficiency}
-                  onChange={(v) => handleCustomInputChange(() => setEfficiency(Math.min(100, Math.max(10, v))))}
+                  onChange={(v) => handleCustomInputChange(() => setEfficiency(v))}
+                  onBlurCustom={(v) => handleCustomInputChange(() => setEfficiency(Math.min(100, Math.max(10, v))))}
                   step={1}
                   min={10}
                   max={100}

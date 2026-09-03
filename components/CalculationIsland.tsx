@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
+import { useAnimationLock } from '@/lib/useAnimationLock';
 
 interface CalculationIslandProps {
   isVisible: boolean;
@@ -19,11 +20,12 @@ export default function CalculationIsland({
   isDark = false,
 }: CalculationIslandProps) {
   const activeColor = isDark ? darkAccentColor : accentColor;
+  const { withLock } = useAnimationLock(400);
 
   return (
     <motion.button
       type="button"
-      onClick={onToggle}
+      onClick={withLock(onToggle)}
       className="absolute -top-1 -right-1 z-20 group"
       whileHover={{ scale: 1.12 }}
       whileTap={{ scale: 0.92 }}

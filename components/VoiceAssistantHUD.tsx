@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import LiveVoiceOrb3D from './LiveVoiceOrb3D';
 import { LiveAgentState } from '@/hooks/useGeminiLiveAgent';
+import { useAnimationLock } from '@/lib/useAnimationLock';
 
 interface VoiceAssistantHUDProps {
   agentState: LiveAgentState;
@@ -33,6 +34,7 @@ export default function VoiceAssistantHUD({
   onToggleMute,
 }: VoiceAssistantHUDProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const { withLock } = useAnimationLock(400);
 
   const {
     isConnected,
@@ -116,7 +118,7 @@ export default function VoiceAssistantHUD({
               <div className="flex items-center gap-1">
                 <button
                   id="btn_hud_minimize"
-                  onClick={() => setIsExpanded(false)}
+                  onClick={withLock(() => setIsExpanded(false))}
                   className="p-1.5 text-[#8C897E] hover:text-[#5A5A40] dark:hover:text-[#E8E7DF] rounded-lg hover:bg-[#F9F8F6] dark:hover:bg-[#242720] transition-colors"
                   title="Minimizar HUD"
                 >
@@ -200,7 +202,7 @@ export default function VoiceAssistantHUD({
             <div className="flex items-center justify-between pt-2 border-t border-[#F0EDE5] dark:border-[#2F3329]">
               <button
                 id="btn_voice_mute_toggle"
-                onClick={onToggleMute}
+                onClick={withLock(onToggleMute)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                   isMuted 
                     ? 'bg-[#E53E3E] text-white shadow-md' 
@@ -214,7 +216,7 @@ export default function VoiceAssistantHUD({
 
               <button
                 id="btn_voice_disconnect"
-                onClick={onDisconnect}
+                onClick={withLock(onDisconnect)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-[#F9F8F6] dark:bg-[#242720] hover:bg-[#E53E3E] text-[#8C897E] hover:text-white border border-[#E5E2D9] dark:border-[#363C2C] hover:border-[#E53E3E] transition-all"
                 title="Encerrar conversa de voz com Puck"
               >
@@ -231,7 +233,7 @@ export default function VoiceAssistantHUD({
         {isConnected && !isExpanded && (
           <button
             id="btn_hud_expand"
-            onClick={() => setIsExpanded(true)}
+            onClick={withLock(() => setIsExpanded(true))}
             className="flex items-center gap-2 bg-white dark:bg-[#1A1C16] text-[#5A5A40] dark:text-[#E8E7DF] px-4 py-3 rounded-2xl shadow-xl border border-[#E5E2D9] dark:border-[#333829] font-bold text-xs hover:bg-[#F9F8F6] dark:hover:bg-[#242720] transition-all active:scale-95"
           >
             <div className="relative">
@@ -246,7 +248,7 @@ export default function VoiceAssistantHUD({
         {!isConnected && (
           <motion.button
             id="btn_start_voice_agent"
-            onClick={onConnect}
+            onClick={withLock(onConnect)}
             disabled={isConnecting}
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}

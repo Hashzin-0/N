@@ -411,7 +411,7 @@ export default function LiveVoiceOrb3D({
       ref={containerRef}
       className={`relative select-none cursor-grab active:cursor-grabbing overflow-hidden flex items-center justify-center ${className}`}
       style={{ width: size, height: size }}
-      title="Assistente de Voz 3D Puck (Arraste para girar)"
+      title="Assistente de Voz Puck (Arraste para girar)"
     />
   );
 }

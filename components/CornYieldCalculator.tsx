@@ -14,12 +14,11 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import CornEar3DVisualizer from './CornEar3DVisualizer';
-import CornAlert3D, { AgronomicValidationIssue } from './CornAlert3D';
 import Input3D from './Input3D';
 import Button3D from './Button3D';
-import Elastic3DSlider from './Elastic3DSlider';
 import { useTheme } from './ThemeProvider';
 import CornYieldResultCard from './metrics/CornYieldResultCard';
+import { useAnimationLock } from '@/lib/useAnimationLock';
 
 interface CornYieldCalculatorProps {
   onApplyYieldGoal?: (scHa: number) => void;
@@ -89,6 +88,7 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
   const [quebraDecimal, setQuebraDecimal] = useState<number>(0);
   const [activePreset, setActivePreset] = useState<string>('personalizado');
   const [showFormulaDetails, setShowFormulaDetails] = useState<boolean>(true);
+  const { withLock } = useAnimationLock(400);
   const [appliedToast, setAppliedToast] = useState<string | null>(null);
   
   // Animation state for filling fields when loading presets
@@ -360,7 +360,7 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                 size="sm"
                 active={activePreset === p.id}
                 isDark={isDark}
-                onClick={() => loadPreset(p)}
+                onClick={withLock(() => loadPreset(p))}
               >
                 {p.name.split(' ')[0]}
               </Button3D>
@@ -425,7 +425,7 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
               variant="ghost"
               size="sm"
               isDark={isDark}
-              onClick={() => {
+              onClick={withLock(() => {
                 setPlantasPorMetro(0);
                 setEspacamentoLinhas(0);
                 setFileiras(0);
@@ -434,7 +434,7 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                 setPmg(0);
                 setQuebraDecimal(0);
                 setActivePreset('personalizado');
-              }}
+              })}
               icon={<RotateCcw className="h-3 w-3" />}
             >
               Resetar
@@ -652,7 +652,7 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
             }`}
           >
             <button
-              onClick={() => setShowFormulaDetails(!showFormulaDetails)}
+              onClick={withLock(() => setShowFormulaDetails(!showFormulaDetails))}
               className="w-full flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#5A5A40] dark:text-[#A3B18A]"
             >
               <div className="flex items-center gap-2">

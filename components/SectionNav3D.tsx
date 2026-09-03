@@ -28,7 +28,7 @@ const CORN_SECTIONS: SectionConfig[] = [
   { id: 'corn_yield_header', label: 'Visão Geral', shortLabel: 'Visão Geral', geometry: 'sphere', color: '#C19262', colorDark: '#D4A373' },
   { id: 'corn_yield_params', label: 'Parâmetros', shortLabel: 'Parâmetros', geometry: 'cylinder', color: '#5A5A40', colorDark: '#9CB386' },
   { id: 'corn_yield_alerts', label: 'Alertas', shortLabel: 'Alertas', geometry: 'cone', color: '#D4A373', colorDark: '#E0A96D' },
-  { id: 'corn_yield_visual', label: 'Visual 3D', shortLabel: 'Visual 3D', geometry: 'torus', color: '#C19262', colorDark: '#D4A373' },
+  { id: 'corn_yield_visual', label: 'Visual', shortLabel: 'Visual', geometry: 'torus', color: '#C19262', colorDark: '#D4A373' },
   { id: 'corn_yield_results', label: 'Resultados', shortLabel: 'Resultados', geometry: 'octahedron', color: '#2E6F40', colorDark: '#86efac' },
 ];
 
@@ -69,6 +69,8 @@ function NavIcon3D({
   const isHoveredRef = useRef(isHovered);
   const targetScale = useRef(1);
   const currentScale = useRef(1);
+  const [contextLost, setContextLost] = useState(false);
+  const webglSupportedRef = useRef<boolean | null>(null);
 
   useEffect(() => {
     isActiveRef.current = isActive;
@@ -80,13 +82,36 @@ function NavIcon3D({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || contextLost) return;
+
+    if (webglSupportedRef.current === null) {
+      try {
+        const testCanvas = document.createElement('canvas');
+        webglSupportedRef.current = !!(testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl'));
+      } catch {
+        webglSupportedRef.current = false;
+      }
+    }
+    if (!webglSupportedRef.current) return;
 
     let renderer: THREE.WebGLRenderer | null = null;
     let geo: THREE.BufferGeometry | null = null;
     let mat: THREE.MeshStandardMaterial | null = null;
     let ringGeo: THREE.TorusGeometry | null = null;
     let ringMat: THREE.MeshBasicMaterial | null = null;
+
+    const onContextLost = (e: Event) => {
+      e.preventDefault();
+      setContextLost(true);
+      if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
+    };
+
+    const onContextRestored = () => {
+      setContextLost(false);
+    };
+
+    canvas.addEventListener('webglcontextlost', onContextLost);
+    canvas.addEventListener('webglcontextrestored', onContextRestored);
 
     try {
       const size = 56;
@@ -97,11 +122,6 @@ function NavIcon3D({
       renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
       renderer.setSize(size, size);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-      canvas.addEventListener('webglcontextlost', (e) => {
-        e.preventDefault();
-        if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
-      }, { once: true });
 
       const ambient = new THREE.AmbientLight(0xffffff, 0.9);
       scene.add(ambient);
@@ -158,10 +178,12 @@ function NavIcon3D({
       };
       animate();
     } catch {
-      // WebGL not available
+      // WebGL renderer creation failed
     }
 
     return () => {
+      canvas.removeEventListener('webglcontextlost', onContextLost);
+      canvas.removeEventListener('webglcontextrestored', onContextRestored);
       if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
       renderer?.dispose();
       geo?.dispose();
@@ -169,7 +191,32 @@ function NavIcon3D({
       ringGeo?.dispose();
       ringMat?.dispose();
     };
-  }, [config.geometry, config.color, config.colorDark, isDark]);
+  }, [config.geometry, config.color, config.colorDark, isDark, contextLost]);
+
+  const colorHex = isDark ? config.colorDark : config.color;
+
+  if (contextLost) {
+    return (
+      <div
+        className="w-[56px] h-[56px] flex items-center justify-center"
+        style={{
+          filter: isActive
+            ? `drop-shadow(0 0 10px ${isDark ? 'rgba(156,187,134,0.6)' : 'rgba(90,90,64,0.5)'})`
+            : 'none',
+          transition: 'filter 0.4s ease',
+        }}
+      >
+        <div
+          className="w-8 h-8 rounded-full"
+          style={{
+            backgroundColor: colorHex,
+            boxShadow: `0 0 12px ${colorHex}60`,
+            opacity: isActive ? 0.9 : 0.5,
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <canvas
@@ -220,10 +267,18 @@ function TransitionEffect({
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
-      canvas.addEventListener('webglcontextlost', (e) => {
+      const onContextLost = (e: Event) => {
         e.preventDefault();
         if (animRef.current) cancelAnimationFrame(animRef.current);
-      }, { once: true });
+        onComplete();
+      };
+
+      const onContextRestored = () => {
+        onComplete();
+      };
+
+      canvas.addEventListener('webglcontextlost', onContextLost);
+      canvas.addEventListener('webglcontextrestored', onContextRestored);
 
       const particleCount = 100;
       const positions = new Float32Array(particleCount * 3);
@@ -317,6 +372,11 @@ function TransitionEffect({
       };
 
       animRef.current = requestAnimationFrame(animate);
+
+      return () => {
+        canvas.removeEventListener('webglcontextlost', onContextLost);
+        canvas.removeEventListener('webglcontextrestored', onContextRestored);
+      };
     } catch {
       onComplete();
     }

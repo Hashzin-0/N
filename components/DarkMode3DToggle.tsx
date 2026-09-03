@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useTheme } from './ThemeProvider';
 import { Sun, Moon } from 'lucide-react';
@@ -17,6 +17,7 @@ export default function DarkMode3DToggle() {
   const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isHovered = useRef<boolean>(false);
   const animFrameId = useRef<number | null>(null);
+  const [contextLost, setContextLost] = useState(false);
 
   const isDarkActive = mounted ? isDark : false;
   const isDarkRef = useRef<boolean>(isDarkActive);
@@ -30,10 +31,23 @@ export default function DarkMode3DToggle() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || contextLost) return;
 
     let renderer: THREE.WebGLRenderer | null = null;
     let clock: THREE.Clock | null = null;
+
+    const onContextLost = (e: Event) => {
+      e.preventDefault();
+      setContextLost(true);
+      if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
+    };
+
+    const onContextRestored = () => {
+      setContextLost(false);
+    };
+
+    canvas.addEventListener('webglcontextlost', onContextLost);
+    canvas.addEventListener('webglcontextrestored', onContextRestored);
 
     try {
       const width = 48;
@@ -55,12 +69,6 @@ export default function DarkMode3DToggle() {
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       rendererRef.current = renderer;
-
-      // Handle context loss
-      canvas.addEventListener('webglcontextlost', (e) => {
-        e.preventDefault();
-        if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
-      }, { once: true });
 
       // Ambient and directional lighting
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
@@ -126,7 +134,6 @@ export default function DarkMode3DToggle() {
       const animate = () => {
         animFrameId.current = requestAnimationFrame(animate);
         const delta = clock!.getDelta();
-        const elapsed = clock!.getElapsedTime();
 
         // Smooth interpolation to target Y rotation (day vs night flip)
         const diff = targetRotationY.current - currentRotationY.current;
@@ -147,14 +154,16 @@ export default function DarkMode3DToggle() {
       };
       animate();
     } catch {
-      // WebGL not available - component will render without 3D
+      // WebGL renderer creation failed
     }
 
     return () => {
+      canvas.removeEventListener('webglcontextlost', onContextLost);
+      canvas.removeEventListener('webglcontextrestored', onContextRestored);
       if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
       renderer?.dispose();
     };
-  }, []);
+  }, [contextLost]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -186,14 +195,32 @@ export default function DarkMode3DToggle() {
           : 'bg-white border-[#E5E2D9] text-[#5A5A40] hover:border-[#5A5A40] hover:bg-[#FAF9F5]'
       }`}
       title={isDarkActive ? 'Mudar para Modo Claro (Diurno)' : 'Mudar para Modo Escuro (Noturno Agronômico)'}
-      aria-label="Alternar tema claro e escuro com 3D"
+      aria-label="Alternar tema claro e escuro"
     >
       {/* 3D WebGL Canvas Sphere */}
       <div className="relative w-8 h-8 flex items-center justify-center overflow-visible">
-        <canvas
-          ref={canvasRef}
-          className="w-8 h-8 rounded-full pointer-events-none filter drop-shadow-md"
-        />
+        {contextLost ? (
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{
+              backgroundColor: isDarkActive ? '#1e293b' : '#fef3c7',
+              boxShadow: isDarkActive
+                ? '0 0 12px rgba(147,197,253,0.4)'
+                : '0 0 12px rgba(245,158,11,0.4)',
+            }}
+          >
+            {isDarkActive ? (
+              <Moon className="w-4 h-4 text-[#93c5fd]" />
+            ) : (
+              <Sun className="w-4 h-4 text-[#f59e0b]" />
+            )}
+          </div>
+        ) : (
+          <canvas
+            ref={canvasRef}
+            className="w-8 h-8 rounded-full pointer-events-none filter drop-shadow-md"
+          />
+        )}
       </div>
 
       {/* Mode Label & Quick Icon */}
@@ -216,7 +243,7 @@ export default function DarkMode3DToggle() {
         </span>
       </div>
 
-      {/* 3D Indicator Pill */}
+      {/* Indicator Pill */}
       <div
         className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md border ${
           isDarkActive
@@ -224,7 +251,6 @@ export default function DarkMode3DToggle() {
             : 'bg-[#F0EDE5] text-[#5A5A40] border-[#E5E2D9]'
         }`}
       >
-        3D
       </div>
     </button>
   );

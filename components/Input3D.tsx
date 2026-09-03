@@ -7,6 +7,7 @@ interface Input3DProps {
   id?: string;
   value: number;
   onChange: (val: number) => void;
+  onBlurCustom?: (val: number) => void;
   label?: string;
   unit?: string;
   step?: number;
@@ -28,6 +29,7 @@ export default function Input3D({
   id,
   value,
   onChange,
+  onBlurCustom,
   label,
   unit = '',
   step = 1,
@@ -155,7 +157,10 @@ export default function Input3D({
             onFocus={() => setIsFocused(true)}
             onBlur={(e) => {
               setIsFocused(false);
-              if (e.target.value === '' || e.target.value === '-') {
+              const val = parseFloat(e.target.value);
+              if (onBlurCustom) {
+                onBlurCustom(isNaN(val) ? 0 : val);
+              } else if (e.target.value === '' || e.target.value === '-') {
                 onChange(0);
               }
             }}

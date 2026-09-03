@@ -1,12 +1,166 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Scale, ArrowRightLeft, ArrowLeftRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import CalculationIsland from '@/components/CalculationIsland';
 import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
 import { useTheme } from '@/components/ThemeProvider';
 import { Calculations } from '@/lib/types';
+import { useAnimationLock } from '@/lib/useAnimationLock';
+
+interface SwapToggle3DProps {
+  isActive: boolean;
+  defaultLabel: string;
+  activeLabel: string;
+  accentColor: string;
+  darkAccentColor: string;
+  isDark: boolean;
+  onClick: () => void;
+  title: string;
+}
+
+function SwapToggle3D({
+  isActive,
+  defaultLabel,
+  activeLabel,
+  accentColor,
+  darkAccentColor,
+  isDark,
+  onClick,
+  title,
+}: SwapToggle3DProps) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+
+  const activeColor = isDark ? darkAccentColor : accentColor;
+
+  const animFrame = useRef<number | null>(null);
+  const targetTilt = useRef({ x: 0, y: 0 });
+  const tiltRef = useRef({ x: 0, y: 0 });
+
+  const startTiltLoop = useCallback(() => {
+    const loop = () => {
+      const tx = targetTilt.current.x;
+      const ty = targetTilt.current.y;
+      tiltRef.current = {
+        x: tiltRef.current.x + (tx - tiltRef.current.x) * 0.15,
+        y: tiltRef.current.y + (ty - tiltRef.current.y) * 0.15,
+      };
+      setTilt({ ...tiltRef.current });
+      animFrame.current = requestAnimationFrame(loop);
+    };
+    animFrame.current = requestAnimationFrame(loop);
+  }, []);
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+      targetTilt.current = { x: y * 12, y: x * -12 };
+      if (!isHovered) {
+        setIsHovered(true);
+        startTiltLoop();
+      }
+    },
+    [isHovered, startTiltLoop],
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovered(false);
+    targetTilt.current = { x: 0, y: 0 };
+    if (animFrame.current) cancelAnimationFrame(animFrame.current);
+    const decay = () => {
+      tiltRef.current = {
+        x: tiltRef.current.x * 0.82,
+        y: tiltRef.current.y * 0.82,
+      };
+      if (Math.abs(tiltRef.current.x) < 0.1 && Math.abs(tiltRef.current.y) < 0.1) {
+        tiltRef.current = { x: 0, y: 0 };
+        setTilt({ x: 0, y: 0 });
+        return;
+      }
+      setTilt({ ...tiltRef.current });
+      requestAnimationFrame(decay);
+    };
+    requestAnimationFrame(decay);
+  }, []);
+
+  return (
+    <motion.button
+      ref={buttonRef}
+      type="button"
+      onClick={onClick}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="absolute -top-1 -right-1 z-20 group"
+      whileTap={{ scale: 0.88, rotateZ: -8 }}
+      title={title}
+      style={{ perspective: '600px' }}
+    >
+      <motion.div
+        className="relative flex items-center justify-center h-8 rounded-bl-2xl px-2.5 gap-1.5 overflow-hidden"
+        style={{
+          backgroundColor: activeColor,
+          transformStyle: 'preserve-3d',
+          rotateX: tilt.x,
+          rotateY: tilt.y,
+          boxShadow: isActive
+            ? `0 0 14px ${activeColor}88, 0 4px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15)`
+            : `0 2px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.1)`,
+          transition: 'box-shadow 0.3s ease',
+        }}
+        whileHover={{
+          boxShadow: `0 0 18px ${activeColor}AA, 0 6px 16px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)`,
+        }}
+      >
+        {/* Shimmer overlay on hover */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          animate={{
+            background: isHovered
+              ? `linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%)`
+              : 'none',
+          }}
+          transition={{ duration: 0.4 }}
+        />
+
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={isActive ? 'active' : 'default'}
+            initial={{ rotateX: -90, opacity: 0 }}
+            animate={{ rotateX: 0, opacity: 1 }}
+            exit={{ rotateX: 90, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            className="text-white text-[10px] font-bold whitespace-nowrap relative z-10"
+            style={{ transformOrigin: 'center' }}
+          >
+            {isActive ? activeLabel : defaultLabel}
+          </motion.span>
+        </AnimatePresence>
+
+        <motion.div
+          animate={{ rotate: isActive ? 180 : 0 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+          className="relative z-10"
+        >
+          <ArrowLeftRight className="w-3 h-3 text-white/80" />
+        </motion.div>
+
+        {isActive && (
+          <motion.span
+            className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#D4A373] border border-white z-10"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+          />
+        )}
+      </motion.div>
+    </motion.button>
+  );
+}
 
 interface Props {
   calculations: Calculations;
@@ -33,6 +187,7 @@ export default function ParcelamentoSection({
   const [showCalc, setShowCalc] = useState(false);
   const [showAgronomicV4V6, setShowAgronomicV4V6] = useState(false);
   const [showAgronomicV8V10, setShowAgronomicV8V10] = useState(false);
+  const { withLock } = useAnimationLock(400);
 
   const isV4V6Range = v4v6Mode === 'range' && v4v6Percent2 > 0;
   const isV8V10Range = v8v10Mode === 'range' && v8v10Percent2 > 0;
@@ -94,36 +249,16 @@ export default function ParcelamentoSection({
         >
           {/* Toggle button for agronomic default */}
           {v4v6UserDiffersFromDefault && (
-            <motion.button
-              type="button"
-              onClick={() => setShowAgronomicV4V6(!showAgronomicV4V6)}
-              className="absolute -top-1 -right-1 z-20 group"
-              whileHover={{ scale: 1.12 }}
-              whileTap={{ scale: 0.92 }}
+            <SwapToggle3D
+              isActive={showAgronomicV4V6}
+              defaultLabel="50-60"
+              activeLabel={`${v4v6Percent}${v4v6Percent2 > 0 ? `-${v4v6Percent2}` : ''}`}
+              accentColor="#5A5A40"
+              darkAccentColor="#3D4D35"
+              isDark={isDark}
+              onClick={withLock(() => setShowAgronomicV4V6(!showAgronomicV4V6))}
               title={showAgronomicV4V6 ? 'Voltar para seus valores' : 'Ver padrão agronômico (50-60%)'}
-            >
-              <div
-                className="relative flex items-center justify-center h-8 rounded-bl-2xl px-2.5 transition-all duration-300 gap-1"
-                style={{
-                  backgroundColor: isDark ? '#3D4D35' : '#5A5A40',
-                  boxShadow: showAgronomicV4V6
-                    ? `0 0 12px ${isDark ? '#3D4D35' : '#5A5A40'}88, 0 2px 8px rgba(0,0,0,0.15)`
-                    : '0 2px 6px rgba(0,0,0,0.12)',
-                }}
-              >
-                <span className="text-white text-[10px] font-bold whitespace-nowrap">
-                  {showAgronomicV4V6 ? `${v4v6Percent}${v4v6Percent2 > 0 ? `-${v4v6Percent2}` : ''}` : '50-60'}
-                </span>
-                <ArrowLeftRight className="w-3 h-3 text-white/80" />
-                {showAgronomicV4V6 && (
-                  <motion.span
-                    className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#D4A373] border border-white"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                  />
-                )}
-              </div>
-            </motion.button>
+            />
           )}
 
           <div className="flex justify-between items-start">
@@ -135,22 +270,6 @@ export default function ParcelamentoSection({
                 Padrão agronômico: <strong>50% a 60%</strong> da meta ({baseLabel})
               </p>
             </div>
-            {/* User percentage badge */}
-            {!showAgronomicV4V6 && (
-              <div className="text-right">
-                <span className="text-[10px] font-bold text-[#5A5A40] dark:text-[#9CB386] bg-[#FDFBF7] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2.5 py-1 rounded-md">
-                  {v4v6Percent}{v4v6Percent2 > 0 ? `-${v4v6Percent2}` : ''}% ({calculations.v4v6_1_kg} kg N/ha)
-                  {calculations.v4v6_2_kg > 0 && ` a ${calculations.v4v6_2_kg} kg N/ha`}
-                </span>
-              </div>
-            )}
-            {showAgronomicV4V6 && (
-              <div className="text-right">
-                <span className="text-[10px] font-bold text-[#5A5A40] dark:text-[#9CB386] bg-[#FDFBF7] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2.5 py-1 rounded-md">
-                  Padrão: 50-60%
-                </span>
-              </div>
-            )}
           </div>
 
           <AnimatePresence mode="wait">
@@ -246,36 +365,16 @@ export default function ParcelamentoSection({
         >
           {/* Toggle button for agronomic default */}
           {v8v10UserDiffersFromDefault && (
-            <motion.button
-              type="button"
-              onClick={() => setShowAgronomicV8V10(!showAgronomicV8V10)}
-              className="absolute -top-1 -right-1 z-20 group"
-              whileHover={{ scale: 1.12 }}
-              whileTap={{ scale: 0.92 }}
+            <SwapToggle3D
+              isActive={showAgronomicV8V10}
+              defaultLabel="20-30"
+              activeLabel={`${v8v10Percent}${v8v10Percent2 > 0 ? `-${v8v10Percent2}` : ''}`}
+              accentColor="#8D6E63"
+              darkAccentColor="#6D544C"
+              isDark={isDark}
+              onClick={withLock(() => setShowAgronomicV8V10(!showAgronomicV8V10))}
               title={showAgronomicV8V10 ? 'Voltar para seus valores' : 'Ver padrão agronômico (20-30%)'}
-            >
-              <div
-                className="relative flex items-center justify-center h-8 rounded-bl-2xl px-2.5 transition-all duration-300 gap-1"
-                style={{
-                  backgroundColor: isDark ? '#6D544C' : '#8D6E63',
-                  boxShadow: showAgronomicV8V10
-                    ? `0 0 12px ${isDark ? '#6D544C' : '#8D6E63'}88, 0 2px 8px rgba(0,0,0,0.15)`
-                    : '0 2px 6px rgba(0,0,0,0.12)',
-                }}
-              >
-                <span className="text-white text-[10px] font-bold whitespace-nowrap">
-                  {showAgronomicV8V10 ? `${v8v10Percent}${v8v10Percent2 > 0 ? `-${v8v10Percent2}` : ''}` : '20-30'}
-                </span>
-                <ArrowLeftRight className="w-3 h-3 text-white/80" />
-                {showAgronomicV8V10 && (
-                  <motion.span
-                    className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#D4A373] border border-white"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                  />
-                )}
-              </div>
-            </motion.button>
+            />
           )}
 
           <div className="flex justify-between items-start">
@@ -287,21 +386,6 @@ export default function ParcelamentoSection({
                 Padrão agronômico: <strong>20% a 30%</strong> da meta ({baseLabel})
               </p>
             </div>
-            {!showAgronomicV8V10 && (
-              <div className="text-right">
-                <span className="text-[10px] font-bold text-[#8D6E63] dark:text-[#D4A373] bg-[#FDFBF7] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2.5 py-1 rounded-md">
-                  {calculations.v8v10_1_final}% ({calculations.v8v10_1_kg} kg N/ha)
-                  {calculations.v8v10_2_final > 0 && ` a ${calculations.v8v10_2_final}% (${calculations.v8v10_2_kg} kg N/ha)`}
-                </span>
-              </div>
-            )}
-            {showAgronomicV8V10 && (
-              <div className="text-right">
-                <span className="text-[10px] font-bold text-[#8D6E63] dark:text-[#D4A373] bg-[#FDFBF7] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2.5 py-1 rounded-md">
-                  Padrão: 20-30%
-                </span>
-              </div>
-            )}
           </div>
 
           <AnimatePresence mode="wait">

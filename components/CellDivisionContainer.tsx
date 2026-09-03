@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type Phase = 'idle' | 'dividing' | 'divided' | 'merging' | 'merged';
+type Phase = 'idle' | 'sliding' | 'split' | 'merging' | 'merged';
 
 interface CellDivisionContainerProps {
   mode: 'single' | 'range';
@@ -13,10 +13,10 @@ interface CellDivisionContainerProps {
   children: React.ReactNode;
 }
 
-const PARTICLE_DATA = Array.from({ length: 10 }, (_, i) => ({
+const PARTICLES = Array.from({ length: 10 }, (_, i) => ({
   angle: (i / 10) * Math.PI * 2,
-  dist: 30 + (((i * 7 + 3) % 11) / 11) * 20,
-  size: 3 + (((i * 3 + 5) % 7) / 7) * 3,
+  dist: 24 + (((i * 7 + 3) % 11) / 11) * 16,
+  size: 2.5 + (((i * 3 + 5) % 7) / 7) * 2.5,
 }));
 
 export default function CellDivisionContainer({
@@ -26,7 +26,7 @@ export default function CellDivisionContainer({
   isDark = false,
   children,
 }: CellDivisionContainerProps) {
-  const [phase, setPhase] = useState<Phase>(mode === 'range' ? 'divided' : 'idle');
+  const [phase, setPhase] = useState<Phase>(mode === 'range' ? 'split' : 'idle');
   const prevMode = useRef(mode);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -45,303 +45,278 @@ export default function CellDivisionContainer({
     clearTimeouts();
 
     if (mode === 'range') {
-      addTimer(() => setPhase('dividing'), 0);
-      addTimer(() => setPhase('divided'), 950);
+      addTimer(() => setPhase('sliding'), 0);
+      addTimer(() => setPhase('split'), 900);
     } else {
       addTimer(() => setPhase('merging'), 0);
-      addTimer(() => setPhase('merged'), 750);
-      addTimer(() => setPhase('idle'), 800);
+      addTimer(() => setPhase('merged'), 650);
+      addTimer(() => setPhase('idle'), 700);
     }
 
     return clearTimeouts;
   }, [mode, clearTimeouts, addTimer]);
 
-  const isDividing = phase === 'dividing';
+  const isSliding = phase === 'sliding';
+  const isSplit = phase === 'split';
   const isMerging = phase === 'merging';
-  const isDivided = phase === 'divided';
   const isIdle = phase === 'idle' || phase === 'merged';
-  const isAnimating = isDividing || isMerging;
+  const isAnimating = isSliding || isMerging;
 
-  const isBridgeVisible = isDividing || isMerging || isDivided;
-
-  const bridgeOpacity = isDividing ? 1 : isMerging ? 0.6 : isDivided ? 0.85 : 0;
-  const bridgePinch = isDividing ? 0.15 : isMerging ? 0.5 : isDivided ? 0 : 0.5;
-  const bridgeGlow = isDividing ? 1 : isMerging ? 0.4 : isDivided ? 0.3 : 0;
-
-  const [snapActive, setSnapActive] = useState(false);
+  const [snapFlash, setSnapFlash] = useState(false);
 
   useEffect(() => {
-    if (isDividing) {
-      addTimer(() => setSnapActive(true), 600);
-      addTimer(() => setSnapActive(false), 850);
+    if (isSliding) {
+      addTimer(() => setSnapFlash(true), 580);
+      addTimer(() => setSnapFlash(false), 820);
     } else {
-      addTimer(() => setSnapActive(false), 0);
+      addTimer(() => setSnapFlash(false), 0);
     }
-  }, [isDividing, addTimer]);
+  }, [isSliding, addTimer]);
 
   const childrenArray = React.Children.toArray(children);
   const firstChild = childrenArray[0];
   const secondChild = childrenArray[1];
 
+  // --- Derived animation values ---
+  // Input 1 width: full when idle, ~48% when split/sliding
+  const input1Flex = isIdle ? '1 1 100%' : '0 0 48%';
+
+  // Bridge width: 0 when idle/split, 60px when sliding, shrinks to 0 at snap
+  const bridgeWidth = isSliding ? 60 : isSplit ? 0 : isMerging ? 50 : 0;
+
+  // Input 2 width: 0 when idle/merged, ~48% when split/sliding
+  const input2Width = isIdle ? '0%' : '48%';
+
+  // Border radius on inner edges (right of input1, left of input2)
+  // During merged look: 0 (flat). After split: 12px (rounded).
+  const innerRadius = isSplit ? 12 : 0;
+
+  // Bridge opacity
+  const bridgeOpacity = isSliding ? 1 : isMerging ? 0.8 : 0;
+
+  // Bridge glow intensity
+  const bridgeGlow = isSliding ? 1 : isMerging ? 0.5 : 0;
+
+  // Second input opacity
+  const input2Opacity = isIdle ? 0 : 1;
+
   return (
-    <div
-      className="relative w-full"
-      style={{ perspective: '800px' }}
-    >
+    <div className="relative w-full" style={{ perspective: '800px' }}>
       <div
-        className="relative flex items-end gap-0"
-        style={{ minHeight: '72px' }}
+        className="relative flex items-stretch"
+        style={{ minHeight: '72px', gap: 0 }}
       >
-        {/* First input — morphs from full width to ~50% */}
+        {/* ===================== INPUT 1 ===================== */}
         <motion.div
-          className="relative overflow-visible"
-          style={{ transformStyle: 'preserve-3d', zIndex: 2 }}
+          className="relative overflow-hidden"
+          style={{
+            zIndex: 2,
+            transformStyle: 'preserve-3d',
+          }}
           animate={{
-            flex: isIdle ? '1 1 100%' : '1 1 48%',
-            rotateX: isDividing ? -1.5 : isMerging ? 1 : 0,
-            scale: isAnimating ? 1.01 : 1,
+            flex: input1Flex,
+            borderTopRightRadius: innerRadius,
+            borderBottomRightRadius: innerRadius,
+            rotateX: isSliding ? -1 : isMerging ? 0.5 : 0,
+            scale: isAnimating ? 1.005 : 1,
           }}
           transition={{
-            flex: {
-              type: 'spring',
-              stiffness: 200,
-              damping: 22,
-              mass: 0.8,
-            },
-            rotateX: { duration: 0.4 },
+            flex: { type: 'spring', stiffness: 220, damping: 24, mass: 0.8 },
+            borderTopRightRadius: { duration: 0.25, ease: 'easeOut' },
+            borderBottomRightRadius: { duration: 0.25, ease: 'easeOut' },
+            rotateX: { duration: 0.35 },
             scale: { type: 'spring', stiffness: 400, damping: 25 },
           }}
         >
-          {/* Organic blob morph overlay on right edge during division */}
-          {isDividing && (
+          {/* Blob glow on right edge during slide-out */}
+          {isSliding && (
             <motion.div
-              className="absolute top-0 right-0 bottom-0 pointer-events-none"
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: '60%', opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className="absolute top-0 right-0 bottom-0 w-8 pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.7, 0.3] }}
+              transition={{ duration: 0.7, ease: 'easeOut' }}
               style={{
-                background: `linear-gradient(90deg, transparent 0%, ${accentColor}18 40%, ${accentColor}30 70%, ${accentColor}15 100%)`,
-                borderRadius: '0 50% 50% 0',
-                filter: 'blur(2px)',
-                zIndex: -1,
+                background: `linear-gradient(90deg, transparent 0%, ${accentColor}30 60%, ${accentColor}15 100%)`,
+                borderRadius: `0 ${innerRadius}px ${innerRadius}px 0`,
               }}
             />
           )}
 
-          {/* Glow pulse on right edge during pinch phase */}
-          {isDividing && (
-            <motion.div
-              className="absolute top-1/2 -translate-y-1/2 -right-3 w-6 h-16 pointer-events-none"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{
-                opacity: [0, 0.8, 0.4, 0],
-                scale: [0.5, 1.2, 0.8, 0.5],
-              }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-              style={{
-                background: `radial-gradient(ellipse, ${accentColor}60, transparent 70%)`,
-                borderRadius: '50%',
-              }}
-            />
-          )}
-
-          <div style={{ opacity: isMerging ? 1 : 1 }}>
-            {firstChild}
-          </div>
+          {firstChild}
         </motion.div>
 
-        {/* Membrane Bridge SVG */}
-        <AnimatePresence>
-          {isBridgeVisible && (
-            <motion.div
-              className="absolute top-0 bottom-0 pointer-events-none"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: bridgeOpacity }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              style={{
-                left: '46%',
-                right: '46%',
-                zIndex: 3,
-                filter: `drop-shadow(0 0 ${bridgeGlow * 8}px ${accentColor}44)`,
-              }}
-            >
-              <svg
-                viewBox="0 0 60 100"
-                preserveAspectRatio="none"
-                className="w-full h-full"
-                style={{ overflow: 'visible' }}
-              >
-                <defs>
-                  <radialGradient id="membraneGlow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor={accentColor} stopOpacity="0.5" />
-                    <stop offset="100%" stopColor={accentColor} stopOpacity="0" />
-                  </radialGradient>
-                </defs>
+        {/* ===================== BRIDGE / CHANNEL ===================== */}
+        <motion.div
+          className="relative flex-shrink-0 overflow-hidden"
+          style={{ zIndex: 1 }}
+          animate={{
+            width: bridgeWidth,
+            opacity: bridgeOpacity,
+          }}
+          transition={{
+            width: {
+              type: 'spring',
+              stiffness: isSliding ? 180 : 250,
+              damping: isSliding ? 20 : 22,
+              mass: 0.6,
+            },
+            opacity: { duration: 0.25 },
+          }}
+        >
+          {/* Channel body — same background as inputs to create merged look */}
+          <div
+            className="w-full h-full"
+            style={{
+              backgroundColor: isDark ? '#242720' : 'white',
+              backgroundImage: isDark
+                ? 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.1) 100%)'
+                : 'linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(0,0,0,0.02) 100%)',
+            }}
+          />
 
-                {/* Glow at pinch point */}
-                <motion.ellipse
-                  cx="30"
-                  cy="50"
-                  fill="url(#membraneGlow)"
-                  animate={{
-                    rx: isDividing ? [12, 8, 18, 0] : isMerging ? [0, 14, 20, 10] : 10,
-                    ry: isDividing ? [30, 25, 35, 0] : isMerging ? [0, 30, 38, 30] : 30,
-                    opacity: bridgeGlow,
-                  }}
-                  transition={{
-                    duration: isDividing ? 0.9 : 0.7,
-                    ease: 'easeInOut',
-                  }}
-                />
-
-                {/* Main membrane path */}
-                <motion.path
-                  fill={`${accentColor}25`}
-                  stroke={accentColor}
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  animate={{
-                    d: isDividing
-                      ? [
-                          'M 5,15 Q 30,12 55,15 L 55,85 Q 30,88 5,85 Z',
-                          'M 10,20 Q 30,18 50,20 L 50,80 Q 30,82 10,80 Z',
-                          'M 18,28 Q 30,40 42,28 L 42,72 Q 30,60 18,72 Z',
-                          'M 24,35 Q 30,48 36,35 L 36,65 Q 30,52 24,65 Z',
-                          'M 28,42 Q 30,50 32,42 L 32,58 Q 30,50 28,42 Z',
-                        ]
-                      : isMerging
-                      ? [
-                          'M 28,42 Q 30,50 32,42 L 32,58 Q 30,50 28,42 Z',
-                          'M 18,28 Q 30,40 42,28 L 42,72 Q 30,60 18,72 Z',
-                          'M 10,20 Q 30,18 50,20 L 50,80 Q 30,82 10,80 Z',
-                          'M 5,15 Q 30,12 55,15 L 55,85 Q 30,88 5,85 Z',
-                        ]
-                      : 'M 5,15 Q 30,12 55,15 L 55,85 Q 30,88 5,85 Z',
-                    opacity: isDividing ? [1, 0.8, 0.5, 0] : isMerging ? [0, 0.5, 0.8, 1] : 1,
-                  }}
-                  transition={{
-                    duration: isDividing ? 0.9 : 0.7,
-                    ease: 'easeInOut',
-                  }}
-                />
-
-                {/* Animated particles along the membrane edge */}
-                {(isDividing || isMerging) &&
-                  [0, 1, 2, 3, 4].map((i) => {
-                    const baseY = 20 + i * 15;
-                    return (
-                      <motion.circle
-                        key={i}
-                        r="2"
-                        fill={accentColor}
-                        initial={{ opacity: 0 }}
-                        animate={{
-                          cx: isDividing ? [30, 30, 30] : [30, 30, 30],
-                          cy: [baseY, baseY + (isDividing ? -3 : 3), baseY],
-                          opacity: [0, 0.6, 0],
-                          r: isDividing ? [1.5, 2.5, 1] : [1, 2.5, 1.5],
-                        }}
-                        transition={{
-                          duration: 0.7,
-                          delay: i * 0.1,
-                          repeat: isAnimating ? 2 : 0,
-                          ease: 'easeInOut',
-                        }}
-                      />
-                    );
-                  })}
-              </svg>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Snap flash effect */}
-        <AnimatePresence>
-          {snapActive && (
+          {/* Glow at connection points */}
+          {isSliding && (
             <>
-              {/* Expanding ring */}
               <motion.div
-                className="absolute top-1/2 -translate-y-1/2 pointer-events-none rounded-full border-2"
+                className="absolute top-0 left-0 bottom-0 w-3 pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: bridgeGlow * 0.5 }}
+                transition={{ duration: 0.4 }}
                 style={{
-                  left: '50%',
-                  width: 8,
-                  height: 8,
-                  marginLeft: -4,
-                  borderColor: 'white',
+                  background: `linear-gradient(90deg, ${accentColor}40, transparent)`,
+                }}
+              />
+              <motion.div
+                className="absolute top-0 right-0 bottom-0 w-3 pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: bridgeGlow * 0.5 }}
+                transition={{ duration: 0.4 }}
+                style={{
+                  background: `linear-gradient(270deg, ${accentColor}40, transparent)`,
+                }}
+              />
+            </>
+          )}
+
+          {/* Thin center line that snaps */}
+          {isSliding && (
+            <motion.div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none rounded-full"
+              initial={{ width: 0, height: 0, opacity: 0 }}
+              animate={{
+                width: [0, 4, 2, 0],
+                height: ['40%', '70%', '50%', '0%'],
+                opacity: [0, 0.8, 0.5, 0],
+              }}
+              transition={{ duration: 0.7, ease: 'easeInOut' }}
+              style={{ backgroundColor: `${accentColor}60` }}
+            />
+          )}
+        </motion.div>
+
+        {/* ===================== SNAP FLASH EFFECT ===================== */}
+        <AnimatePresence>
+          {snapFlash && (
+            <>
+              {/* Expanding ring at snap point */}
+              <motion.div
+                className="absolute top-1/2 -translate-y-1/2 pointer-events-none rounded-full"
+                style={{
+                  left: 'calc(48% + 60px)',
+                  width: 6,
+                  height: 6,
+                  marginLeft: -3,
+                  border: `2px solid ${accentColor}`,
                   zIndex: 10,
                 }}
                 initial={{ scale: 0, opacity: 1 }}
-                animate={{ scale: 14, opacity: 0 }}
+                animate={{ scale: 12, opacity: 0 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.45, ease: 'easeOut' }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
               />
               {/* Particle burst */}
-              {PARTICLE_DATA.map((p, i) => {
-                return (
-                  <motion.div
-                    key={i}
-                    className="absolute top-1/2 left-1/2 rounded-full pointer-events-none"
-                    style={{
-                      width: p.size,
-                      height: p.size,
-                      backgroundColor: accentColor,
-                      zIndex: 11,
-                    }}
-                    initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-                    animate={{
-                      x: Math.cos(p.angle) * p.dist,
-                      y: Math.sin(p.angle) * p.dist,
-                      opacity: 0,
-                      scale: 0,
-                    }}
-                    transition={{ duration: 0.4, ease: 'easeOut', delay: i * 0.02 }}
-                  />
-                );
-              })}
+              {PARTICLES.map((p, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute top-1/2 left-1/2 rounded-full pointer-events-none"
+                  style={{
+                    width: p.size,
+                    height: p.size,
+                    backgroundColor: accentColor,
+                    zIndex: 11,
+                    marginLeft: -p.size / 2,
+                    marginTop: -p.size / 2,
+                  }}
+                  initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                  animate={{
+                    x: Math.cos(p.angle) * p.dist,
+                    y: Math.sin(p.angle) * p.dist,
+                    opacity: 0,
+                    scale: 0,
+                  }}
+                  transition={{ duration: 0.35, ease: 'easeOut', delay: i * 0.015 }}
+                />
+              ))}
             </>
           )}
         </AnimatePresence>
 
-        {/* Second input — appears during division, fades during merge */}
+        {/* ===================== INPUT 2 ===================== */}
         <motion.div
-          className="relative overflow-visible"
-          style={{ transformStyle: 'preserve-3d', zIndex: 2 }}
-          initial={false}
+          className="relative overflow-hidden"
+          style={{
+            zIndex: 2,
+            transformStyle: 'preserve-3d',
+          }}
           animate={{
-            flex: isIdle ? '0 0 0%' : '1 1 48%',
-            opacity: isMerging ? [1, 0.8, 0] : isDividing ? [0, 0, 0.5, 1] : isDivided ? 1 : 0,
-            scale: isMerging ? [1, 1.03, 0.95] : isDividing ? [0.9, 1.05, 1] : isDivided ? 1 : 0.9,
-            rotateX: isMerging ? 1.5 : isDividing ? -1.5 : 0,
+            width: input2Width,
+            opacity: input2Opacity,
+            borderTopLeftRadius: innerRadius,
+            borderBottomLeftRadius: innerRadius,
+            rotateX: isSliding ? 1 : isMerging ? -0.5 : 0,
           }}
           transition={{
-            flex: {
+            width: {
               type: 'spring',
-              stiffness: 200,
-              damping: 22,
-              mass: 0.8,
+              stiffness: isSliding ? 180 : 250,
+              damping: isSliding ? 20 : 22,
+              mass: 0.6,
             },
-            opacity: { duration: isDividing ? 0.5 : 0.4, ease: 'easeOut' },
-            scale: { type: 'spring', stiffness: 300, damping: 20 },
-            rotateX: { duration: 0.4 },
+            opacity: { duration: isSliding ? 0.3 : 0.25, ease: 'easeOut' },
+            borderTopLeftRadius: { duration: 0.25, ease: 'easeOut' },
+            borderBottomLeftRadius: { duration: 0.25, ease: 'easeOut' },
+            rotateX: { duration: 0.35 },
           }}
         >
-          {/* Blob entrance overlay during division */}
-          {isDividing && (
+          {/* Blob glow on left edge during slide-out */}
+          {isSliding && (
             <motion.div
-              className="absolute inset-0 pointer-events-none"
-              initial={{ clipPath: 'circle(0% at 0% 50%)' }}
-              animate={{ clipPath: 'circle(100% at 50% 50%)' }}
-              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
+              className="absolute top-0 left-0 bottom-0 w-8 pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.6, 0.2] }}
+              transition={{ duration: 0.7, ease: 'easeOut' }}
               style={{
-                background: `linear-gradient(270deg, ${accentColor}10, ${accentColor}05)`,
-                borderRadius: '50% 0 0 50%',
+                background: `linear-gradient(270deg, transparent 0%, ${accentColor}25 60%, ${accentColor}10 100%)`,
+                borderRadius: `${innerRadius}px 0 0 ${innerRadius}px`,
               }}
             />
           )}
 
-          <div style={{ opacity: isMerging ? 0 : 1, pointerEvents: isIdle ? 'none' : 'auto' }}>
+          {/* Clip entrance during slide */}
+          {isSliding && (
+            <motion.div
+              className="absolute inset-0 pointer-events-none"
+              initial={{ clipPath: 'inset(0 100% 0 0)' }}
+              animate={{ clipPath: 'inset(0 0% 0 0)' }}
+              transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1], delay: 0.05 }}
+              style={{
+                background: `linear-gradient(90deg, ${accentColor}08, transparent)`,
+              }}
+            />
+          )}
+
+          {/* Invisible placeholder when width is 0 — keeps DOM node for smooth animation */}
+          <div style={{ opacity: isIdle ? 0 : 1, pointerEvents: isIdle ? 'none' : 'auto' }}>
             {secondChild}
           </div>
         </motion.div>

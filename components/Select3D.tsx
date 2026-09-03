@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
+import { useAnimationLock } from '@/lib/useAnimationLock';
 
 interface SelectOption {
   value: string;
@@ -32,6 +33,7 @@ export default function Select3D({
   className = '',
 }: Select3DProps) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const { withLock } = useAnimationLock(400);
 
   return (
     <div className={`space-y-2 ${className}`} id={id}>
@@ -57,7 +59,7 @@ export default function Select3D({
             <motion.button
               key={opt.value}
               type="button"
-              onClick={() => onChange(opt.value)}
+              onClick={withLock(() => onChange(opt.value))}
               onMouseEnter={() => setHoveredIdx(idx)}
               onMouseLeave={() => setHoveredIdx(null)}
               className="relative text-left px-3 py-2.5 rounded-lg font-bold text-xs transition-colors overflow-hidden"

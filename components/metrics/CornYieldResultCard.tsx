@@ -6,6 +6,7 @@ import CalculationIsland from '@/components/CalculationIsland';
 import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
 import Button3D from '@/components/Button3D';
 import { Sparkles } from 'lucide-react';
+import { useAnimationLock } from '@/lib/useAnimationLock';
 
 interface Props {
   isDark: boolean;
@@ -43,6 +44,7 @@ export default function CornYieldResultCard({
   onApplyToNitrogen,
 }: Props) {
   const [showCalcYield, setShowCalcYield] = useState(false);
+  const { withLock } = useAnimationLock(400);
 
   return (
     <div id="corn_yield_results" className={`calc-island-scoop p-6 rounded-3xl border shadow-md space-y-5 transition-colors relative ${
@@ -132,7 +134,7 @@ export default function CornYieldResultCard({
         variant="primary"
         size="lg"
         isDark={isDark}
-        onClick={onApplyToNitrogen}
+        onClick={withLock(onApplyToNitrogen)}
         icon={<Sparkles className="h-4 w-4 text-[#86efac]" />}
         iconRight={<svg className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>}
         tooltip="Transfere esta produtividade diretamente para a calculadora de Nitrogênio"

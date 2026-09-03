@@ -5,16 +5,16 @@ import DarkMode3DTransition from '@/components/DarkMode3DTransition';
 
 export const metadata: Metadata = {
   title: 'Calculadora de Nitrogênio para Milho',
-  description: 'Calculadora agronômica de adubação nitrogenada e estimativa de produtividade de milho por estande, grãos, PMG e quebra com tema escuro e visualizador 3D.',
+  description: 'Calculadora agronômica de adubação nitrogenada e estimativa de produtividade de milho por estande, grãos, PMG e quebra com tema escuro e visualizador.',
   openGraph: {
     title: 'Calculadora de Nitrogênio para Milho',
-    description: 'Calculadora agronômica de adubação nitrogenada e estimativa de produtividade de milho por estande, grãos, PMG e quebra com tema escuro e visualizador 3D.',
+    description: 'Calculadora agronômica de adubação nitrogenada e estimativa de produtividade de milho por estande, grãos, PMG e quebra com tema escuro e visualizador.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Calculadora de Nitrogênio para Milho',
-    description: 'Calculadora agronômica de adubação nitrogenada e estimativa de produtividade de milho por estande, grãos, PMG e quebra com tema escuro e visualizador 3D.',
+    description: 'Calculadora agronômica de adubação nitrogenada e estimativa de produtividade de milho por estande, grãos, PMG e quebra com tema escuro e visualizador.',
   },
 };
 
