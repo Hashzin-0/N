@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type Phase = 'idle' | 'sliding' | 'split' | 'merging' | 'merged';
+type Phase = 'idle' | 'growing' | 'sliding' | 'split' | 'merging' | 'merged';
 
 interface CellDivisionContainerProps {
   mode: 'single' | 'range';
@@ -45,7 +45,8 @@ export default function CellDivisionContainer({
     clearTimeouts();
 
     if (mode === 'range') {
-      addTimer(() => setPhase('sliding'), 0);
+      addTimer(() => setPhase('growing'), 0);
+      addTimer(() => setPhase('sliding'), 200);
       addTimer(() => setPhase('split'), 900);
     } else {
       addTimer(() => setPhase('merging'), 0);
@@ -59,8 +60,9 @@ export default function CellDivisionContainer({
   const isSliding = phase === 'sliding';
   const isSplit = phase === 'split';
   const isMerging = phase === 'merging';
+  const isGrowing = phase === 'growing';
   const isIdle = phase === 'idle' || phase === 'merged';
-  const isAnimating = isSliding || isMerging;
+  const isAnimating = isSliding || isMerging || isGrowing;
 
   const [snapFlash, setSnapFlash] = useState(false);
 
@@ -78,16 +80,10 @@ export default function CellDivisionContainer({
   const secondChild = childrenArray[1];
 
   // --- Derived animation values ---
-  // Input 1 width: full when idle, ~48% when split/sliding
-  const input1Flex = isIdle ? '1 1 100%' : '0 0 48%';
-
-  // Bridge width: 0 when idle/split, 60px when sliding, shrinks to 0 at snap
+  // Bridge width: 0 when idle/growing, 60px when sliding, shrinks to 0 at split
   const bridgeWidth = isSliding ? 60 : isSplit ? 0 : isMerging ? 50 : 0;
 
-  // Input 2 width: 0 when idle/merged, ~48% when split/sliding
-  const input2Width = isIdle ? '0%' : '48%';
-
-  // Border radius on inner edges (right of input1, left of input2)
+  // Border radius on inner edges
   // During merged look: 0 (flat). After split: 12px (rounded).
   const innerRadius = isSplit ? 12 : 0;
 
@@ -100,25 +96,36 @@ export default function CellDivisionContainer({
   // Second input opacity
   const input2Opacity = isIdle ? 0 : 1;
 
+  // Is in split state (final separated state)
+  const isSplitState = isSplit || isMerging || isGrowing;
+
   return (
     <div className="relative w-full" style={{ perspective: '800px' }}>
       <div
-        className="relative flex items-stretch"
-        style={{ minHeight: '72px', gap: 0 }}
+        className="relative"
+        style={{ minHeight: '72px' }}
       >
-        {/* ===================== INPUT 2 (emerges from left) ===================== */}
+        {/* ===================== INPUT 2 (emerges from center) ===================== */}
         <motion.div
-          className="relative overflow-hidden"
+          className="absolute top-0 bottom-0 left-0 overflow-hidden"
           style={{
             zIndex: 2,
             transformStyle: 'preserve-3d',
           }}
           animate={{
-            width: input2Width,
+            width: isIdle ? '0%' : '48%',
             opacity: input2Opacity,
+            scale: isGrowing ? 0.5 : isSliding ? 1 : isSplit ? 1 : isMerging ? 0.5 : 0,
+            scaleX: isSliding ? 1.02 : 1,
+            scaleY: isSliding ? 0.98 : 1,
             borderTopRightRadius: innerRadius,
             borderBottomRightRadius: innerRadius,
-            rotateX: isSliding ? -1 : isMerging ? 0.5 : 0,
+            rotateX: isGrowing ? 0 : isSliding ? -1 : isMerging ? 0.5 : 0,
+            clipPath: isGrowing 
+              ? 'inset(0 50% 0 50%)' 
+              : isSliding || isSplit || isMerging 
+                ? 'inset(0 0 0 0)' 
+                : 'inset(0 50% 0 50%)',
           }}
           transition={{
             width: {
@@ -128,9 +135,18 @@ export default function CellDivisionContainer({
               mass: 0.6,
             },
             opacity: { duration: isSliding ? 0.3 : 0.25, ease: 'easeOut' },
+            scale: { 
+              type: 'spring', 
+              stiffness: isGrowing ? 300 : 200, 
+              damping: isGrowing ? 20 : 25,
+              delay: isGrowing ? 0 : 0.1
+            },
+            scaleX: { duration: 0.3 },
+            scaleY: { duration: 0.3 },
             borderTopRightRadius: { duration: 0.25, ease: 'easeOut' },
             borderBottomRightRadius: { duration: 0.25, ease: 'easeOut' },
             rotateX: { duration: 0.35 },
+            clipPath: { duration: 0.4, ease: [0.32, 0.72, 0, 1] },
           }}
         >
           {/* Blob glow on right edge during slide-out */}
@@ -147,19 +163,6 @@ export default function CellDivisionContainer({
             />
           )}
 
-          {/* Clip entrance during slide — reveal from right to left */}
-          {isSliding && (
-            <motion.div
-              className="absolute inset-0 pointer-events-none"
-              initial={{ clipPath: 'inset(0 0 0 100%)' }}
-              animate={{ clipPath: 'inset(0 0 0 0)' }}
-              transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1], delay: 0.05 }}
-              style={{
-                background: `linear-gradient(270deg, ${accentColor}08, transparent)`,
-              }}
-            />
-          )}
-
           {/* Invisible placeholder when width is 0 — keeps DOM node for smooth animation */}
           <div style={{ opacity: isIdle ? 0 : 1, pointerEvents: isIdle ? 'none' : 'auto' }}>
             {secondChild}
@@ -168,8 +171,11 @@ export default function CellDivisionContainer({
 
         {/* ===================== BRIDGE / CHANNEL ===================== */}
         <motion.div
-          className="relative flex-shrink-0 overflow-hidden"
-          style={{ zIndex: 1 }}
+          className="absolute top-0 bottom-0 overflow-hidden"
+          style={{ 
+            zIndex: 1,
+            left: '48%',
+          }}
           animate={{
             width: bridgeWidth,
             opacity: bridgeOpacity,
@@ -284,24 +290,28 @@ export default function CellDivisionContainer({
 
         {/* ===================== INPUT 1 (shrinks to right) ===================== */}
         <motion.div
-          className="relative overflow-hidden"
+          className="absolute top-0 bottom-0 right-0 overflow-hidden"
           style={{
             zIndex: 2,
             transformStyle: 'preserve-3d',
           }}
           animate={{
-            flex: input1Flex,
+            width: isIdle ? '100%' : '48%',
+            scale: isGrowing ? 1.03 : isSplit ? 1 : isMerging ? 1.03 : 1,
+            scaleX: isSliding ? 1.02 : 1,
+            scaleY: isSliding ? 0.98 : 1,
             borderTopLeftRadius: innerRadius,
             borderBottomLeftRadius: innerRadius,
-            rotateX: isSliding ? 1 : isMerging ? -0.5 : 0,
-            scale: isAnimating ? 1.005 : 1,
+            rotateX: isGrowing ? 0 : isSliding ? 1 : isMerging ? -0.5 : 0,
           }}
           transition={{
-            flex: { type: 'spring', stiffness: 220, damping: 24, mass: 0.8 },
+            width: { type: 'spring', stiffness: 220, damping: 24, mass: 0.8 },
+            scale: { type: 'spring', stiffness: 400, damping: 25 },
+            scaleX: { duration: 0.3 },
+            scaleY: { duration: 0.3 },
             borderTopLeftRadius: { duration: 0.25, ease: 'easeOut' },
             borderBottomLeftRadius: { duration: 0.25, ease: 'easeOut' },
             rotateX: { duration: 0.35 },
-            scale: { type: 'spring', stiffness: 400, damping: 25 },
           }}
         >
           {/* Blob glow on left edge during slide-out */}

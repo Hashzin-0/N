@@ -266,7 +266,7 @@ function NavIcon3D({
   );
 }
 
-/* ─── Morphing Particle Transition ─── */
+/* ─── Morphing Particle Transition (per-icon staggered) ─── */
 function MorphTransitionEffect({
   active,
   isDark,
@@ -331,29 +331,36 @@ function MorphTransitionEffect({
         return { x: (frac - 0.5) * frustumWidth * 0.85, y: 0, z: 0 };
       };
 
-      /* ── Particle setup: 50 per icon slot ── */
+      /* ── Per-icon stagger delay (100ms between each icon) ── */
       const PARTICLES_PER_ICON = 50;
       const maxIcons = Math.max(fromSections.length, toSections.length, 1);
       const totalParticles = PARTICLES_PER_ICON * maxIcons;
+      const STAGGER_MS = 100;
+      const totalStagger = (maxIcons - 1) * STAGGER_MS;
 
+      const iconDelays: number[] = [];
+      const iconWorldPositions: { x: number; y: number; z: number }[] = [];
+      for (let idx = 0; idx < maxIcons; idx++) {
+        iconDelays.push(idx * STAGGER_MS);
+        const cfg = fromSections[idx] || fromSections[0];
+        const pos = iconPositions.get(cfg.id);
+        iconWorldPositions.push(pos !== undefined ? toWorldPos(pos) : toWorldPos(0.5));
+      }
+
+      /* ── Particle arrays ── */
       const positions = new Float32Array(totalParticles * 3);
-      const startPositions = new Float32Array(totalParticles * 3);
       const endPositions = new Float32Array(totalParticles * 3);
       const velocities = new Float32Array(totalParticles * 3);
       const baseColors = new Float32Array(totalParticles * 3);
       const targetColors = new Float32Array(totalParticles * 3);
-      const particleSizes = new Float32Array(totalParticles);
-
-      const fromColor = isDark ? new THREE.Color(0x9CB386) : new THREE.Color(0x5A5A40);
-      const toColor = isDark ? new THREE.Color(0xD4A373) : new THREE.Color(0xC19262);
+      const particleIconIdx = new Uint8Array(totalParticles);
 
       for (let iconIdx = 0; iconIdx < maxIcons; iconIdx++) {
         const fromConfig = fromSections[iconIdx] || fromSections[fromSections.length - 1];
         const toConfig = toSections[iconIdx] || toSections[toSections.length - 1];
 
         const fromPos = iconPositions.get(fromConfig.id);
-        const toConfigFromNew = toSections[iconIdx] || toSections[0];
-        const toPos = iconPositions.get(toConfigFromNew.id);
+        const toPos = iconPositions.get((toSections[iconIdx] || toSections[0]).id);
 
         const fromWorld = fromPos !== undefined ? toWorldPos(fromPos) : toWorldPos(0.5);
         const toWorld = toPos !== undefined ? toWorldPos(toPos) : toWorldPos(0.5);
@@ -372,25 +379,23 @@ function MorphTransitionEffect({
           const i = iconIdx * PARTICLES_PER_ICON + p;
           const i3 = i * 3;
 
-          const sx = fromWorld.x + fromPts[p * 3] * 0.6;
-          const sy = fromWorld.y + fromPts[p * 3 + 1] * 0.6;
-          const sz = fromWorld.z + fromPts[p * 3 + 2] * 0.6;
+          particleIconIdx[i] = iconIdx;
+
+          const sx = fromWorld.x + fromPts[p * 3] * 0.5;
+          const sy = fromWorld.y + fromPts[p * 3 + 1] * 0.5;
+          const sz = fromWorld.z + fromPts[p * 3 + 2] * 0.5;
 
           positions[i3] = sx;
           positions[i3 + 1] = sy;
           positions[i3 + 2] = sz;
 
-          startPositions[i3] = sx;
-          startPositions[i3 + 1] = sy;
-          startPositions[i3 + 2] = sz;
-
-          endPositions[i3] = toWorld.x + toPts[p * 3] * 0.6;
-          endPositions[i3 + 1] = toWorld.y + toPts[p * 3 + 1] * 0.6;
-          endPositions[i3 + 2] = toWorld.z + toPts[p * 3 + 2] * 0.6;
+          endPositions[i3] = toWorld.x + toPts[p * 3] * 0.5;
+          endPositions[i3 + 1] = toWorld.y + toPts[p * 3 + 1] * 0.5;
+          endPositions[i3 + 2] = toWorld.z + toPts[p * 3 + 2] * 0.5;
 
           const angle = Math.random() * Math.PI * 2;
-          const speed = 3 + Math.random() * 8;
-          const zVel = (Math.random() - 0.5) * 4;
+          const speed = 1.5 + Math.random() * 2.5;
+          const zVel = (Math.random() - 0.5) * 2;
           velocities[i3] = Math.cos(angle) * speed;
           velocities[i3 + 1] = Math.sin(angle) * speed;
           velocities[i3 + 2] = zVel;
@@ -402,8 +407,6 @@ function MorphTransitionEffect({
           targetColors[i3] = toCol.r;
           targetColors[i3 + 1] = toCol.g;
           targetColors[i3 + 2] = toCol.b;
-
-          particleSizes[i] = 0.8 + Math.random() * 1.2;
         }
       }
 
@@ -423,32 +426,44 @@ function MorphTransitionEffect({
       const points = new THREE.Points(geo, mat);
       scene.add(points);
 
-      /* ── Shockwave rings (one per phase) ── */
-      const ringGeo = new THREE.TorusGeometry(3, 0.3, 12, 48);
-      const ringMat = new THREE.MeshBasicMaterial({
-        color: isDark ? 0xD4A373 : 0x5A5A40,
-        transparent: true,
-        opacity: 0,
-        wireframe: true,
-        blending: THREE.AdditiveBlending,
-      });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      scene.add(ring);
+      /* ── Per-icon shockwave rings ── */
+      const dissolveRings: THREE.Mesh[] = [];
+      const reformRings: THREE.Mesh[] = [];
+      const dissolveRingGeo = new THREE.TorusGeometry(2.5, 0.25, 12, 40);
+      const reformRingGeo = new THREE.TorusGeometry(1.5, 0.18, 12, 40);
 
-      /* ── Second ring for reform phase ── */
-      const ring2Geo = new THREE.TorusGeometry(2, 0.2, 12, 48);
-      const ring2Mat = new THREE.MeshBasicMaterial({
-        color: isDark ? 0x9CB386 : 0x2E6F40,
-        transparent: true,
-        opacity: 0,
-        wireframe: true,
-        blending: THREE.AdditiveBlending,
-      });
-      const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
-      scene.add(ring2);
+      for (let idx = 0; idx < maxIcons; idx++) {
+        const wp = iconWorldPositions[idx];
+
+        const dMat = new THREE.MeshBasicMaterial({
+          color: isDark ? 0xD4A373 : 0x5A5A40,
+          transparent: true,
+          opacity: 0,
+          wireframe: true,
+          blending: THREE.AdditiveBlending,
+        });
+        const dRing = new THREE.Mesh(dissolveRingGeo, dMat);
+        dRing.position.set(wp.x, wp.y, wp.z);
+        dRing.rotation.x = Math.PI / 4;
+        scene.add(dRing);
+        dissolveRings.push(dRing);
+
+        const rMat = new THREE.MeshBasicMaterial({
+          color: isDark ? 0x9CB386 : 0x2E6F40,
+          transparent: true,
+          opacity: 0,
+          wireframe: true,
+          blending: THREE.AdditiveBlending,
+        });
+        const rRing = new THREE.Mesh(reformRingGeo, rMat);
+        rRing.position.set(wp.x, wp.y, wp.z);
+        rRing.rotation.x = Math.PI / 3;
+        scene.add(rRing);
+        reformRings.push(rRing);
+      }
 
       /* ── Animation timing ── */
-      const DURATION = 1200;
+      const DURATION = 1200 + totalStagger;
       const DISSOLVE_END = 0.35;
       const HOLD_END = 0.50;
       const startTime = performance.now();
@@ -456,40 +471,48 @@ function MorphTransitionEffect({
       const colorAttr = geo.getAttribute('color') as THREE.BufferAttribute;
       const colorArr = colorAttr.array as Float32Array;
 
+      /* ── Compute per-icon normalized delay offsets (0→1 range within DURATION) ── */
+      const iconDelayNorm = iconDelays.map((d) => d / DURATION);
+
       const animate = (now: number) => {
         const elapsed = now - startTime;
-        const t = Math.min(elapsed / DURATION, 1);
+        const tGlobal = Math.min(elapsed / DURATION, 1);
 
         const posAttr = geo.attributes.position as THREE.BufferAttribute;
         const posArr = posAttr.array as Float32Array;
 
         for (let i = 0; i < totalParticles; i++) {
           const i3 = i * 3;
+          const iconIdx = particleIconIdx[i];
+          const delay = iconDelayNorm[iconIdx];
 
-          if (t <= DISSOLVE_END) {
+          /* Per-particle local time: shifted by icon delay, stretched to fill remaining duration */
+          const tLocal = Math.min(Math.max((tGlobal - delay) / (1 - delay), 0), 1);
+
+          if (tLocal <= 0) {
+            /* Not yet this icon's turn — particles invisible */
+            posArr[i3 + 2] = -10;
+            continue;
+          }
+
+          if (tLocal <= DISSOLVE_END) {
             /* ── Phase 1: DISSOLVE — particles fly outward from source ── */
-            const phaseT = t / DISSOLVE_END;
+            const phaseT = tLocal / DISSOLVE_END;
             const ease = 1 - Math.pow(1 - phaseT, 3);
 
             posArr[i3]     += velocities[i3]     * 0.016 * (1 + ease * 2);
             posArr[i3 + 1] += velocities[i3 + 1] * 0.016 * (1 + ease * 2);
             posArr[i3 + 2] += velocities[i3 + 2] * 0.016;
 
-            particleSizes[i] = (0.8 + Math.random() * 0.4) * (1 + ease * 0.5);
-
-          } else if (t <= HOLD_END) {
+          } else if (tLocal <= HOLD_END) {
             /* ── Phase 2: HOLD — particles drift gently, almost frozen ── */
-            const holdT = (t - DISSOLVE_END) / (HOLD_END - DISSOLVE_END);
-
-            posArr[i3]     += velocities[i3]     * 0.002 * (1 - holdT);
-            posArr[i3 + 1] += velocities[i3 + 1] * 0.002 * (1 - holdT);
-            posArr[i3 + 2] += Math.sin(now * 0.003 + i) * 0.003;
-
-            particleSizes[i] = 2.0 + Math.sin(now * 0.004 + i * 0.5) * 0.3;
+            posArr[i3]     += velocities[i3]     * 0.001;
+            posArr[i3 + 1] += velocities[i3 + 1] * 0.001;
+            posArr[i3 + 2] += Math.sin(now * 0.003 + i) * 0.002;
 
           } else {
             /* ── Phase 3: REFORM — particles converge to target positions ── */
-            const phaseT = (t - HOLD_END) / (1 - HOLD_END);
+            const phaseT = (tLocal - HOLD_END) / (1 - HOLD_END);
             const ease = phaseT < 0.5
               ? 4 * phaseT * phaseT * phaseT
               : 1 - Math.pow(-2 * phaseT + 2, 3) / 2;
@@ -498,12 +521,10 @@ function MorphTransitionEffect({
             posArr[i3]     += (endPositions[i3]     - posArr[i3])     * lerpFactor;
             posArr[i3 + 1] += (endPositions[i3 + 1] - posArr[i3 + 1]) * lerpFactor;
             posArr[i3 + 2] += (endPositions[i3 + 2] - posArr[i3 + 2]) * lerpFactor;
-
-            particleSizes[i] = 2.0 * (1 - phaseT * 0.3);
           }
 
           /* ── Color interpolation per particle ── */
-          const colorMix = t <= DISSOLVE_END ? 0 : Math.min((t - DISSOLVE_END) / 0.4, 1);
+          const colorMix = tLocal <= DISSOLVE_END ? 0 : Math.min((tLocal - DISSOLVE_END) / 0.4, 1);
           colorArr[i3]     = baseColors[i3]     + (targetColors[i3]     - baseColors[i3])     * colorMix;
           colorArr[i3 + 1] = baseColors[i3 + 1] + (targetColors[i3 + 1] - baseColors[i3 + 1]) * colorMix;
           colorArr[i3 + 2] = baseColors[i3 + 2] + (targetColors[i3 + 2] - baseColors[i3 + 2]) * colorMix;
@@ -512,51 +533,57 @@ function MorphTransitionEffect({
         posAttr.needsUpdate = true;
         colorAttr.needsUpdate = true;
 
-        /* ── Shockwave ring: expands during dissolve, collapses during reform ── */
-        if (t <= DISSOLVE_END) {
-          const ringT = t / DISSOLVE_END;
-          const ringEase = 1 - Math.pow(1 - ringT, 2);
-          const s = 1 + ringEase * 8;
-          ring.scale.set(s, s, s);
-          ring.rotation.z += 0.04;
-          ring.rotation.x = Math.PI / 4;
-          ringMat.opacity = (1 - ringT) * 0.5;
-        } else if (t <= HOLD_END) {
-          ringMat.opacity *= 0.95;
-        } else {
-          ringMat.opacity = 0;
-        }
+        /* ── Per-icon rings: each ring animates on its own staggered timeline ── */
+        for (let idx = 0; idx < maxIcons; idx++) {
+          const delay = iconDelayNorm[idx];
+          const tLocal = Math.min(Math.max((tGlobal - delay) / (1 - delay), 0), 1);
 
-        /* ── Reform ring: appears during reformation ── */
-        if (t > HOLD_END) {
-          const ring2T = (t - HOLD_END) / (1 - HOLD_END);
-          const s2 = 8 * (1 - ring2T) + 0.5;
-          ring2.scale.set(s2, s2, s2);
-          ring2.rotation.z -= 0.03;
-          ring2.rotation.x = Math.PI / 3;
-          ring2Mat.opacity = Math.sin(ring2T * Math.PI) * 0.4;
-        } else {
-          ring2Mat.opacity = 0;
+          const dRing = dissolveRings[idx];
+          const dMat = dRing.material as THREE.MeshBasicMaterial;
+          const rRing = reformRings[idx];
+          const rMat = rRing.material as THREE.MeshBasicMaterial;
+
+          if (tLocal <= 0) {
+            dMat.opacity = 0;
+            rMat.opacity = 0;
+          } else if (tLocal <= DISSOLVE_END) {
+            const ringT = tLocal / DISSOLVE_END;
+            const s = 1 + ringT * 6;
+            dRing.scale.set(s, s, s);
+            dRing.rotation.z += 0.05;
+            dMat.opacity = (1 - ringT) * 0.5;
+            rMat.opacity = 0;
+          } else if (tLocal <= HOLD_END) {
+            dMat.opacity *= 0.93;
+            rMat.opacity = 0;
+          } else {
+            dMat.opacity = 0;
+            const ring2T = (tLocal - HOLD_END) / (1 - HOLD_END);
+            const s2 = 6 * (1 - ring2T) + 0.3;
+            rRing.scale.set(s2, s2, s2);
+            rRing.rotation.z -= 0.04;
+            rMat.opacity = Math.sin(ring2T * Math.PI) * 0.45;
+          }
         }
 
         /* ── Overall opacity: fade in at start, fade out at end ── */
-        const fadeIn = Math.min(t / 0.05, 1);
-        const fadeOut = t > 0.9 ? (1 - t) / 0.1 : 1;
+        const fadeIn = Math.min(tGlobal / 0.03, 1);
+        const fadeOut = tGlobal > 0.92 ? (1 - tGlobal) / 0.08 : 1;
         mat.opacity = fadeIn * fadeOut * 0.9;
 
         renderer!.render(scene, camera);
 
-        if (t < 1) {
+        if (tGlobal < 1) {
           animRef.current = requestAnimationFrame(animate);
         } else {
           onComplete();
           renderer?.dispose();
           geo.dispose();
           mat.dispose();
-          ringGeo.dispose();
-          ringMat.dispose();
-          ring2Geo.dispose();
-          ring2Mat.dispose();
+          dissolveRingGeo.dispose();
+          reformRingGeo.dispose();
+          for (const r of dissolveRings) { (r.material as THREE.MeshBasicMaterial).dispose(); }
+          for (const r of reformRings) { (r.material as THREE.MeshBasicMaterial).dispose(); }
         }
       };
 
