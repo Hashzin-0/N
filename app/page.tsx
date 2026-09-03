@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Calculator, 
@@ -61,7 +61,56 @@ interface Preset {
   v8v10Percent2: number; // 2nd % value for range (0 = single value)
 }
 
-const PRESETS: Preset[] = [];
+const PRESETS: Preset[] = [
+  {
+    id: 'alta_produtividade',
+    name: 'Alta Produtividade',
+    description: 'Milho irrigado com alta tecnologia, produtividade superior a 160 sc/ha.',
+    yieldGoal: 180,
+    nRequirementPerBag: 1.45,
+    mosNContribution: 45,
+    soyNContribution: 25,
+    efficiency: 0.85,
+    baseDose: 35,
+    baseDose2: 0,
+    v4v6Percent: 55,
+    v4v6Percent2: 0,
+    v8v10Percent: 20,
+    v8v10Percent2: 0,
+  },
+  {
+    id: 'produtividade_media',
+    name: 'Produtividade Média',
+    description: 'Milho de sequeiro com manejo padrão, produtividade entre 100-140 sc/ha.',
+    yieldGoal: 120,
+    nRequirementPerBag: 1.35,
+    mosNContribution: 35,
+    soyNContribution: 20,
+    efficiency: 0.80,
+    baseDose: 30,
+    baseDose2: 0,
+    v4v6Percent: 50,
+    v4v6Percent2: 0,
+    v8v10Percent: 25,
+    v8v10Percent2: 0,
+  },
+  {
+    id: 'baixa_produtividade',
+    name: 'Baixa Produtividade',
+    description: 'Milho com limitações hídricas ou solo pobre, produtividade abaixo de 100 sc/ha.',
+    yieldGoal: 80,
+    nRequirementPerBag: 1.25,
+    mosNContribution: 25,
+    soyNContribution: 15,
+    efficiency: 0.75,
+    baseDose: 25,
+    baseDose2: 0,
+    v4v6Percent: 45,
+    v4v6Percent2: 0,
+    v8v10Percent: 30,
+    v8v10Percent2: 0,
+  },
+];
 
 export default function Home() {
   const { isDark } = useTheme();
@@ -94,6 +143,10 @@ export default function Home() {
 
   // Active scenario preset
   const [activePreset, setActivePreset] = useState<string>('personalizado');
+  
+  // Animation state for filling fields when loading presets
+  const [fillingFields, setFillingFields] = useState<Set<string>>(new Set());
+  const fillingTimersRef = useRef<NodeJS.Timeout[]>([]);
 
   // SQLike Local Storage states
   const savedRecords = useCalculationRecords();
@@ -107,24 +160,72 @@ export default function Home() {
     notifyStorageChange();
   };
 
-  // Handle preset loading
-  const handleLoadPreset = (preset: Preset) => {
-    setYieldGoal(preset.yieldGoal);
-    setNRequirementPerBag(preset.nRequirementPerBag);
-    setMosNContribution(preset.mosNContribution);
-    setSoyNContribution(preset.soyNContribution);
-    setEfficiency(preset.efficiency * 100);
-    setBaseDose(preset.baseDose);
-    setBaseDose2(preset.baseDose2);
-    setBaseDoseMode(preset.baseDose2 > 0 ? 'range' : 'single');
-    setV4v6Percent(preset.v4v6Percent);
-    setV4v6Percent2(preset.v4v6Percent2);
-    setV4v6Mode(preset.v4v6Percent2 > 0 ? 'range' : 'single');
-    setV8v10Percent(preset.v8v10Percent);
-    setV8v10Percent2(preset.v8v10Percent2);
-    setV8v10Mode(preset.v8v10Percent2 > 0 ? 'range' : 'single');
+  // Handle preset loading with 3D staggered animation
+  const handleLoadPreset = useCallback((preset: Preset) => {
+    // Clear any existing timers
+    fillingTimersRef.current.forEach(clearTimeout);
+    fillingTimersRef.current = [];
+    
+    // Define the fields to fill with their delays (staggered animation)
+    const fieldsToFill = [
+      { name: 'yieldGoal', value: preset.yieldGoal, delay: 0 },
+      { name: 'nRequirementPerBag', value: preset.nRequirementPerBag, delay: 80 },
+      { name: 'mosNContribution', value: preset.mosNContribution, delay: 160 },
+      { name: 'soyNContribution', value: preset.soyNContribution, delay: 240 },
+      { name: 'efficiency', value: preset.efficiency * 100, delay: 320 },
+      { name: 'baseDose', value: preset.baseDose, delay: 400 },
+      { name: 'baseDose2', value: preset.baseDose2, delay: 450 },
+      { name: 'v4v6Percent', value: preset.v4v6Percent, delay: 500 },
+      { name: 'v4v6Percent2', value: preset.v4v6Percent2, delay: 550 },
+      { name: 'v8v10Percent', value: preset.v8v10Percent, delay: 600 },
+      { name: 'v8v10Percent2', value: preset.v8v10Percent2, delay: 650 },
+    ];
+
+    // Set the active preset immediately
     setActivePreset(preset.id);
-  };
+
+    // Animate each field with staggered delay
+    fieldsToFill.forEach(({ name, value, delay }) => {
+      const timer = setTimeout(() => {
+        // Add field to filling state
+        setFillingFields(prev => new Set([...prev, name]));
+        
+        // Set the actual value
+        switch (name) {
+          case 'yieldGoal': setYieldGoal(value); break;
+          case 'nRequirementPerBag': setNRequirementPerBag(value); break;
+          case 'mosNContribution': setMosNContribution(value); break;
+          case 'soyNContribution': setSoyNContribution(value); break;
+          case 'efficiency': setEfficiency(value); break;
+          case 'baseDose': setBaseDose(value); break;
+          case 'baseDose2': setBaseDose2(value); break;
+          case 'v4v6Percent': setV4v6Percent(value); break;
+          case 'v4v6Percent2': setV4v6Percent2(value); break;
+          case 'v8v10Percent': setV8v10Percent(value); break;
+          case 'v8v10Percent2': setV8v10Percent2(value); break;
+        }
+        
+        // Remove from filling state after animation completes
+        setTimeout(() => {
+          setFillingFields(prev => {
+            const next = new Set(prev);
+            next.delete(name);
+            return next;
+          });
+        }, 300);
+      }, delay);
+      
+      fillingTimersRef.current.push(timer);
+    });
+
+    // Set modes based on preset values
+    const modeTimer = setTimeout(() => {
+      setBaseDoseMode(preset.baseDose2 > 0 ? 'range' : 'single');
+      setV4v6Mode(preset.v4v6Percent2 > 0 ? 'range' : 'single');
+      setV8v10Mode(preset.v8v10Percent2 > 0 ? 'range' : 'single');
+    }, 100);
+    fillingTimersRef.current.push(modeTimer);
+  }, []);
 
   // Mark custom if any state changes
   const handleCustomInputChange = (updater: () => void) => {
@@ -573,9 +674,11 @@ export default function Home() {
                   step={5}
                   min={50}
                   max={250}
+                  placeholder="Ex: 160"
                   isDark={isDark}
                   accentColor="#5A5A40"
                   hint="Meta de rendimento em sacas de 60kg por hectare."
+                  filling={fillingFields.has('yieldGoal')}
                 />
 
                 {/* N Requirement */}
@@ -587,9 +690,11 @@ export default function Home() {
                   step={0.05}
                   min={0.5}
                   max={2.5}
+                  placeholder="Ex: 1.35"
                   isDark={isDark}
                   accentColor="#5A5A40"
                   hint="Extração unitária: 1.2 a 1.5 kg N por saca (padrão: 1.35)."
+                  filling={fillingFields.has('nRequirementPerBag')}
                 />
 
                 {/* MOS Contribution */}
@@ -602,9 +707,11 @@ export default function Home() {
                   step={1}
                   min={0}
                   max={150}
+                  placeholder="Ex: 40"
                   isDark={isDark}
                   accentColor="#5A5A40"
                   hint="Mineralização da Matéria Orgânica do Solo."
+                  filling={fillingFields.has('mosNContribution')}
                 />
 
                 {/* Soy Credit */}
@@ -616,9 +723,11 @@ export default function Home() {
                   step={1}
                   min={0}
                   max={100}
+                  placeholder="Ex: 20"
                   isDark={isDark}
                   accentColor="#5A5A40"
                   hint="Crédito de N da soja: 15 a 30 kg N/ha na sucessão Soja-Milho."
+                  filling={fillingFields.has('soyNContribution')}
                 />
 
                 {/* Efficiency rate */}
@@ -631,9 +740,11 @@ export default function Home() {
                   step={1}
                   min={10}
                   max={100}
+                  placeholder="Ex: 80"
                   isDark={isDark}
                   accentColor="#5A5A40"
                   hint="Eficiência padrão: 80% (fator 0.8). Perdas por volatilização/lixiviação."
+                  filling={fillingFields.has('efficiency')}
                 />
 
               </div>
@@ -710,8 +821,10 @@ export default function Home() {
                       step={1}
                       min={0}
                       max={100}
+                      placeholder="Ex: 35"
                       isDark={isDark}
                       accentColor="#D4A373"
+                      filling={fillingFields.has('baseDose')}
                     />
                     <Input3D
                       label="Max (kg N/ha)"
@@ -721,8 +834,10 @@ export default function Home() {
                       step={1}
                       min={0}
                       max={100}
+                      placeholder="0"
                       isDark={isDark}
                       accentColor="#D4A373"
+                      filling={fillingFields.has('baseDose2')}
                     />
                   </CellDivisionContainer>
 
@@ -770,8 +885,10 @@ export default function Home() {
                       step={1}
                       min={0}
                       max={100}
+                      placeholder="Ex: 50"
                       isDark={isDark}
                       accentColor="#5A5A40"
+                      filling={fillingFields.has('v4v6Percent')}
                     />
                     <Input3D
                       label="Max %"
@@ -781,8 +898,10 @@ export default function Home() {
                       step={1}
                       min={0}
                       max={100}
+                      placeholder="0"
                       isDark={isDark}
                       accentColor="#5A5A40"
+                      filling={fillingFields.has('v4v6Percent2')}
                     />
                   </CellDivisionContainer>
 
@@ -839,10 +958,12 @@ export default function Home() {
                       step={1}
                       min={0}
                       max={100}
+                      placeholder="Ex: 20"
                       isDark={isDark}
                       accentColor="#8D6E63"
                       derived={v8v10Percent === 0}
                       hint={v8v10Percent === 0 ? `Auto-calculado: ${calculations.v8v10_1_auto}%` : undefined}
+                      filling={fillingFields.has('v8v10Percent')}
                     />
                     <Input3D
                       label="Max %"
@@ -852,10 +973,12 @@ export default function Home() {
                       step={1}
                       min={0}
                       max={100}
+                      placeholder="0"
                       isDark={isDark}
                       accentColor="#8D6E63"
                       derived={v8v10Percent2 === 0 && v4v6Percent2 > 0}
                       hint={v8v10Percent2 === 0 && v4v6Percent2 > 0 ? `Auto-calculado: ${calculations.v8v10_2_auto}%` : undefined}
+                      filling={fillingFields.has('v8v10Percent2')}
                     />
                   </CellDivisionContainer>
 
@@ -918,6 +1041,12 @@ export default function Home() {
             <ParcelamentoSection
               calculations={calculations}
               splitBase={splitBase}
+              v4v6Percent={v4v6Percent}
+              v4v6Mode={v4v6Mode}
+              v4v6Percent2={v4v6Percent2}
+              v8v10Percent={v8v10Percent}
+              v8v10Mode={v8v10Mode}
+              v8v10Percent2={v8v10Percent2}
             />
 
             {/* BALANCO SECTION */}

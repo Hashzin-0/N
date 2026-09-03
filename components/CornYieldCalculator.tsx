@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { motion } from 'motion/react';
 import { 
   Calculator, 
@@ -38,7 +38,44 @@ interface YieldPreset {
   quebraDecimal: number;
 }
 
-const YIELD_PRESETS: YieldPreset[] = [];
+const YIELD_PRESETS: YieldPreset[] = [
+  {
+    id: 'milho_alto',
+    name: 'Alto Rendimento',
+    description: 'Milho irrigado com alta população e grãos pesados, acima de 180 sc/ha.',
+    plantasPorMetro: 4.5,
+    espacamentoLinhas: 0.50,
+    fileiras: 18,
+    graosPorFileira: 40,
+    espigas: 1.1,
+    pmg: 320,
+    quebraDecimal: 0.04,
+  },
+  {
+    id: 'milho_medio',
+    name: 'Médio Rendimento',
+    description: 'Milho de sequeiro com manejo padrão, entre 120-160 sc/ha.',
+    plantasPorMetro: 4.0,
+    espacamentoLinhas: 0.50,
+    fileiras: 16,
+    graosPorFileira: 35,
+    espigas: 1.0,
+    pmg: 300,
+    quebraDecimal: 0.05,
+  },
+  {
+    id: 'milho_baixo',
+    name: 'Baixo Rendimento',
+    description: 'Milho com limitações hídricas ou solo pobre, abaixo de 100 sc/ha.',
+    plantasPorMetro: 3.2,
+    espacamentoLinhas: 0.60,
+    fileiras: 14,
+    graosPorFileira: 28,
+    espigas: 0.9,
+    pmg: 260,
+    quebraDecimal: 0.08,
+  },
+];
 
 export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalculatorProps) {
   const { isDark } = useTheme();
@@ -53,6 +90,10 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
   const [activePreset, setActivePreset] = useState<string>('personalizado');
   const [showFormulaDetails, setShowFormulaDetails] = useState<boolean>(true);
   const [appliedToast, setAppliedToast] = useState<string | null>(null);
+  
+  // Animation state for filling fields when loading presets
+  const [fillingFields, setFillingFields] = useState<Set<string>>(new Set());
+  const fillingTimersRef = useRef<NodeJS.Timeout[]>([]);
 
   // Calculations
   const estande = useMemo(() => {
@@ -185,16 +226,55 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
     return issues;
   }, [plantasPorMetro, espacamentoLinhas, fileiras, graosPorFileira, espigas, pmg, quebraDecimal]);
 
-  const loadPreset = (p: YieldPreset) => {
+  const loadPreset = useCallback((p: YieldPreset) => {
+    // Clear any existing timers
+    fillingTimersRef.current.forEach(clearTimeout);
+    fillingTimersRef.current = [];
+    
+    // Define the fields to fill with their delays (staggered animation)
+    const fieldsToFill = [
+      { name: 'plantasPorMetro', value: p.plantasPorMetro, delay: 0 },
+      { name: 'espacamentoLinhas', value: p.espacamentoLinhas, delay: 80 },
+      { name: 'fileiras', value: p.fileiras, delay: 160 },
+      { name: 'graosPorFileira', value: p.graosPorFileira, delay: 240 },
+      { name: 'espigas', value: p.espigas, delay: 320 },
+      { name: 'pmg', value: p.pmg, delay: 400 },
+      { name: 'quebraDecimal', value: p.quebraDecimal, delay: 480 },
+    ];
+
+    // Set the active preset immediately
     setActivePreset(p.id);
-    setPlantasPorMetro(p.plantasPorMetro);
-    setEspacamentoLinhas(p.espacamentoLinhas);
-    setFileiras(p.fileiras);
-    setGraosPorFileira(p.graosPorFileira);
-    setEspigas(p.espigas);
-    setPmg(p.pmg);
-    setQuebraDecimal(p.quebraDecimal);
-  };
+
+    // Animate each field with staggered delay
+    fieldsToFill.forEach(({ name, value, delay }) => {
+      const timer = setTimeout(() => {
+        // Add field to filling state
+        setFillingFields(prev => new Set([...prev, name]));
+        
+        // Set the actual value
+        switch (name) {
+          case 'plantasPorMetro': setPlantasPorMetro(value); break;
+          case 'espacamentoLinhas': setEspacamentoLinhas(value); break;
+          case 'fileiras': setFileiras(value); break;
+          case 'graosPorFileira': setGraosPorFileira(value); break;
+          case 'espigas': setEspigas(value); break;
+          case 'pmg': setPmg(value); break;
+          case 'quebraDecimal': setQuebraDecimal(value); break;
+        }
+        
+        // Remove from filling state after animation completes
+        setTimeout(() => {
+          setFillingFields(prev => {
+            const next = new Set(prev);
+            next.delete(name);
+            return next;
+          });
+        }, 300);
+      }, delay);
+      
+      fillingTimersRef.current.push(timer);
+    });
+  }, []);
 
   const handleFixAll = () => {
     setPlantasPorMetro(4.0);
@@ -374,11 +454,13 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                 step={0.1}
                 min={1}
                 max={10}
+                placeholder="Ex: 4.0"
                 isDark={isDark}
                 accentColor="#5A5A40"
                 critical={getFieldSeverity('plantasPorMetro') === 'critical'}
                 warning={getFieldSeverity('plantasPorMetro') === 'warning'}
                 hint="Contagem linear na linha de semeadura."
+                filling={fillingFields.has('plantasPorMetro')}
               />
               <Input3D
                 id="input_espacamento_linhas"
@@ -389,11 +471,13 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                 step={0.05}
                 min={0.30}
                 max={1.20}
+                placeholder="Ex: 0.50"
                 isDark={isDark}
                 accentColor="#5A5A40"
                 critical={getFieldSeverity('espacamentoLinhas') === 'critical'}
                 warning={getFieldSeverity('espacamentoLinhas') === 'warning'}
                 hint="Distância entre linhas (metros)."
+                filling={fillingFields.has('espacamentoLinhas')}
               />
             </div>
 
@@ -448,11 +532,13 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                 step={2}
                 min={10}
                 max={24}
+                placeholder="Ex: 16"
                 isDark={isDark}
                 accentColor="#5A5A40"
                 critical={getFieldSeverity('fileiras') === 'critical'}
                 warning={getFieldSeverity('fileiras') === 'warning'}
                 hint="Sempre em números pares (12, 14, 16, 18, 20)."
+                filling={fillingFields.has('fileiras')}
               />
               <Input3D
                 id="input_graos_por_fileira"
@@ -463,11 +549,13 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                 step={1}
                 min={10}
                 max={60}
+                placeholder="Ex: 35"
                 isDark={isDark}
                 accentColor="#5A5A40"
                 critical={getFieldSeverity('graosPorFileira') === 'critical'}
                 warning={getFieldSeverity('graosPorFileira') === 'warning'}
                 hint="Contagem média longitudinal de grãos."
+                filling={fillingFields.has('graosPorFileira')}
               />
             </div>
 
@@ -509,11 +597,13 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                 step={0.05}
                 min={0.5}
                 max={2.0}
+                placeholder="Ex: 1.0"
                 isDark={isDark}
                 accentColor="#D4A373"
                 critical={getFieldSeverity('espigas') === 'critical'}
                 warning={getFieldSeverity('espigas') === 'warning'}
                 hint="Espigas viáveis por planta (questão: 1.0)."
+                filling={fillingFields.has('espigas')}
               />
 
               <Input3D
@@ -525,11 +615,13 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                 step={5}
                 min={150}
                 max={450}
+                placeholder="Ex: 300"
                 isDark={isDark}
                 accentColor="#D4A373"
                 critical={getFieldSeverity('pmg') === 'critical'}
                 warning={getFieldSeverity('pmg') === 'warning'}
                 hint={`PMG unitário: ${pmgUnitario.toFixed(3)} g/grão`}
+                filling={fillingFields.has('pmg')}
               />
 
               <Input3D
@@ -541,11 +633,13 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                 step={0.01}
                 min={0}
                 max={0.30}
+                placeholder="Ex: 0.05"
                 isDark={isDark}
                 accentColor="#D4A373"
                 critical={getFieldSeverity('quebraDecimal') === 'critical'}
                 warning={getFieldSeverity('quebraDecimal') === 'warning'}
                 hint="Em decimal (ex: 0.05 para 5% de perda)."
+                filling={fillingFields.has('quebraDecimal')}
               />
             </div>
 

@@ -21,6 +21,7 @@ interface Input3DProps {
   warning?: boolean;
   critical?: boolean;
   hint?: string;
+  filling?: boolean;
 }
 
 export default function Input3D({
@@ -41,6 +42,7 @@ export default function Input3D({
   warning = false,
   critical = false,
   hint,
+  filling = false,
 }: Input3DProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -69,6 +71,8 @@ export default function Input3D({
     ? '#ef4444'
     : warning
     ? '#f59e0b'
+    : filling
+    ? '#22c55e'
     : isFocused
     ? accentColor
     : isDark
@@ -79,6 +83,8 @@ export default function Input3D({
     ? 'rgba(239,68,68,0.35)'
     : warning
     ? 'rgba(245,158,11,0.3)'
+    : filling
+    ? 'rgba(34,197,94,0.4)'
     : isFocused
     ? `${accentColor}44`
     : 'transparent';
@@ -98,7 +104,7 @@ export default function Input3D({
           </label>
           {unit && (
             <span className="text-xs font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A]">
-              {value} {unit}
+              {value === 0 ? '' : value} {unit}
             </span>
           )}
         </div>
@@ -106,24 +112,26 @@ export default function Input3D({
 
       <motion.div
         animate={{
-          rotateX: isFocused ? 3 : isHovered ? 1 : 0,
-          rotateY: isFocused ? -1 : isHovered ? 0.5 : 0,
-          scale: isFocused ? 1.02 : isHovered ? 1.01 : 1,
+          rotateX: filling ? 2 : isFocused ? 3 : isHovered ? 1 : 0,
+          rotateY: filling ? -2 : isFocused ? -1 : isHovered ? 0.5 : 0,
+          scale: filling ? 1.03 : isFocused ? 1.02 : isHovered ? 1.01 : 1,
         }}
         transition={{
           type: 'spring',
-          stiffness: isFocused ? 300 : 400,
-          damping: 25,
+          stiffness: filling ? 200 : isFocused ? 300 : 400,
+          damping: 20,
         }}
         style={{ transformStyle: 'preserve-3d' }}
       >
         <div className="relative overflow-hidden rounded-xl">
           {/* Shimmer border effect */}
-          {isFocused && !readOnly && (
+          {(isFocused || filling) && !readOnly && (
             <div
               className="absolute inset-0 rounded-xl pointer-events-none z-10"
               style={{
-                background: `linear-gradient(90deg, transparent, ${accentColor}33, transparent)`,
+                background: filling
+                  ? `linear-gradient(90deg, transparent, rgba(34,197,94,0.3), transparent)`
+                  : `linear-gradient(90deg, transparent, ${accentColor}33, transparent)`,
                 backgroundSize: '200% 100%',
                 animation: 'shimmer-border 2s ease-in-out infinite',
               }}
@@ -137,15 +145,20 @@ export default function Input3D({
             step={step}
             min={min}
             max={max}
-            value={value}
-            placeholder={placeholder}
+            value={value === 0 ? '' : value}
+            placeholder={placeholder || '0'}
             readOnly={readOnly}
             onChange={(e) => {
               const val = parseFloat(e.target.value);
               if (!isNaN(val)) onChange(val);
             }}
             onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
+            onBlur={(e) => {
+              setIsFocused(false);
+              if (e.target.value === '' || e.target.value === '-') {
+                onChange(0);
+              }
+            }}
             className={`w-full p-2.5 rounded-xl border text-sm font-medium focus:outline-none transition-all duration-200 ${
               readOnly
                 ? 'cursor-default opacity-80'

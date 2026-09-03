@@ -8,6 +8,7 @@ export class AudioStreamer {
   private outputCtx: AudioContext | null = null;
   private inputCtx: AudioContext | null = null;
   private inputSource: MediaStreamAudioSourceNode | null = null;
+  private inputWorkletNode: AudioWorkletNode | null = null;
   private inputProcessor: ScriptProcessorNode | null = null;
   private inputAnalyser: AnalyserNode | null = null;
   private outputAnalyser: AnalyserNode | null = null;
@@ -63,68 +64,114 @@ export class AudioStreamer {
     this.inputAnalyser.fftSize = 256;
     this.inputAnalyser.smoothingTimeConstant = 0.5;
 
-    this.mediaStream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        channelCount: 1,
-        sampleRate: 16000,
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-      },
-    });
+    // Get microphone with ideal constraints, fallback to minimal constraints
+    try {
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: { ideal: 1 },
+          sampleRate: { ideal: 16000 },
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+    } catch {
+      try {
+        this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        this.inputCtx.close().catch(() => {});
+        this.inputCtx = null;
+        throw err;
+      }
+    }
 
     this.inputSource = this.inputCtx.createMediaStreamSource(this.mediaStream);
     this.inputSource.connect(this.inputAnalyser);
 
-    // Buffer size 4096 samples at 16kHz ~ 256ms chunk
+    // Try AudioWorklet (512 samples ~32ms at 16kHz) for low latency,
+    // fall back to ScriptProcessorNode if worklet unavailable
+    let workletLoaded = false;
+    if (this.inputCtx.audioWorklet && 'addModule' in this.inputCtx.audioWorklet) {
+      try {
+        await this.inputCtx.audioWorklet.addModule('/audio-processors/capture.worklet.js');
+        workletLoaded = true;
+      } catch {
+        console.warn('[AudioStreamer] worklet load failed; using ScriptProcessor fallback');
+      }
+    }
+
+    if (workletLoaded) {
+      try {
+        this.inputWorkletNode = new AudioWorkletNode(this.inputCtx, 'audio-capture-processor');
+        this.inputWorkletNode.port.onmessage = (e: MessageEvent) => {
+          if (!this.isRecording) return;
+          const float32 = e.data?.data as Float32Array | undefined;
+          if (float32) this.processAudioChunk(float32);
+        };
+        this.inputSource.connect(this.inputWorkletNode);
+        this.isRecording = true;
+        this.startVolumeMonitoringLoop();
+        return;
+      } catch {
+        this.inputWorkletNode = null;
+      }
+    }
+
+    // Fallback: ScriptProcessorNode (widely supported, 4096 samples ~256ms)
     this.inputProcessor = this.inputCtx.createScriptProcessor(4096, 1, 1);
     this.inputSource.connect(this.inputProcessor);
     this.inputProcessor.connect(this.inputCtx.destination);
 
     this.inputProcessor.onaudioprocess = (e) => {
       if (!this.isRecording) return;
-      const inputData = e.inputBuffer.getChannelData(0);
-
-      // Calculate instantaneous volume for visualization
-      let sum = 0;
-      for (let i = 0; i < inputData.length; i++) {
-        sum += inputData[i] * inputData[i];
-      }
-      const rms = Math.sqrt(sum / inputData.length);
-      const volume = Math.min(1, rms * 5);
-      if (this.onUserVolumeCallback) {
-        this.onUserVolumeCallback(volume);
-      }
-
-      // Convert Float32 [-1.0, 1.0] to Int16 PCM little-endian
-      const pcm16 = new Int16Array(inputData.length);
-      for (let i = 0; i < inputData.length; i++) {
-        const s = Math.max(-1, Math.min(1, inputData[i]));
-        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-      }
-
-      // Base64 encode
-      const uint8 = new Uint8Array(pcm16.buffer);
-      let binary = '';
-      const len = uint8.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(uint8[i]);
-      }
-      const base64 = btoa(binary);
-
-      if (this.onAudioChunkCallback) {
-        this.onAudioChunkCallback(base64);
-      }
+      this.processAudioChunk(e.inputBuffer.getChannelData(0));
     };
 
     this.isRecording = true;
     this.startVolumeMonitoringLoop();
   }
 
+  private processAudioChunk(inputData: Float32Array): void {
+    // Calculate instantaneous volume for visualization
+    let sum = 0;
+    for (let i = 0; i < inputData.length; i++) {
+      sum += inputData[i] * inputData[i];
+    }
+    const rms = Math.sqrt(sum / inputData.length);
+    const volume = Math.min(1, rms * 5);
+    if (this.onUserVolumeCallback) {
+      this.onUserVolumeCallback(volume);
+    }
+
+    // Convert Float32 [-1.0, 1.0] to Int16 PCM little-endian
+    const pcm16 = new Int16Array(inputData.length);
+    for (let i = 0; i < inputData.length; i++) {
+      const s = Math.max(-1, Math.min(1, inputData[i]));
+      pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+    }
+
+    // Base64 encode
+    const uint8 = new Uint8Array(pcm16.buffer);
+    let binary = '';
+    const len = uint8.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(uint8[i]);
+    }
+    const base64 = btoa(binary);
+
+    if (this.onAudioChunkCallback) {
+      this.onAudioChunkCallback(base64);
+    }
+  }
+
   // Stop microphone recording
   public stopRecording(): void {
     this.isRecording = false;
 
+    if (this.inputWorkletNode) {
+      this.inputWorkletNode.disconnect();
+      this.inputWorkletNode = null;
+    }
     if (this.inputProcessor) {
       this.inputProcessor.disconnect();
       this.inputProcessor = null;

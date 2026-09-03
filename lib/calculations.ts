@@ -56,27 +56,27 @@ export function computeCalculations(inputs: {
   const v8v10_1 = v8v10Percent;
   const v8v10_2 = v8v10Mode === 'range' ? v8v10Percent2 : 0;
 
-  const usedByBase1 = base1_kg;
-  const usedByV4v6_1 = v4v6_1_kg;
-  const usedByV4v6_2 = v4v6_2_kg;
-
-  const remaining_after_base1 = targetSplitTotal - usedByBase1;
-  const remaining_after_v4v6_1 = remaining_after_base1 - usedByV4v6_1;
-
-  const v8v10_1_auto = remaining_after_v4v6_1 > 0
-    ? Number(((remaining_after_v4v6_1 / targetSplitTotal) * 100).toFixed(1))
+  const v8v10_1_kg_direct = Number(Math.max(0, targetSplitTotal - base1_kg - v4v6_1_kg).toFixed(2));
+  const v8v10_2_kg_direct = (v8v10_2 > 0 && v4v6_2 > 0)
+    ? Number(Math.max(0, targetSplitTotal - base2_kg - v4v6_2_kg).toFixed(2))
     : 0;
 
-  const remaining_after_v4v6_both = remaining_after_base1 - usedByV4v6_1 - usedByV4v6_2;
-  const v8v10_2_auto = (v8v10_2 > 0 && v4v6_2 > 0)
-    ? Number(((remaining_after_v4v6_both / targetSplitTotal) * 100).toFixed(1))
+  const v8v10_1_auto = targetSplitTotal > 0
+    ? Number(((v8v10_1_kg_direct / targetSplitTotal) * 100).toFixed(1))
+    : 0;
+  const v8v10_2_auto = (v8v10_2 > 0 && v4v6_2 > 0 && targetSplitTotal > 0)
+    ? Number(((v8v10_2_kg_direct / targetSplitTotal) * 100).toFixed(1))
     : 0;
 
   const v8v10_1_final = v8v10_1 > 0 ? v8v10_1 : v8v10_1_auto;
   const v8v10_2_final = v8v10_2 > 0 ? v8v10_2 : v8v10_2_auto;
 
-  const v8v10_1_kg = Number((targetSplitTotal * (v8v10_1_final / 100)).toFixed(2));
-  const v8v10_2_kg = v8v10_2_final > 0 ? Number((targetSplitTotal * (v8v10_2_final / 100)).toFixed(2)) : 0;
+  const v8v10_1_kg = v8v10_1 > 0
+    ? Number((targetSplitTotal * (v8v10_1_final / 100)).toFixed(2))
+    : v8v10_1_kg_direct;
+  const v8v10_2_kg = v8v10_2 > 0
+    ? Number((targetSplitTotal * (v8v10_2_final / 100)).toFixed(2))
+    : v8v10_2_kg_direct;
 
   const v4v6_50 = Number((targetSplitTotal * 0.50).toFixed(2));
   const v4v6_60 = Number((targetSplitTotal * 0.60).toFixed(2));

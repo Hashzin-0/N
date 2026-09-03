@@ -340,10 +340,11 @@ export function useGeminiLiveAgent(simContext: SimulatorContext) {
             model: 'models/gemini-3.1-flash-live-preview',
             generationConfig: {
               responseModalities: ['AUDIO'],
+              temperature: 0,
               speechConfig: {
                 voiceConfig: {
                   prebuiltVoiceConfig: {
-                    voiceName: 'Puck', // Standard voice Puck
+                    voiceName: 'Puck',
                   },
                 },
               },
@@ -548,6 +549,20 @@ Sempre responda de forma concisa e direta, pois se trata de uma conversa falada 
                 ],
               },
             ],
+            realtimeInputConfig: {
+              automaticActivityDetection: {
+                disabled: false,
+                silenceDurationMs: 1500,
+                prefixPaddingMs: 400,
+                endOfSpeechSensitivity: 'END_SENSITIVITY_UNSPECIFIED',
+                startOfSpeechSensitivity: 'START_SENSITIVITY_HIGH',
+              },
+              activityHandling: 'START_OF_ACTIVITY_INTERRUPTS',
+              turnCoverage: 'TURN_INCLUDES_ONLY_ACTIVITY',
+            },
+            sessionResumption: {
+              transparent: true,
+            },
           },
         };
 
@@ -577,12 +592,10 @@ Sempre responda de forma concisa e direta, pois se trata de uma conversa falada 
                   ws.send(
                     JSON.stringify({
                       realtimeInput: {
-                        mediaChunks: [
-                          {
-                            mimeType: 'audio/pcm;rate=16000',
-                            data: base64Pcm,
-                          },
-                        ],
+                        audio: {
+                          mimeType: 'audio/pcm;rate=16000',
+                          data: base64Pcm,
+                        },
                       },
                     })
                   );
