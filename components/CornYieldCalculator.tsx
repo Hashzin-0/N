@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import CornEar3DVisualizer from './CornEar3DVisualizer';
 import CornAlert3D from './CornAlert3D';
+import Elastic3DSlider from './Elastic3DSlider';
 import Input3D from './Input3D';
 import Button3D from './Button3D';
 import { useTheme } from './ThemeProvider';
