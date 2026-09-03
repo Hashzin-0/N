@@ -11,7 +11,6 @@ import {
   ChevronRight, 
   Percent, 
   Scale, 
-  FileSpreadsheet, 
   Printer, 
   TrendingUp, 
   Sprout, 
@@ -31,6 +30,7 @@ import VoiceAssistantHUD from '@/components/VoiceAssistantHUD';
 import CalculationIsland from '@/components/CalculationIsland';
 import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
 import DarkMode3DToggle from '@/components/DarkMode3DToggle';
+import SectionNav3D from '@/components/SectionNav3D';
 import CornYieldCalculator from '@/components/CornYieldCalculator';
 import CornAlert3D, { AgronomicValidationIssue } from '@/components/CornAlert3D';
 import Input3D from '@/components/Input3D';
@@ -58,73 +58,24 @@ interface Preset {
   v8v10Percent2: number; // 2nd % value for range (0 = single value)
 }
 
-const PRESETS: Preset[] = [
-  {
-    id: 'padrao',
-    name: 'Exemplo Agronômico Padrão',
-    description: 'Parâmetros médios recomendados para solos de fertilidade média.',
-    yieldGoal: 150,
-    nRequirementPerBag: 1.35,
-    mosNContribution: 30,
-    soyNContribution: 20,
-    efficiency: 0.80,
-    baseDose: 30,
-    baseDose2: 0,
-    v4v6Percent: 50,
-    v4v6Percent2: 0,
-    v8v10Percent: 30,
-    v8v10Percent2: 0,
-  },
-  {
-    id: 'alta_produtividade',
-    name: 'Alta Produtividade',
-    description: 'Para metas de produtividade desafiadoras e alta tecnologia.',
-    yieldGoal: 180,
-    nRequirementPerBag: 1.40,
-    mosNContribution: 25,
-    soyNContribution: 25,
-    efficiency: 0.80,
-    baseDose: 35,
-    baseDose2: 45,
-    v4v6Percent: 50,
-    v4v6Percent2: 60,
-    v8v10Percent: 20,
-    v8v10Percent2: 30,
-  },
-  {
-    id: 'solo_arenoso',
-    name: 'Solo Arenoso / Baixa M.O.',
-    description: 'Solos com menor teor de matéria orgânica seca e maior risco de lixiviação.',
-    yieldGoal: 120,
-    nRequirementPerBag: 1.30,
-    mosNContribution: 15,
-    soyNContribution: 15,
-    efficiency: 0.80,
-    baseDose: 30,
-    baseDose2: 0,
-    v4v6Percent: 60,
-    v4v6Percent2: 0,
-    v8v10Percent: 20,
-    v8v10Percent2: 0,
-  }
-];
+const PRESETS: Preset[] = [];
 
 export default function Home() {
   const { isDark } = useTheme();
 
   // Input states
-  const [yieldGoal, setYieldGoal] = useState<number>(150);
-  const [nRequirementPerBag, setNRequirementPerBag] = useState<number>(1.35);
-  const [mosNContribution, setMosNContribution] = useState<number>(30);
-  const [soyNContribution, setSoyNContribution] = useState<number>(20);
-  const [efficiency, setEfficiency] = useState<number>(80);
+  const [yieldGoal, setYieldGoal] = useState<number>(0);
+  const [nRequirementPerBag, setNRequirementPerBag] = useState<number>(0);
+  const [mosNContribution, setMosNContribution] = useState<number>(0);
+  const [soyNContribution, setSoyNContribution] = useState<number>(0);
+  const [efficiency, setEfficiency] = useState<number>(0);
   
   // Custom interactive split parameters
-  const [baseDose, setBaseDose] = useState<number>(30);
+  const [baseDose, setBaseDose] = useState<number>(0);
   const [baseDose2, setBaseDose2] = useState<number>(0); // 0 = single value mode
-  const [v4v6Percent, setV4v6Percent] = useState<number>(50);
+  const [v4v6Percent, setV4v6Percent] = useState<number>(0);
   const [v4v6Percent2, setV4v6Percent2] = useState<number>(0); // 0 = single value mode
-  const [v8v10Percent, setV8v10Percent] = useState<number>(30);
+  const [v8v10Percent, setV8v10Percent] = useState<number>(0);
   const [v8v10Percent2, setV8v10Percent2] = useState<number>(0); // 0 = single value mode
   
   // Toggle for 1 vs 2 values per application
@@ -139,7 +90,7 @@ export default function Home() {
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   // Active scenario preset
-  const [activePreset, setActivePreset] = useState<string>('padrao');
+  const [activePreset, setActivePreset] = useState<string>('personalizado');
 
   // SQLike Local Storage states
   const savedRecords = useCalculationRecords();
@@ -454,7 +405,23 @@ export default function Home() {
             </button>
             <button
               id="btn_reset"
-              onClick={() => handleLoadPreset(PRESETS[0])}
+              onClick={() => {
+                setYieldGoal(0);
+                setNRequirementPerBag(0);
+                setMosNContribution(0);
+                setSoyNContribution(0);
+                setEfficiency(0);
+                setBaseDose(0);
+                setBaseDose2(0);
+                setBaseDoseMode('single');
+                setV4v6Percent(0);
+                setV4v6Percent2(0);
+                setV4v6Mode('single');
+                setV8v10Percent(0);
+                setV8v10Percent2(0);
+                setV8v10Mode('single');
+                setActivePreset('personalizado');
+              }}
               className="flex items-center justify-center p-2.5 bg-white/10 dark:bg-white/5 hover:bg-white/20 text-white rounded-xl border border-white/20 dark:border-white/10 transition-all active:scale-95"
               title="Resetar para valores padrão"
             >
@@ -465,7 +432,7 @@ export default function Home() {
 
         {/* TOP NAVIGATION / MODE SWITCHER BAR */}
         <nav id="app_mode_nav" className="bg-white dark:bg-[#1C201A] p-2 rounded-2xl border border-[#E5E2D9] dark:border-[#2C3328] shadow-sm flex flex-wrap gap-2 items-center justify-between">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             <button
               id="tab_btn_nitrogen"
               onClick={() => setActiveTab('calculadora')}
@@ -504,9 +471,13 @@ export default function Home() {
               <span>Comparador de Cenários ({savedRecords.length})</span>
             </button>
           </div>
-          <div className="hidden sm:flex items-center gap-2 px-3 text-xs text-[#8C897E] dark:text-[#9EA399]">
-            <span className="inline-block w-2 h-2 rounded-full bg-[#2E6F40] animate-pulse" />
-            <span>Puck Live Assistant Ativo</span>
+          <div className="flex items-center gap-3">
+            {/* 3D Section Navigation Indicator */}
+            <SectionNav3D activeTab={activeTab} />
+            <div className="hidden sm:flex items-center gap-2 px-3 text-xs text-[#8C897E] dark:text-[#9EA399]">
+              <span className="inline-block w-2 h-2 rounded-full bg-[#2E6F40] animate-pulse" />
+              <span>Puck Live Assistant Ativo</span>
+            </div>
           </div>
         </nav>
 
@@ -1390,95 +1361,9 @@ export default function Home() {
 
         {/* DETAILED FORMULA AND MATHEMATICAL EXPLANATIONS PANEL */}
         <section id="detailed_math_panel" className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-6 shadow-sm transition-colors">
-          <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-4 mb-6">
-            <h3 className="text-sm font-bold text-[#5A5A40] dark:text-[#E8E6DF] uppercase tracking-wider flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> Memória de Cálculo Detalhada (Passo a Passo)
-            </h3>
-            <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-1">
-              Confira como o algoritmo calculou cada um dos resultados passo a passo
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm text-[#3D3D3D] dark:text-[#E8E6DF]">
-            
-            {/* Step 1: Extração */}
-            <div className="space-y-2 bg-[#F9F8F6] dark:bg-[#151813] p-4 rounded-xl border border-[#E5E2D9] dark:border-[#2C3328]">
-              <div className="flex items-center gap-1.5 text-[#5A5A40] dark:text-[#9CB386] font-bold">
-                <span className="bg-[#5A5A40] dark:bg-[#384332] text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">1</span>
-                Extração pela Cultura
-              </div>
-              <p className="text-xs text-[#8C897E] dark:text-[#9EA399]">
-                N total extraído para a produtividade planejada.
-              </p>
-              <div className="bg-white dark:bg-[#232821] p-2.5 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328] font-mono text-[11px] leading-relaxed mt-1 text-[#3D3D3D] dark:text-[#E8E6DF]">
-                <div className="text-[#8C897E] dark:text-[#9EA399] font-semibold mb-1">FÓRMULA:</div>
-                <div className="font-bold text-[#5A5A40] dark:text-[#9CB386]">E = sc/ha × N_saca</div>
-                <div className="border-t border-[#F0EDE5] dark:border-[#2C3328] my-1 pt-1 text-[#8D6E63] dark:text-[#D4A373] font-bold">
-                  {yieldGoal} × {nRequirementPerBag.toFixed(2)} = {calculations.totalExtraction.toFixed(2)} kg N/ha
-                </div>
-              </div>
-            </div>
-
-            {/* Step 2: N Liquido */}
-            <div className="space-y-2 bg-[#F9F8F6] dark:bg-[#151813] p-4 rounded-xl border border-[#E5E2D9] dark:border-[#2C3328]">
-              <div className="flex items-center gap-1.5 text-[#5A5A40] dark:text-[#9CB386] font-bold">
-                <span className="bg-[#5A5A40] dark:bg-[#384332] text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">2</span>
-                Necessidade Líquida
-              </div>
-              <p className="text-xs text-[#8C897E] dark:text-[#9EA399]">
-                Deduz as contribuições da M.O. e crédito de nitrogênio da soja.
-              </p>
-              <div className="bg-white dark:bg-[#232821] p-2.5 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328] font-mono text-[11px] leading-relaxed mt-1 text-[#3D3D3D] dark:text-[#E8E6DF]">
-                <div className="text-[#8C897E] dark:text-[#9EA399] font-semibold mb-1">FÓRMULA:</div>
-                <div className="font-bold text-[#5A5A40] dark:text-[#9CB386]">N_Liq = E - MOS - Soja</div>
-                <div className="border-t border-[#F0EDE5] dark:border-[#2C3328] my-1 pt-1 text-[#8D6E63] dark:text-[#D4A373] font-bold">
-                  {calculations.totalExtraction.toFixed(2)} - {mosNContribution} - {soyNContribution} = {calculations.liquidNeed.toFixed(2)} kg N/ha
-                </div>
-              </div>
-            </div>
-
-            {/* Step 3: Eficiência */}
-            <div className="space-y-2 bg-[#F9F8F6] dark:bg-[#151813] p-4 rounded-xl border border-[#E5E2D9] dark:border-[#2C3328]">
-              <div className="flex items-center gap-1.5 text-[#5A5A40] dark:text-[#9CB386] font-bold">
-                <span className="bg-[#5A5A40] dark:bg-[#384332] text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">3</span>
-                Ajuste de Perdas
-              </div>
-              <p className="text-xs text-[#8C897E] dark:text-[#9EA399]">
-                Dose corrigida considerando a eficiência de {efficiency}%.
-              </p>
-              <div className="bg-white dark:bg-[#232821] p-2.5 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328] font-mono text-[11px] leading-relaxed mt-1 text-[#3D3D3D] dark:text-[#E8E6DF]">
-                <div className="text-[#8C897E] dark:text-[#9EA399] font-semibold mb-1">FÓRMULA:</div>
-                <div className="font-bold text-[#5A5A40] dark:text-[#9CB386]">Dose = N_Liq ÷ Efic</div>
-                <div className="border-t border-[#F0EDE5] dark:border-[#2C3328] my-1 pt-1 text-[#8D6E63] dark:text-[#D4A373] font-bold">
-                  {calculations.liquidNeed.toFixed(2)} ÷ {efficiency / 100} = {calculations.recommendedDose.toFixed(2)} kg N/ha
-                </div>
-              </div>
-            </div>
-
-            {/* Step 4: Parcelamento */}
-            <div className="space-y-2 bg-[#F9F8F6] dark:bg-[#151813] p-4 rounded-xl border border-[#E5E2D9] dark:border-[#2C3328]">
-              <div className="flex items-center gap-1.5 text-[#5A5A40] dark:text-[#9CB386] font-bold">
-                <span className="bg-[#5A5A40] dark:bg-[#384332] text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">4</span>
-                Valores de Parcelamento
-              </div>
-              <p className="text-xs text-[#8C897E] dark:text-[#9EA399]">
-                Divisão baseada na meta escolhida ({calculations.targetSplitTotal.toFixed(2)} kg N/ha).
-              </p>
-              <div className="bg-white dark:bg-[#232821] p-2.5 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328] font-mono text-[11px] leading-relaxed mt-1 text-[#3D3D3D] dark:text-[#E8E6DF]">
-                <div className="text-[#8C897E] dark:text-[#9EA399] font-semibold mb-1">APLICAÇÕES:</div>
-                <div>Base: {calculations.base1_kg} kg/ha</div>
-                <div>V4-V6 ({calculations.v4v6_1}%): {calculations.v4v6_1_kg} kg/ha</div>
-                <div>V8-V10 ({calculations.v8v10_1_final}%): {calculations.v8v10_1_kg} kg/ha</div>
-                <div className="border-t border-[#F0EDE5] dark:border-[#2C3328] my-1 pt-1 text-[#8D6E63] dark:text-[#D4A373] font-bold">
-                  Soma: {calculations.sumOfSplits} kg N/ha
-                </div>
-              </div>
-            </div>
-
-          </div>
           
           {/* DETAILED EXPLANATION CORNER */}
-          <div className="mt-6 bg-[#FDFBF7] dark:bg-[#151813] border border-[#E5E2D9] dark:border-[#2C3328] p-5 rounded-xl text-xs text-[#3D3D3D] dark:text-[#E8E6DF] leading-relaxed space-y-2">
+          <div className="bg-[#FDFBF7] dark:bg-[#151813] border border-[#E5E2D9] dark:border-[#2C3328] p-5 rounded-xl text-xs text-[#3D3D3D] dark:text-[#E8E6DF] leading-relaxed space-y-2">
             <h4 className="font-bold text-[#5A5A40] dark:text-[#9CB386] flex items-center gap-1.5 text-sm">
               <Info className="h-4 w-4 text-[#5A5A40] dark:text-[#9CB386]" /> Resumo de Respostas e Conferência (Pronto para Copiar)
             </h4>

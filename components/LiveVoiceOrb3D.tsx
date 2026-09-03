@@ -1,7 +1,19 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+
+let webglAvailable: boolean | null = null;
+function isWebGLAvailable(): boolean {
+  if (webglAvailable !== null) return webglAvailable;
+  try {
+    const canvas = document.createElement('canvas');
+    webglAvailable = !!(canvas.getContext('webgl') || canvas.getContext('experimental-webgl'));
+  } catch {
+    webglAvailable = false;
+  }
+  return webglAvailable;
+}
 
 interface LiveVoiceOrb3DProps {
   status: 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking' | 'error';
@@ -19,6 +31,7 @@ export default function LiveVoiceOrb3D({
   className = '',
   size = 180,
 }: LiveVoiceOrb3DProps) {
+  const [contextLost, setContextLost] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -73,9 +86,11 @@ export default function LiveVoiceOrb3D({
     }
   }, [status]);
 
+  const webglSupported = typeof window !== 'undefined' && isWebGLAvailable();
+
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || !webglSupported) return;
 
     const width = size;
     const height = size;
@@ -101,6 +116,11 @@ export default function LiveVoiceOrb3D({
       return;
     }
 
+    if (!renderer.getContext()) {
+      renderer.dispose();
+      return;
+    }
+
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -109,6 +129,19 @@ export default function LiveVoiceOrb3D({
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
+
+    // WebGL context loss/restore handlers
+    const onContextLost = (e: Event) => {
+      e.preventDefault();
+      setContextLost(true);
+    };
+
+    const onContextRestored = () => {
+      setContextLost(false);
+    };
+
+    renderer.domElement.addEventListener('webglcontextlost', onContextLost);
+    renderer.domElement.addEventListener('webglcontextrestored', onContextRestored);
 
     // Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
@@ -338,12 +371,40 @@ export default function LiveVoiceOrb3D({
       container.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+      renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
+      renderer.domElement.removeEventListener('webglcontextrestored', onContextRestored);
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [size]);
+  }, [size, webglSupported]);
+
+  if (!webglSupported || contextLost) {
+    const glowColor =
+      status === 'speaking' ? '#2E6F40' :
+      status === 'listening' ? '#D4A373' :
+      status === 'thinking' ? '#319795' :
+      status === 'error' ? '#E53E3E' :
+      '#5A5A40';
+
+    return (
+      <div
+        className={`relative select-none flex items-center justify-center ${className}`}
+        style={{ width: size, height: size }}
+      >
+        <div
+          className="rounded-full animate-pulse"
+          style={{
+            width: size * 0.5,
+            height: size * 0.5,
+            backgroundColor: glowColor,
+            boxShadow: `0 0 ${size * 0.25}px ${size * 0.12}px ${glowColor}60`,
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div

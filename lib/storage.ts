@@ -27,72 +27,7 @@ export interface CalculationRecord {
 const STORAGE_KEY = 'agronomic_n_pro_calculations_v1';
 const STORAGE_EVENT = 'agronomic_db_update';
 
-// Initial preloaded benchmark scenarios ordered by created_at desc
-export const DEFAULT_SAVED_SCENARIOS: CalculationRecord[] = [
-  {
-    id: 'sc-seed-2',
-    name: 'Cenário Alta Produtividade (180 sc/ha)',
-    created_at: '2026-09-02T14:30:00.000Z',
-    yield_goal: 180,
-    n_req_per_bag: 1.40,
-    mos_n: 25,
-    soy_n: 25,
-    efficiency: 80,
-    base_dose: 40,
-    v4v6_percent: 55,
-    v8v10_percent: 25,
-    split_base: 'dose_perdas',
-    total_extraction: 252.0,
-    liquid_need: 202.0,
-    recommended_dose: 252.5,
-    selected_v4v6_val: 138.88,
-    selected_v8v10_val: 63.13,
-    sum_of_splits: 242.01,
-    notes: 'Híbrido de alto investimento e espaçamento adensado.',
-  },
-  {
-    id: 'sc-seed-1',
-    name: 'Cenário Médio (150 sc/ha)',
-    created_at: '2026-09-02T11:00:00.000Z',
-    yield_goal: 150,
-    n_req_per_bag: 1.35,
-    mos_n: 30,
-    soy_n: 20,
-    efficiency: 80,
-    base_dose: 30,
-    v4v6_percent: 50,
-    v8v10_percent: 30,
-    split_base: 'dose_perdas',
-    total_extraction: 202.5,
-    liquid_need: 152.5,
-    recommended_dose: 190.63,
-    selected_v4v6_val: 95.31,
-    selected_v8v10_val: 57.19,
-    sum_of_splits: 182.5,
-    notes: 'Fertilidade padrão, safra verão pós-soja.',
-  },
-  {
-    id: 'sc-seed-3',
-    name: 'Cenário Econômico / Baixa M.O. (120 sc/ha)',
-    created_at: '2026-09-02T09:15:00.000Z',
-    yield_goal: 120,
-    n_req_per_bag: 1.30,
-    mos_n: 15,
-    soy_n: 15,
-    efficiency: 80,
-    base_dose: 30,
-    v4v6_percent: 60,
-    v8v10_percent: 20,
-    split_base: 'dose_perdas',
-    total_extraction: 156.0,
-    liquid_need: 126.0,
-    recommended_dose: 157.5,
-    selected_v4v6_val: 94.5,
-    selected_v8v10_val: 31.5,
-    sum_of_splits: 156.0,
-    notes: 'Solo mais arenoso com menor reserva natural.',
-  },
-];
+export const DEFAULT_SAVED_SCENARIOS: CalculationRecord[] = [];
 
 export interface QueryOptions {
   orderBy?: 'created_at' | 'yield_goal' | 'recommended_dose' | 'name';
@@ -172,8 +107,7 @@ export const SQLikeCalculationDB = {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) {
-          records = [...DEFAULT_SAVED_SCENARIOS];
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+          records = [];
         } else {
           const parsed = JSON.parse(raw);
           records = Array.isArray(parsed) ? parsed : [...DEFAULT_SAVED_SCENARIOS];

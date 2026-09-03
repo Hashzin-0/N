@@ -40,56 +40,19 @@ interface YieldPreset {
   quebraDecimal: number;
 }
 
-const YIELD_PRESETS: YieldPreset[] = [
-  {
-    id: 'questao_exemplo',
-    name: 'Exercício da Questão (Típico)',
-    description: 'Valores clássicos de provas e exercícios agronômicos.',
-    plantasPorMetro: 4.0,
-    espacamentoLinhas: 0.50,
-    fileiras: 16,
-    graosPorFileira: 35,
-    espigas: 1.0,
-    pmg: 300,
-    quebraDecimal: 0.05,
-  },
-  {
-    id: 'safra_verao',
-    name: 'Safra Verão Alto Investimento',
-    description: 'Espaçamento 0.45m, espigas graúdas e híbridos modernos.',
-    plantasPorMetro: 3.8,
-    espacamentoLinhas: 0.45,
-    fileiras: 18,
-    graosPorFileira: 38,
-    espigas: 1.0,
-    pmg: 340,
-    quebraDecimal: 0.03,
-  },
-  {
-    id: 'safrinha',
-    name: 'Safrinha Centro-Oeste / Cerrado',
-    description: 'Condição de menor umidade no enchimento de grãos.',
-    plantasPorMetro: 3.2,
-    espacamentoLinhas: 0.50,
-    fileiras: 14,
-    graosPorFileira: 30,
-    espigas: 0.95,
-    pmg: 280,
-    quebraDecimal: 0.08,
-  },
-];
+const YIELD_PRESETS: YieldPreset[] = [];
 
 export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalculatorProps) {
   const { isDark } = useTheme();
 
-  const [plantasPorMetro, setPlantasPorMetro] = useState<number>(4.0);
-  const [espacamentoLinhas, setEspacamentoLinhas] = useState<number>(0.50);
-  const [fileiras, setFileiras] = useState<number>(16);
-  const [graosPorFileira, setGraosPorFileira] = useState<number>(35);
-  const [espigas, setEspigas] = useState<number>(1.0);
-  const [pmg, setPmg] = useState<number>(300);
-  const [quebraDecimal, setQuebraDecimal] = useState<number>(0.05);
-  const [activePreset, setActivePreset] = useState<string>('questao_exemplo');
+  const [plantasPorMetro, setPlantasPorMetro] = useState<number>(0);
+  const [espacamentoLinhas, setEspacamentoLinhas] = useState<number>(0);
+  const [fileiras, setFileiras] = useState<number>(0);
+  const [graosPorFileira, setGraosPorFileira] = useState<number>(0);
+  const [espigas, setEspigas] = useState<number>(0);
+  const [pmg, setPmg] = useState<number>(0);
+  const [quebraDecimal, setQuebraDecimal] = useState<number>(0);
+  const [activePreset, setActivePreset] = useState<string>('personalizado');
   const [showFormulaDetails, setShowFormulaDetails] = useState<boolean>(true);
   const [appliedToast, setAppliedToast] = useState<string | null>(null);
   const [showCalcYield, setShowCalcYield] = useState<boolean>(false);
@@ -237,7 +200,14 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
   };
 
   const handleFixAll = () => {
-    loadPreset(YIELD_PRESETS[0]);
+    setPlantasPorMetro(4.0);
+    setEspacamentoLinhas(0.50);
+    setFileiras(16);
+    setGraosPorFileira(35);
+    setEspigas(1.0);
+    setPmg(300);
+    setQuebraDecimal(0.05);
+    setActivePreset('personalizado');
   };
 
   const handleFixField = (field: string, val: number) => {
@@ -274,6 +244,7 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
       
       {/* HEADER CARD */}
       <motion.div
+        id="corn_yield_header"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
@@ -346,18 +317,21 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
       </motion.div>
 
       {/* 3D ALERT: AGRONOMIC VALIDATION */}
-      <CornAlert3D
-        issues={agronomicIssues}
-        onFixAll={handleFixAll}
-        onFixField={handleFixField}
-        isDark={isDark}
-      />
+      <div id="corn_yield_alerts">
+        <CornAlert3D
+          issues={agronomicIssues}
+          onFixAll={handleFixAll}
+          onFixField={handleFixField}
+          isDark={isDark}
+        />
+      </div>
 
       {/* TWO COLUMN GRID: INPUTS & 3D / RESULTS */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* LEFT COLUMN: PARAMETER INPUTS (7 COLS) */}
         <motion.div
+          id="corn_yield_params"
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ type: 'spring', stiffness: 250, damping: 30, delay: 0.1 }}
@@ -374,7 +348,16 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
               variant="ghost"
               size="sm"
               isDark={isDark}
-              onClick={() => loadPreset(YIELD_PRESETS[0])}
+              onClick={() => {
+                setPlantasPorMetro(0);
+                setEspacamentoLinhas(0);
+                setFileiras(0);
+                setGraosPorFileira(0);
+                setEspigas(0);
+                setPmg(0);
+                setQuebraDecimal(0);
+                setActivePreset('personalizado');
+              }}
               icon={<RotateCcw className="h-3 w-3" />}
             >
               Resetar
@@ -659,14 +642,16 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
         >
           
           {/* 3D CORN EAR VISUALIZER */}
-          <CornEar3DVisualizer
-            rows={fileiras}
-            kernelsPerRow={graosPorFileira}
-            totalKernels={quantidadeGraos}
-          />
+          <div id="corn_yield_visual">
+            <CornEar3DVisualizer
+              rows={fileiras}
+              kernelsPerRow={graosPorFileira}
+              totalKernels={quantidadeGraos}
+            />
+          </div>
 
           {/* RESULTS CARD */}
-          <div className={`calc-island-scoop p-6 rounded-3xl border shadow-md space-y-5 transition-colors relative ${
+          <div id="corn_yield_results" className={`calc-island-scoop p-6 rounded-3xl border shadow-md space-y-5 transition-colors relative ${
             isDark ? 'bg-[#1F221B] border-[#373C2C]' : 'bg-white border-[#E5E2D9]'
           }`}>
             <CalculationIsland
