@@ -14,11 +14,13 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import CornEar3DVisualizer from './CornEar3DVisualizer';
+import CornAlert3D from './CornAlert3D';
 import Input3D from './Input3D';
 import Button3D from './Button3D';
 import { useTheme } from './ThemeProvider';
 import CornYieldResultCard from './metrics/CornYieldResultCard';
 import { useAnimationLock } from '@/lib/useAnimationLock';
+import type { AgronomicValidationIssue } from './CornAlert3D';
 
 interface CornYieldCalculatorProps {
   onApplyYieldGoal?: (scHa: number) => void;
