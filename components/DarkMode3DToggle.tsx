@@ -32,120 +32,127 @@ export default function DarkMode3DToggle() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const width = 48;
-    const height = 48;
+    let renderer: THREE.WebGLRenderer | null = null;
+    let clock: THREE.Clock | null = null;
 
-    const scene = new THREE.Scene();
-    sceneRef.current = scene;
+    try {
+      const width = 48;
+      const height = 48;
 
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.z = 2.8;
-    cameraRef.current = camera;
+      const scene = new THREE.Scene();
+      sceneRef.current = scene;
 
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      alpha: true,
-      antialias: true,
-      powerPreference: 'high-performance',
-    });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    rendererRef.current = renderer;
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+      camera.position.z = 2.8;
+      cameraRef.current = camera;
 
-    // Ambient and directional lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-    scene.add(ambientLight);
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        alpha: true,
+        antialias: true,
+        powerPreference: 'high-performance',
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      rendererRef.current = renderer;
 
-    const dirLight = new THREE.DirectionalLight(0xfff5e6, 2.0);
-    dirLight.position.set(2, 2, 3);
-    scene.add(dirLight);
+      // Handle context loss
+      canvas.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault();
+        if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
+      }, { once: true });
 
-    const dirLightBack = new THREE.DirectionalLight(0xa5c9eb, 1.2);
-    dirLightBack.position.set(-2, -1, -3);
-    scene.add(dirLightBack);
+      // Ambient and directional lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+      scene.add(ambientLight);
 
-    // Group for the 3D celestial body
-    const celestialGroup = new THREE.Group();
-    sphereGroupRef.current = celestialGroup;
-    scene.add(celestialGroup);
+      const dirLight = new THREE.DirectionalLight(0xfff5e6, 2.0);
+      dirLight.position.set(2, 2, 3);
+      scene.add(dirLight);
 
-    // SUN HEMISPHERE (Front facing in light mode, z > 0)
-    const sunGeo = new THREE.SphereGeometry(1, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-    const sunMat = new THREE.MeshStandardMaterial({
-      color: 0xf59e0b, // Amber Sun
-      emissive: 0xd97706,
-      emissiveIntensity: 0.5,
-      roughness: 0.3,
-      metalness: 0.2,
-    });
-    const sunMesh = new THREE.Mesh(sunGeo, sunMat);
-    sunMesh.rotation.x = Math.PI / 2;
-    celestialGroup.add(sunMesh);
+      const dirLightBack = new THREE.DirectionalLight(0xa5c9eb, 1.2);
+      dirLightBack.position.set(-2, -1, -3);
+      scene.add(dirLightBack);
 
-    // MOON HEMISPHERE (Back facing in light mode, z < 0)
-    const moonGeo = new THREE.SphereGeometry(1, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-    const moonMat = new THREE.MeshStandardMaterial({
-      color: 0xd1d5db, // Silver Moon
-      emissive: 0x475569,
-      emissiveIntensity: 0.4,
-      roughness: 0.8,
-      metalness: 0.1,
-    });
-    const moonMesh = new THREE.Mesh(moonGeo, moonMat);
-    moonMesh.rotation.x = -Math.PI / 2;
-    celestialGroup.add(moonMesh);
+      // Group for the 3D celestial body
+      const celestialGroup = new THREE.Group();
+      sphereGroupRef.current = celestialGroup;
+      scene.add(celestialGroup);
 
-    // 3D Orbital Corona Ring
-    const ringGeo = new THREE.TorusGeometry(1.3, 0.05, 8, 36);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: isDarkRef.current ? 0x93c5fd : 0xfbbf24,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.5,
-    });
-    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-    ringMesh.rotation.x = Math.PI / 3;
-    celestialGroup.add(ringMesh);
+      // SUN HEMISPHERE (Front facing in light mode, z > 0)
+      const sunGeo = new THREE.SphereGeometry(1, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+      const sunMat = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b, // Amber Sun
+        emissive: 0xd97706,
+        emissiveIntensity: 0.5,
+        roughness: 0.3,
+        metalness: 0.2,
+      });
+      const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+      sunMesh.rotation.x = Math.PI / 2;
+      celestialGroup.add(sunMesh);
 
-    // Initial position
-    currentRotationY.current = isDarkRef.current ? Math.PI : 0;
-    celestialGroup.rotation.y = currentRotationY.current;
+      // MOON HEMISPHERE (Back facing in light mode, z < 0)
+      const moonGeo = new THREE.SphereGeometry(1, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+      const moonMat = new THREE.MeshStandardMaterial({
+        color: 0xd1d5db, // Silver Moon
+        emissive: 0x475569,
+        emissiveIntensity: 0.4,
+        roughness: 0.8,
+        metalness: 0.1,
+      });
+      const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+      moonMesh.rotation.x = -Math.PI / 2;
+      celestialGroup.add(moonMesh);
 
-    // Animation Loop
-    let clock = new THREE.Clock();
-    const animate = () => {
-      animFrameId.current = requestAnimationFrame(animate);
-      const delta = clock.getDelta();
-      const elapsed = clock.getElapsedTime();
+      // 3D Orbital Corona Ring
+      const ringGeo = new THREE.TorusGeometry(1.3, 0.05, 8, 36);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: isDarkRef.current ? 0x93c5fd : 0xfbbf24,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.5,
+      });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = Math.PI / 3;
+      celestialGroup.add(ringMesh);
 
-      // Smooth interpolation to target Y rotation (day vs night flip)
-      const diff = targetRotationY.current - currentRotationY.current;
-      currentRotationY.current += diff * 0.12;
+      // Initial position
+      currentRotationY.current = isDarkRef.current ? Math.PI : 0;
       celestialGroup.rotation.y = currentRotationY.current;
 
-      // Mouse tilt interaction
-      const targetTiltX = mouseRef.current.y * 0.4;
-      const targetTiltZ = -mouseRef.current.x * 0.4;
-      celestialGroup.rotation.x += (targetTiltX - celestialGroup.rotation.x) * 0.1;
-      celestialGroup.rotation.z += (targetTiltZ - celestialGroup.rotation.z) * 0.1;
+      // Animation Loop
+      clock = new THREE.Clock();
+      const animate = () => {
+        animFrameId.current = requestAnimationFrame(animate);
+        const delta = clock!.getDelta();
+        const elapsed = clock!.getElapsedTime();
 
-      // Gentle wobble & ring rotation
-      ringMesh.rotation.z += isHovered.current ? delta * 3 : delta * 0.8;
-      ringMat.color.setHex(isDarkRef.current ? 0x93c5fd : 0xfbbf24);
+        // Smooth interpolation to target Y rotation (day vs night flip)
+        const diff = targetRotationY.current - currentRotationY.current;
+        currentRotationY.current += diff * 0.12;
+        celestialGroup.rotation.y = currentRotationY.current;
 
-      renderer.render(scene, camera);
-    };
-    animate();
+        // Mouse tilt interaction
+        const targetTiltX = mouseRef.current.y * 0.4;
+        const targetTiltZ = -mouseRef.current.x * 0.4;
+        celestialGroup.rotation.x += (targetTiltX - celestialGroup.rotation.x) * 0.1;
+        celestialGroup.rotation.z += (targetTiltZ - celestialGroup.rotation.z) * 0.1;
+
+        // Gentle wobble & ring rotation
+        ringMesh.rotation.z += isHovered.current ? delta * 3 : delta * 0.8;
+        ringMat.color.setHex(isDarkRef.current ? 0x93c5fd : 0xfbbf24);
+
+        renderer!.render(scene, camera);
+      };
+      animate();
+    } catch {
+      // WebGL not available - component will render without 3D
+    }
 
     return () => {
       if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
-      renderer.dispose();
-      sunGeo.dispose();
-      sunMat.dispose();
-      moonGeo.dispose();
-      moonMat.dispose();
-      ringGeo.dispose();
-      ringMat.dispose();
+      renderer?.dispose();
     };
   }, []);
 

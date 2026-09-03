@@ -327,106 +327,113 @@ export default function Home() {
   });
 
   return (
-    <main id="main_container" className="min-h-screen bg-[#FDFBF7] dark:bg-[#121511] text-[#3D3D3D] dark:text-[#E8E6DF] antialiased py-8 px-4 sm:px-6 lg:px-8 font-sans transition-colors duration-300">
+    <main id="main_container" className="min-h-screen bg-[#FDFBF7] dark:bg-[#121511] text-[#3D3D3D] dark:text-[#E8E6DF] antialiased pt-[200px] pb-8 px-4 sm:px-6 lg:px-8 font-sans transition-colors duration-300">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* TOP BRANDING / HEADER - NATURAL TONES STYLE */}
-        <header id="app_header" className="bg-[#5A5A40] dark:bg-[#1E241B] text-white p-6 sm:p-8 rounded-3xl shadow-md border border-transparent dark:border-[#2D3528] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="bg-white/10 dark:bg-white/5 text-white p-2.5 rounded-2xl border border-white/20 dark:border-white/10">
-                <Sprout id="brand_icon" className="h-6 w-6 text-white" />
+        {/* TOP BRANDING / HEADER - FIXED HERO */}
+        <header id="app_header" className="fixed top-0 left-0 right-0 z-50 bg-[#5A5A40] dark:bg-[#1E241B] text-white px-4 sm:px-6 lg:px-8 pt-4 pb-0 shadow-lg border-b border-[#4A4A30] dark:border-[#2D3528] transition-all">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="bg-white/10 dark:bg-white/5 text-white p-2.5 rounded-2xl border border-white/20 dark:border-white/10">
+                  <Sprout id="brand_icon" className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 id="app_title" className="text-2xl sm:text-3xl font-serif italic font-bold tracking-tight text-white">
+                    Agronômica N-Pro
+                  </h1>
+                  <p id="app_subtitle" className="text-xs sm:text-sm text-white/90 dark:text-white/80 mt-1 font-medium">
+                    Calculadora de Adubação: Milho (Sucessão Soja) & Estimativa de Produtividade
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 id="app_title" className="text-2xl sm:text-3xl font-serif italic font-bold tracking-tight text-white">
-                  Agronômica N-Pro
-                </h1>
-                <p id="app_subtitle" className="text-xs sm:text-sm text-white/90 dark:text-white/80 mt-1 font-medium">
-                  Calculadora de Adubação: Milho (Sucessão Soja) & Estimativa de Produtividade
-                </p>
+            </div>
+            
+            <div className="flex items-center gap-2 self-stretch md:self-auto flex-wrap">
+              {/* 3D Dark Mode Toggle */}
+              <div className="flex items-center">
+                <DarkMode3DToggle />
               </div>
+
+              <button
+                id="btn_header_voice_agent"
+                onClick={() => {
+                  if (voiceAgent.state.isConnected) {
+                    voiceAgent.disconnect();
+                  } else {
+                    voiceAgent.connect();
+                  }
+                }}
+                className={`flex-1 md:flex-none flex items-center justify-center gap-2 font-bold py-2.5 px-4 rounded-xl transition-all text-sm active:scale-95 shadow-md ${
+                  voiceAgent.state.isConnected
+                    ? 'bg-[#2E6F40] text-white ring-2 ring-white/50'
+                    : 'bg-white dark:bg-[#2A3125] text-[#5A5A40] dark:text-[#E8E6DF] hover:bg-[#F9F8F6] dark:hover:bg-[#343D2F]'
+                }`}
+                title="Conversar por voz com Puck (Gemini Live API)"
+              >
+                <Mic className={`h-4 w-4 ${voiceAgent.state.isConnected ? 'animate-bounce text-white' : 'text-[#5A5A40] dark:text-[#C5D9B0]'}`} />
+                <span>{voiceAgent.state.isConnected ? 'Puck Conectado' : 'Falar com Puck'}</span>
+              </button>
+              <button
+                id="btn_open_save_modal"
+                onClick={() => setIsSaveModalOpen(true)}
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#D4A373] dark:bg-[#B38356] hover:bg-[#C19262] dark:hover:bg-[#C19262] text-white font-bold py-2.5 px-4 rounded-xl transition-all text-sm active:scale-95 shadow-md shadow-[#D4A37333]"
+                title="Salvar cálculo atual no banco local"
+              >
+                <BookmarkPlus className="h-4 w-4 text-white" />
+                Salvar Cenário
+              </button>
+              <button
+                id="btn_nav_comparator"
+                onClick={() => {
+                  setActiveTab('comparador');
+                  const el = document.getElementById('scenario_comparator_section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white/10 dark:bg-white/5 hover:bg-white/20 text-white font-semibold py-2.5 px-4 rounded-xl border border-white/20 dark:border-white/10 transition-all text-sm active:scale-95"
+                title="Visualizar e comparar cenários salvos"
+              >
+                <Columns className="h-4 w-4 text-white" />
+                Comparador ({savedRecords.length})
+              </button>
+              <button
+                id="btn_print"
+                onClick={handlePrint}
+                className="p-2.5 bg-white/10 dark:bg-white/5 hover:bg-white/20 text-white rounded-xl border border-white/20 dark:border-white/10 transition-all active:scale-95"
+                title="Imprimir Relatório"
+              >
+                <Printer className="h-4 w-4 text-white" />
+              </button>
+              <button
+                id="btn_reset"
+                onClick={() => {
+                  setYieldGoal(0);
+                  setNRequirementPerBag(0);
+                  setMosNContribution(0);
+                  setSoyNContribution(0);
+                  setEfficiency(0);
+                  setBaseDose(0);
+                  setBaseDose2(0);
+                  setBaseDoseMode('single');
+                  setV4v6Percent(0);
+                  setV4v6Percent2(0);
+                  setV4v6Mode('single');
+                  setV8v10Percent(0);
+                  setV8v10Percent2(0);
+                  setV8v10Mode('single');
+                  setActivePreset('personalizado');
+                }}
+                className="flex items-center justify-center p-2.5 bg-white/10 dark:bg-white/5 hover:bg-white/20 text-white rounded-xl border border-white/20 dark:border-white/10 transition-all active:scale-95"
+                title="Resetar para valores padrão"
+              >
+                <RotateCcw className="h-4 w-4 text-white" />
+              </button>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2 self-stretch md:self-auto flex-wrap">
-            {/* 3D Dark Mode Toggle */}
-            <div className="flex items-center">
-              <DarkMode3DToggle />
-            </div>
 
-            <button
-              id="btn_header_voice_agent"
-              onClick={() => {
-                if (voiceAgent.state.isConnected) {
-                  voiceAgent.disconnect();
-                } else {
-                  voiceAgent.connect();
-                }
-              }}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2 font-bold py-2.5 px-4 rounded-xl transition-all text-sm active:scale-95 shadow-md ${
-                voiceAgent.state.isConnected
-                  ? 'bg-[#2E6F40] text-white ring-2 ring-white/50'
-                  : 'bg-white dark:bg-[#2A3125] text-[#5A5A40] dark:text-[#E8E6DF] hover:bg-[#F9F8F6] dark:hover:bg-[#343D2F]'
-              }`}
-              title="Conversar por voz com Puck (Gemini Live API)"
-            >
-              <Mic className={`h-4 w-4 ${voiceAgent.state.isConnected ? 'animate-bounce text-white' : 'text-[#5A5A40] dark:text-[#C5D9B0]'}`} />
-              <span>{voiceAgent.state.isConnected ? 'Puck Conectado' : 'Falar com Puck'}</span>
-            </button>
-            <button
-              id="btn_open_save_modal"
-              onClick={() => setIsSaveModalOpen(true)}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#D4A373] dark:bg-[#B38356] hover:bg-[#C19262] dark:hover:bg-[#C19262] text-white font-bold py-2.5 px-4 rounded-xl transition-all text-sm active:scale-95 shadow-md shadow-[#D4A37333]"
-              title="Salvar cálculo atual no banco local"
-            >
-              <BookmarkPlus className="h-4 w-4 text-white" />
-              Salvar Cenário
-            </button>
-            <button
-              id="btn_nav_comparator"
-              onClick={() => {
-                setActiveTab('comparador');
-                const el = document.getElementById('scenario_comparator_section');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white/10 dark:bg-white/5 hover:bg-white/20 text-white font-semibold py-2.5 px-4 rounded-xl border border-white/20 dark:border-white/10 transition-all text-sm active:scale-95"
-              title="Visualizar e comparar cenários salvos"
-            >
-              <Columns className="h-4 w-4 text-white" />
-              Comparador ({savedRecords.length})
-            </button>
-            <button
-              id="btn_print"
-              onClick={handlePrint}
-              className="p-2.5 bg-white/10 dark:bg-white/5 hover:bg-white/20 text-white rounded-xl border border-white/20 dark:border-white/10 transition-all active:scale-95"
-              title="Imprimir Relatório"
-            >
-              <Printer className="h-4 w-4 text-white" />
-            </button>
-            <button
-              id="btn_reset"
-              onClick={() => {
-                setYieldGoal(0);
-                setNRequirementPerBag(0);
-                setMosNContribution(0);
-                setSoyNContribution(0);
-                setEfficiency(0);
-                setBaseDose(0);
-                setBaseDose2(0);
-                setBaseDoseMode('single');
-                setV4v6Percent(0);
-                setV4v6Percent2(0);
-                setV4v6Mode('single');
-                setV8v10Percent(0);
-                setV8v10Percent2(0);
-                setV8v10Mode('single');
-                setActivePreset('personalizado');
-              }}
-              className="flex items-center justify-center p-2.5 bg-white/10 dark:bg-white/5 hover:bg-white/20 text-white rounded-xl border border-white/20 dark:border-white/10 transition-all active:scale-95"
-              title="Resetar para valores padrão"
-            >
-              <RotateCcw className="h-4 w-4 text-white" />
-            </button>
+          {/* 3D SECTION NAVIGATION - SLIDING INDICATOR */}
+          <div className="max-w-7xl mx-auto mt-3 pb-2">
+            <SectionNav3D activeTab={activeTab} />
           </div>
         </header>
 
@@ -471,13 +478,9 @@ export default function Home() {
               <span>Comparador de Cenários ({savedRecords.length})</span>
             </button>
           </div>
-          <div className="flex items-center gap-3">
-            {/* 3D Section Navigation Indicator */}
-            <SectionNav3D activeTab={activeTab} />
-            <div className="hidden sm:flex items-center gap-2 px-3 text-xs text-[#8C897E] dark:text-[#9EA399]">
-              <span className="inline-block w-2 h-2 rounded-full bg-[#2E6F40] animate-pulse" />
-              <span>Puck Live Assistant Ativo</span>
-            </div>
+          <div className="flex items-center gap-2 px-3 text-xs text-[#8C897E] dark:text-[#9EA399]">
+            <span className="inline-block w-2 h-2 rounded-full bg-[#2E6F40] animate-pulse" />
+            <span>Puck Live Assistant Ativo</span>
           </div>
         </nav>
 
