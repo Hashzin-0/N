@@ -9,7 +9,7 @@ interface SectionConfig {
   id: string;
   label: string;
   shortLabel: string;
-  geometry: 'dodecahedron' | 'box' | 'octahedron' | 'torusknot' | 'icosahedron' | 'cone' | 'torus' | 'sphere';
+  geometry: 'dodecahedron' | 'box' | 'octahedron' | 'torusknot' | 'icosahedron' | 'cone' | 'torus' | 'sphere' | 'cylinder';
   color: string;
   colorDark: string;
 }
@@ -44,6 +44,7 @@ function createGeometry(type: SectionConfig['geometry']): THREE.BufferGeometry {
     case 'cone': return new THREE.ConeGeometry(0.8, 1.6, 6);
     case 'torus': return new THREE.TorusGeometry(0.8, 0.3, 12, 24);
     case 'sphere': return new THREE.SphereGeometry(1, 16, 12);
+    case 'cylinder': return new THREE.CylinderGeometry(0.7, 0.7, 1.4, 12);
     default: return new THREE.OctahedronGeometry(1, 0);
   }
 }
