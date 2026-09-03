@@ -1,22 +1,24 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { motion } from 'motion/react';
 import { 
   Calculator, 
   Sprout, 
-  Percent, 
-  Scale, 
-  TrendingUp, 
-  ArrowRight, 
   HelpCircle, 
   CheckCircle2, 
   RotateCcw,
   Sparkles,
   Layers,
   ChevronDown,
-  Info
+  Info,
+  AlertTriangle
 } from 'lucide-react';
 import CornEar3DVisualizer from './CornEar3DVisualizer';
+import CornAlert3D, { AgronomicValidationIssue } from './CornAlert3D';
+import Input3D from './Input3D';
+import Button3D from './Button3D';
+import Elastic3DSlider from './Elastic3DSlider';
 import { useTheme } from './ThemeProvider';
 
 interface CornYieldCalculatorProps {
@@ -78,58 +80,147 @@ const YIELD_PRESETS: YieldPreset[] = [
 export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalculatorProps) {
   const { isDark } = useTheme();
 
-  // Inputs
   const [plantasPorMetro, setPlantasPorMetro] = useState<number>(4.0);
   const [espacamentoLinhas, setEspacamentoLinhas] = useState<number>(0.50);
   const [fileiras, setFileiras] = useState<number>(16);
   const [graosPorFileira, setGraosPorFileira] = useState<number>(35);
   const [espigas, setEspigas] = useState<number>(1.0);
   const [pmg, setPmg] = useState<number>(300);
-  const [quebraDecimal, setQuebraDecimal] = useState<number>(0.05); // 0.05 = 5%
+  const [quebraDecimal, setQuebraDecimal] = useState<number>(0.05);
   const [activePreset, setActivePreset] = useState<string>('questao_exemplo');
   const [showFormulaDetails, setShowFormulaDetails] = useState<boolean>(true);
   const [appliedToast, setAppliedToast] = useState<string | null>(null);
 
-  // Calculations strictly adhering to user formulas:
-  // 1. estande(população) = contagem de plantas por metro × espaçamento entre linhas × 10000
+  // Calculations
   const estande = useMemo(() => {
     return Number((plantasPorMetro * espacamentoLinhas * 10000).toFixed(0));
   }, [plantasPorMetro, espacamentoLinhas]);
 
-  // 2. Quantidade de grãos = fileira × grãos/fileira
   const quantidadeGraos = useMemo(() => {
     return Number((fileiras * graosPorFileira).toFixed(0));
   }, [fileiras, graosPorFileira]);
 
-  // 3. PMG = xyz (valor dada na questão) ÷ por mil
-  const pmgUnitario = useMemo(() => {
-    return pmg / 1000;
-  }, [pmg]);
+  const pmgUnitario = useMemo(() => pmg / 1000, [pmg]);
 
-  // 4. sc/ha = estande × espigas(por fileira) × Qant. De grãos × PMG ÷ 1000
-  // Note: user specified PMG = xyz ÷ 1000.
-  // When computing sc/ha with PMG unitário:
-  // (estande * espigas * quantidadeGraos * pmgUnitario) / 1000
-  // We compute exactly the mathematical outcome of the prompt formula:
   const scHaBruto = useMemo(() => {
     const raw = (estande * espigas * quantidadeGraos * pmgUnitario) / 1000;
     return Number(raw.toFixed(2));
   }, [estande, espigas, quantidadeGraos, pmgUnitario]);
 
-  // Equivalent in kg/ha
-  const kgHaBruto = useMemo(() => {
-    return Number((scHaBruto * 60).toFixed(1));
-  }, [scHaBruto]);
+  const kgHaBruto = useMemo(() => Number((scHaBruto * 60).toFixed(1)), [scHaBruto]);
 
-  // 5. Quebra(perda) = valor de sc/ha × porcentagem(falada na questão, em decimal)
   const quebraValor = useMemo(() => {
     return Number((scHaBruto * quebraDecimal).toFixed(2));
   }, [scHaBruto, quebraDecimal]);
 
-  // Produtividade Líquida final
   const produtividadeLiquida = useMemo(() => {
     return Number(Math.max(0, scHaBruto - quebraValor).toFixed(2));
   }, [scHaBruto, quebraValor]);
+
+  // Agronomic validation
+  const agronomicIssues = useMemo((): AgronomicValidationIssue[] => {
+    const issues: AgronomicValidationIssue[] = [];
+
+    if (plantasPorMetro < 2.5 || plantasPorMetro > 6.0) {
+      issues.push({
+        field: 'plantasPorMetro',
+        label: 'Plantas por Metro',
+        currentValue: plantasPorMetro,
+        typicalRange: '2.5 a 6.0 pl/m',
+        severity: plantasPorMetro < 1.5 || plantasPorMetro > 8.0 ? 'critical' : 'warning',
+        message: plantasPorMetro < 2.5
+          ? 'População muito baixa para milho. Comumente utilizam-se 3.0 a 5.5 pl/m.'
+          : 'População excessiva, pode causar competição por luz e nutrients.',
+        recommendedValue: 4.0,
+      });
+    }
+
+    if (espacamentoLinhas < 0.40 || espacamentoLinhas > 0.80) {
+      issues.push({
+        field: 'espacamentoLinhas',
+        label: 'Espaçamento entre Linhas',
+        currentValue: espacamentoLinhas,
+        typicalRange: '0.40 a 0.80 m',
+        severity: espacamentoLinhas < 0.30 || espacamentoLinhas > 1.0 ? 'critical' : 'warning',
+        message: espacamentoLinhas < 0.40
+          ? 'Espaçamento estreito, reduz vigor e dificulta manejo mecânico.'
+          : 'Espaçamento largo, reduz população por ha e potencial produtivo.',
+        recommendedValue: 0.50,
+      });
+    }
+
+    if (fileiras < 14 || fileiras > 20) {
+      issues.push({
+        field: 'fileiras',
+        label: 'Fileiras na Espiga',
+        currentValue: fileiras,
+        typicalRange: '14 a 20 fileiras',
+        severity: fileiras < 10 || fileiras > 24 ? 'critical' : 'warning',
+        message: fileiras < 14
+          ? 'Poucas fileiras, abaixo do típico para híbridos modernos (14-20).'
+          : 'Muitas fileiras, pode indicar erros de contagem ou híbrido atípico.',
+        recommendedValue: 16,
+      });
+    }
+
+    if (graosPorFileira < 25 || graosPorFileira > 45) {
+      issues.push({
+        field: 'graosPorFileira',
+        label: 'Grãos por Fileira',
+        currentValue: graosPorFileira,
+        typicalRange: '25 a 45 grãos',
+        severity: graosPorFileira < 15 || graosPorFileira > 55 ? 'critical' : 'warning',
+        message: graosPorFileira < 25
+          ? 'Baixa contagem de grãos por fileira, pode indicar estresse durante enchimento.'
+          : 'Contagem alta, atípica para a maioria dos híbridos comerciais.',
+        recommendedValue: 35,
+      });
+    }
+
+    if (espigas < 0.8 || espigas > 1.5) {
+      issues.push({
+        field: 'espigas',
+        label: 'Espigas / Planta',
+        currentValue: espigas,
+        typicalRange: '0.8 a 1.5 espigas/planta',
+        severity: espigas < 0.5 || espigas > 2.0 ? 'critical' : 'warning',
+        message: espigas < 0.8
+          ? 'Espigamento baixo, pode indicar estresse hídrico ou nutricional.'
+          : 'Múltiplas espigas por planta é atípico em híbridos modernos.',
+        recommendedValue: 1.0,
+      });
+    }
+
+    if (pmg < 200 || pmg > 400) {
+      issues.push({
+        field: 'pmg',
+        label: 'PMG (g/1000 grãos)',
+        currentValue: pmg,
+        typicalRange: '200 a 400 g',
+        severity: pmg < 150 || pmg > 450 ? 'critical' : 'warning',
+        message: pmg < 200
+          ? 'Peso de mil grãos muito baixo, grãos mal preenchidos.'
+          : 'PMG muito alto, pode indicar erro de medição ou híbrido especial.',
+        recommendedValue: 300,
+      });
+    }
+
+    if (quebraDecimal < 0.02 || quebraDecimal > 0.15) {
+      issues.push({
+        field: 'quebraDecimal',
+        label: 'Quebra / Perda (%)',
+        currentValue: `${(quebraDecimal * 100).toFixed(1)}%`,
+        typicalRange: '2% a 15%',
+        severity: quebraDecimal > 0.20 ? 'critical' : 'warning',
+        message: quebraDecimal > 0.15
+          ? 'Perda de colheita muito acima do normal (típico: 3-10%).'
+          : 'Perda de colheita abaixo do esperado, pode subestimar perdas reais.',
+        recommendedValue: 0.05,
+      });
+    }
+
+    return issues;
+  }, [plantasPorMetro, espacamentoLinhas, fileiras, graosPorFileira, espigas, pmg, quebraDecimal]);
 
   const loadPreset = (p: YieldPreset) => {
     setActivePreset(p.id);
@@ -142,6 +233,23 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
     setQuebraDecimal(p.quebraDecimal);
   };
 
+  const handleFixAll = () => {
+    loadPreset(YIELD_PRESETS[0]);
+  };
+
+  const handleFixField = (field: string, val: number) => {
+    setActivePreset('personalizado');
+    switch (field) {
+      case 'plantasPorMetro': setPlantasPorMetro(val); break;
+      case 'espacamentoLinhas': setEspacamentoLinhas(val); break;
+      case 'fileiras': setFileiras(val); break;
+      case 'graosPorFileira': setGraosPorFileira(val); break;
+      case 'espigas': setEspigas(val); break;
+      case 'pmg': setPmg(val); break;
+      case 'quebraDecimal': setQuebraDecimal(val); break;
+    }
+  };
+
   const handleApplyToNitrogenCalculator = () => {
     if (onApplyYieldGoal) {
       onApplyYieldGoal(Math.round(produtividadeLiquida));
@@ -152,18 +260,33 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
     }
   };
 
+  // Helper: check if a field has issues
+  const getFieldSeverity = (field: string): 'warning' | 'critical' | undefined => {
+    const issue = agronomicIssues.find((i) => i.field === field);
+    return issue?.severity;
+  };
+
   return (
     <section id="corn_yield_calculator_section" className="space-y-6">
       
       {/* HEADER CARD */}
-      <div className={`p-6 sm:p-7 rounded-3xl border shadow-sm transition-colors ${
-        isDark ? 'bg-[#1C1E19] border-[#2E3326]' : 'bg-white border-[#E5E2D9]'
-      }`}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className={`p-6 sm:p-7 rounded-3xl border shadow-sm transition-colors ${
+          isDark ? 'bg-[#1C1E19] border-[#2E3326]' : 'bg-white border-[#E5E2D9]'
+        }`}
+      >
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4 border-[#F0EDE5] dark:border-[#2F3329]">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-[#D4A373]/20 text-[#D4A373] border border-[#D4A373]/30">
+            <motion.div
+              className="p-3 rounded-2xl bg-[#D4A373]/20 text-[#D4A373] border border-[#D4A373]/30"
+              animate={{ rotateY: [0, 360] }}
+              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
+            >
               <Calculator className="h-6 w-6" />
-            </div>
+            </motion.div>
             <div>
               <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#5A5A40] dark:text-[#E8E7DF]">
                 Estimativa de Produtividade de Milho
@@ -180,24 +303,28 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
               Cenários:
             </span>
             {YIELD_PRESETS.map((p) => (
-              <button
+              <Button3D
                 key={p.id}
+                variant={activePreset === p.id ? 'secondary' : 'ghost'}
+                size="sm"
+                active={activePreset === p.id}
+                isDark={isDark}
                 onClick={() => loadPreset(p)}
-                className={`text-xs px-3 py-1.5 rounded-xl border font-semibold transition-all active:scale-95 ${
-                  activePreset === p.id
-                    ? 'bg-[#5A5A40] text-white border-[#5A5A40] dark:bg-[#7D8861] dark:border-[#7D8861]'
-                    : 'bg-[#F9F8F6] text-[#5A5A40] border-[#E5E2D9] hover:bg-white dark:bg-[#242720] dark:text-[#C5C4B8] dark:border-[#383D31]'
-                }`}
               >
                 {p.name.split(' ')[0]}
-              </button>
+              </Button3D>
             ))}
           </div>
         </div>
 
         {/* NOTIFICATION TOAST */}
         {appliedToast && (
-          <div className="mt-4 p-3.5 rounded-2xl bg-[#2E6F40] text-white flex items-center justify-between text-xs font-semibold shadow-md animate-fade-in">
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            className="mt-4 p-3.5 rounded-2xl bg-[#2E6F40] text-white flex items-center justify-between text-xs font-semibold shadow-md"
+          >
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-[#86efac]" />
               <span>{appliedToast}</span>
@@ -211,123 +338,111 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
             >
               Ver Simulador N ↓
             </button>
-          </div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
+
+      {/* 3D ALERT: AGRONOMIC VALIDATION */}
+      <CornAlert3D
+        issues={agronomicIssues}
+        onFixAll={handleFixAll}
+        onFixField={handleFixField}
+        isDark={isDark}
+      />
 
       {/* TWO COLUMN GRID: INPUTS & 3D / RESULTS */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* LEFT COLUMN: PARAMETER INPUTS (7 COLS) */}
-        <div className={`lg:col-span-7 p-6 rounded-3xl border shadow-sm space-y-6 transition-colors ${
-          isDark ? 'bg-[#1C1E19] border-[#2E3326]' : 'bg-white border-[#E5E2D9]'
-        }`}>
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ type: 'spring', stiffness: 250, damping: 30, delay: 0.1 }}
+          className={`lg:col-span-7 p-6 rounded-3xl border shadow-sm space-y-6 transition-colors ${
+            isDark ? 'bg-[#1C1E19] border-[#2E3326]' : 'bg-white border-[#E5E2D9]'
+          }`}
+        >
           
           <div className="flex items-center justify-between border-b pb-3 border-[#F0EDE5] dark:border-[#2F3329]">
             <h3 className="text-sm font-bold uppercase tracking-wider text-[#5A5A40] dark:text-[#A3B18A] flex items-center gap-2">
               <Layers className="h-4 w-4" /> Parâmetros da Lavoura / Questão
             </h3>
-            <button
+            <Button3D
+              variant="ghost"
+              size="sm"
+              isDark={isDark}
               onClick={() => loadPreset(YIELD_PRESETS[0])}
-              className="text-xs text-[#8C897E] hover:text-[#5A5A40] dark:hover:text-[#E8E7DF] flex items-center gap-1 transition-colors"
+              icon={<RotateCcw className="h-3 w-3" />}
             >
-              <RotateCcw className="h-3 w-3" /> Resetar
-            </button>
+              Resetar
+            </Button3D>
           </div>
 
           <div className="space-y-5">
             
             {/* 1. PLANTAS POR METRO & ESPAÇAMENTO */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-[#8C897E] dark:text-[#A6A395] uppercase tracking-wider">
-                    Plantas por Metro
-                  </label>
-                  <span className="text-sm font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A]">
-                    {plantasPorMetro} pl/m
-                  </span>
-                </div>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="1"
-                  max="10"
-                  value={plantasPorMetro}
-                  onChange={(e) => {
-                    setPlantasPorMetro(parseFloat(e.target.value) || 0);
-                    setActivePreset('personalizado');
-                  }}
-                  className={`w-full p-2.5 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                    isDark
-                      ? 'bg-[#242720] border-[#393E32] text-[#F4F3EE] focus:ring-[#7D8861]'
-                      : 'bg-white border-[#E5E2D9] text-[#3D3D3D] focus:ring-[#5A5A40]'
-                  }`}
-                />
-                <input
-                  type="range"
-                  min="1.5"
-                  max="7.0"
-                  step="0.1"
-                  value={plantasPorMetro}
-                  onChange={(e) => {
-                    setPlantasPorMetro(parseFloat(e.target.value));
-                    setActivePreset('personalizado');
-                  }}
-                  className="w-full accent-[#5A5A40] dark:accent-[#7D8861] cursor-pointer"
-                />
-                <span className="text-[10px] text-[#8C897E] block">
-                  Contagem linear na linha de semeadura.
-                </span>
-              </div>
+              <Input3D
+                id="input_plantas_por_metro"
+                label="Plantas por Metro"
+                unit="pl/m"
+                value={plantasPorMetro}
+                onChange={(v) => { setPlantasPorMetro(v); setActivePreset('personalizado'); }}
+                step={0.1}
+                min={1}
+                max={10}
+                isDark={isDark}
+                accentColor="#5A5A40"
+                critical={getFieldSeverity('plantasPorMetro') === 'critical'}
+                warning={getFieldSeverity('plantasPorMetro') === 'warning'}
+                hint="Contagem linear na linha de semeadura."
+              />
+              <Input3D
+                id="input_espacamento_linhas"
+                label="Espaçamento entre Linhas"
+                unit={`m (${Math.round(espacamentoLinhas * 100)} cm)`}
+                value={espacamentoLinhas}
+                onChange={(v) => { setEspacamentoLinhas(v); setActivePreset('personalizado'); }}
+                step={0.05}
+                min={0.30}
+                max={1.20}
+                isDark={isDark}
+                accentColor="#5A5A40"
+                critical={getFieldSeverity('espacamentoLinhas') === 'critical'}
+                warning={getFieldSeverity('espacamentoLinhas') === 'warning'}
+                hint="Distância entre linhas (metros)."
+              />
+            </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-[#8C897E] dark:text-[#A6A395] uppercase tracking-wider">
-                    Espaçamento entre Linhas
-                  </label>
-                  <span className="text-sm font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A]">
-                    {espacamentoLinhas} m ({Math.round(espacamentoLinhas * 100)} cm)
-                  </span>
-                </div>
-                <input
-                  type="number"
-                  step="0.05"
-                  min="0.30"
-                  max="1.20"
-                  value={espacamentoLinhas}
-                  onChange={(e) => {
-                    setEspacamentoLinhas(parseFloat(e.target.value) || 0);
-                    setActivePreset('personalizado');
-                  }}
-                  className={`w-full p-2.5 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                    isDark
-                      ? 'bg-[#242720] border-[#393E32] text-[#F4F3EE] focus:ring-[#7D8861]'
-                      : 'bg-white border-[#E5E2D9] text-[#3D3D3D] focus:ring-[#5A5A40]'
-                  }`}
-                />
-                <input
-                  type="range"
-                  min="0.35"
-                  max="0.90"
-                  step="0.05"
-                  value={espacamentoLinhas}
-                  onChange={(e) => {
-                    setEspacamentoLinhas(parseFloat(e.target.value));
-                    setActivePreset('personalizado');
-                  }}
-                  className="w-full accent-[#5A5A40] dark:accent-[#7D8861] cursor-pointer"
-                />
-                <span className="text-[10px] text-[#8C897E] block">
-                  Distância entre linhas (metros).
-                </span>
-              </div>
+            {/* ELASTIC SLIDER: PLANTAS POR METRO */}
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#A6A395] uppercase tracking-wider">
+                Ajuste rápido (Plantas/m):
+              </span>
+              <Elastic3DSlider
+                id="slider_plantas_por_metro"
+                value={plantasPorMetro}
+                min={1.5}
+                max={7.0}
+                step={0.1}
+                onChange={(v) => { setPlantasPorMetro(v); setActivePreset('personalizado'); }}
+                unit="pl/m"
+                isDark={isDark}
+                accentColor="#5A5A40"
+                minLabel="1.5 pl/m"
+                maxLabel="7.0 pl/m"
+              />
             </div>
 
             {/* ESTANDE RESULT CALLOUT */}
-            <div className={`p-3.5 rounded-2xl border flex items-center justify-between text-xs transition-colors ${
-              isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
-            }`}>
+            <motion.div
+              className={`p-3.5 rounded-2xl border flex items-center justify-between text-xs transition-colors ${
+                isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
+              }`}
+              animate={{ scale: [1, 1.005, 1] }}
+              transition={{ duration: 0.3 }}
+              key={estande}
+            >
               <div className="flex items-center gap-2">
                 <Sprout className="h-4 w-4 text-[#D4A373]" />
                 <span className="font-semibold text-[#5A5A40] dark:text-[#E8E7DF]">
@@ -337,197 +452,128 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
               <div className="font-mono font-bold text-sm text-[#2E6F40] dark:text-[#86efac]">
                 {estande.toLocaleString('pt-BR')} <span className="text-xs font-normal">plantas/ha</span>
               </div>
-            </div>
+            </motion.div>
 
             {/* 2. FILEIRAS & GRÃOS POR FILEIRA */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-[#8C897E] dark:text-[#A6A395] uppercase tracking-wider">
-                    Fileiras na Espiga
-                  </label>
-                  <span className="text-sm font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A]">
-                    {fileiras} fileiras
-                  </span>
-                </div>
-                <input
-                  type="number"
-                  min="10"
-                  max="24"
-                  step="2"
-                  value={fileiras}
-                  onChange={(e) => {
-                    setFileiras(parseInt(e.target.value, 10) || 0);
-                    setActivePreset('personalizado');
-                  }}
-                  className={`w-full p-2.5 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                    isDark
-                      ? 'bg-[#242720] border-[#393E32] text-[#F4F3EE] focus:ring-[#7D8861]'
-                      : 'bg-white border-[#E5E2D9] text-[#3D3D3D] focus:ring-[#5A5A40]'
-                  }`}
-                />
-                <input
-                  type="range"
-                  min="12"
-                  max="22"
-                  step="2"
-                  value={fileiras}
-                  onChange={(e) => {
-                    setFileiras(parseInt(e.target.value, 10));
-                    setActivePreset('personalizado');
-                  }}
-                  className="w-full accent-[#5A5A40] dark:accent-[#7D8861] cursor-pointer"
-                />
-                <span className="text-[10px] text-[#8C897E] block">
-                  Sempre em números pares (12, 14, 16, 18, 20).
-                </span>
-              </div>
+              <Input3D
+                id="input_fileiras"
+                label="Fileiras na Espiga"
+                unit="fileiras"
+                value={fileiras}
+                onChange={(v) => { setFileiras(Math.round(v)); setActivePreset('personalizado'); }}
+                step={2}
+                min={10}
+                max={24}
+                isDark={isDark}
+                accentColor="#5A5A40"
+                critical={getFieldSeverity('fileiras') === 'critical'}
+                warning={getFieldSeverity('fileiras') === 'warning'}
+                hint="Sempre em números pares (12, 14, 16, 18, 20)."
+              />
+              <Input3D
+                id="input_graos_por_fileira"
+                label="Grãos por Fileira"
+                unit="grãos"
+                value={graosPorFileira}
+                onChange={(v) => { setGraosPorFileira(Math.round(v)); setActivePreset('personalizado'); }}
+                step={1}
+                min={10}
+                max={60}
+                isDark={isDark}
+                accentColor="#5A5A40"
+                critical={getFieldSeverity('graosPorFileira') === 'critical'}
+                warning={getFieldSeverity('graosPorFileira') === 'warning'}
+                hint="Contagem média longitudinal de grãos."
+              />
+            </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-[#8C897E] dark:text-[#A6A395] uppercase tracking-wider">
-                    Grãos por Fileira
-                  </label>
-                  <span className="text-sm font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A]">
-                    {graosPorFileira} grãos
-                  </span>
-                </div>
-                <input
-                  type="number"
-                  min="10"
-                  max="60"
-                  value={graosPorFileira}
-                  onChange={(e) => {
-                    setGraosPorFileira(parseInt(e.target.value, 10) || 0);
-                    setActivePreset('personalizado');
-                  }}
-                  className={`w-full p-2.5 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                    isDark
-                      ? 'bg-[#242720] border-[#393E32] text-[#F4F3EE] focus:ring-[#7D8861]'
-                      : 'bg-white border-[#E5E2D9] text-[#3D3D3D] focus:ring-[#5A5A40]'
-                  }`}
-                />
-                <input
-                  type="range"
-                  min="20"
-                  max="50"
-                  step="1"
-                  value={graosPorFileira}
-                  onChange={(e) => {
-                    setGraosPorFileira(parseInt(e.target.value, 10));
-                    setActivePreset('personalizado');
-                  }}
-                  className="w-full accent-[#5A5A40] dark:accent-[#7D8861] cursor-pointer"
-                />
-                <span className="text-[10px] text-[#8C897E] block">
-                  Contagem média longitudinal de grãos.
-                </span>
-              </div>
+            {/* ELASTIC SLIDERS: FILEIRAS & GRÃOS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Elastic3DSlider
+                id="slider_fileiras"
+                value={fileiras}
+                min={12}
+                max={22}
+                step={2}
+                onChange={(v) => { setFileiras(v); setActivePreset('personalizado'); }}
+                unit="fileiras"
+                isDark={isDark}
+                accentColor="#5A5A40"
+              />
+              <Elastic3DSlider
+                id="slider_graos"
+                value={graosPorFileira}
+                min={20}
+                max={50}
+                step={1}
+                onChange={(v) => { setGraosPorFileira(v); setActivePreset('personalizado'); }}
+                unit="grãos"
+                isDark={isDark}
+                accentColor="#5A5A40"
+              />
             </div>
 
             {/* 3. ESPIGAS, PMG & QUEBRA */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               
-              {/* Espigas */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-[#8C897E] dark:text-[#A6A395] uppercase tracking-wider">
-                    Espigas / Planta
-                  </label>
-                  <span className="text-sm font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A]">
-                    {espigas}
-                  </span>
-                </div>
-                <input
-                  type="number"
-                  step="0.05"
-                  min="0.5"
-                  max="2.0"
-                  value={espigas}
-                  onChange={(e) => {
-                    setEspigas(parseFloat(e.target.value) || 0);
-                    setActivePreset('personalizado');
-                  }}
-                  className={`w-full p-2.5 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                    isDark
-                      ? 'bg-[#242720] border-[#393E32] text-[#F4F3EE] focus:ring-[#7D8861]'
-                      : 'bg-white border-[#E5E2D9] text-[#3D3D3D] focus:ring-[#5A5A40]'
-                  }`}
-                />
-                <span className="text-[10px] text-[#8C897E] block">
-                  Espigas viáveis por planta (questão: 1.0).
-                </span>
-              </div>
+              <Input3D
+                id="input_espigas"
+                label="Espigas / Planta"
+                unit=""
+                value={espigas}
+                onChange={(v) => { setEspigas(v); setActivePreset('personalizado'); }}
+                step={0.05}
+                min={0.5}
+                max={2.0}
+                isDark={isDark}
+                accentColor="#D4A373"
+                critical={getFieldSeverity('espigas') === 'critical'}
+                warning={getFieldSeverity('espigas') === 'warning'}
+                hint="Espigas viáveis por planta (questão: 1.0)."
+              />
 
-              {/* PMG */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-[#8C897E] dark:text-[#A6A395] uppercase tracking-wider">
-                    PMG (g / 1000 grãos)
-                  </label>
-                  <span className="text-sm font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A]">
-                    {pmg} g
-                  </span>
-                </div>
-                <input
-                  type="number"
-                  step="5"
-                  min="150"
-                  max="450"
-                  value={pmg}
-                  onChange={(e) => {
-                    setPmg(parseFloat(e.target.value) || 0);
-                    setActivePreset('personalizado');
-                  }}
-                  className={`w-full p-2.5 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                    isDark
-                      ? 'bg-[#242720] border-[#393E32] text-[#F4F3EE] focus:ring-[#7D8861]'
-                      : 'bg-white border-[#E5E2D9] text-[#3D3D3D] focus:ring-[#5A5A40]'
-                  }`}
-                />
-                <span className="text-[10px] text-[#8C897E] block">
-                  PMG unitário: <strong>{pmgUnitario.toFixed(3)} g/grão</strong>
-                </span>
-              </div>
+              <Input3D
+                id="input_pmg"
+                label="PMG (g / 1000 grãos)"
+                unit="g"
+                value={pmg}
+                onChange={(v) => { setPmg(v); setActivePreset('personalizado'); }}
+                step={5}
+                min={150}
+                max={450}
+                isDark={isDark}
+                accentColor="#D4A373"
+                critical={getFieldSeverity('pmg') === 'critical'}
+                warning={getFieldSeverity('pmg') === 'warning'}
+                hint={`PMG unitário: ${pmgUnitario.toFixed(3)} g/grão`}
+              />
 
-              {/* Quebra */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-[#8C897E] dark:text-[#A6A395] uppercase tracking-wider">
-                    Quebra / Perda (%)
-                  </label>
-                  <span className="text-sm font-mono font-bold text-[#D4A373]">
-                    {(quebraDecimal * 100).toFixed(1)}% ({quebraDecimal})
-                  </span>
-                </div>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="0.30"
-                  value={quebraDecimal}
-                  onChange={(e) => {
-                    setQuebraDecimal(parseFloat(e.target.value) || 0);
-                    setActivePreset('personalizado');
-                  }}
-                  className={`w-full p-2.5 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                    isDark
-                      ? 'bg-[#242720] border-[#393E32] text-[#F4F3EE] focus:ring-[#7D8861]'
-                      : 'bg-white border-[#E5E2D9] text-[#3D3D3D] focus:ring-[#5A5A40]'
-                  }`}
-                />
-                <span className="text-[10px] text-[#8C897E] block">
-                  Em decimal (ex: 0.05 para 5% de perda).
-                </span>
-              </div>
+              <Input3D
+                id="input_quebra"
+                label="Quebra / Perda (%)"
+                unit={`${(quebraDecimal * 100).toFixed(1)}% (${quebraDecimal})`}
+                value={quebraDecimal}
+                onChange={(v) => { setQuebraDecimal(v); setActivePreset('personalizado'); }}
+                step={0.01}
+                min={0}
+                max={0.30}
+                isDark={isDark}
+                accentColor="#D4A373"
+                critical={getFieldSeverity('quebraDecimal') === 'critical'}
+                warning={getFieldSeverity('quebraDecimal') === 'warning'}
+                hint="Em decimal (ex: 0.05 para 5% de perda)."
+              />
             </div>
 
           </div>
 
           {/* EDUCATIONAL STEP-BY-STEP BREAKDOWN PANEL */}
-          <div className={`rounded-2xl border p-4 transition-colors ${
-            isDark ? 'bg-[#181A15] border-[#2E3326]' : 'bg-[#FAF8F3] border-[#E5E2D9]'
-          }`}>
+          <motion.div
+            className={`rounded-2xl border p-4 transition-colors ${
+              isDark ? 'bg-[#181A15] border-[#2E3326]' : 'bg-[#FAF8F3] border-[#E5E2D9]'
+            }`}
+          >
             <button
               onClick={() => setShowFormulaDetails(!showFormulaDetails)}
               className="w-full flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#5A5A40] dark:text-[#A3B18A]"
@@ -536,11 +582,21 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                 <HelpCircle className="h-4 w-4 text-[#D4A373]" />
                 <span>Memória de Cálculo Didática (Passo a Passo da Questão)</span>
               </div>
-              <ChevronDown className={`h-4 w-4 transition-transform ${showFormulaDetails ? 'rotate-180' : ''}`} />
+              <motion.div
+                animate={{ rotate: showFormulaDetails ? 180 : 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              >
+                <ChevronDown className="h-4 w-4" />
+              </motion.div>
             </button>
 
             {showFormulaDetails && (
-              <div className="mt-3.5 space-y-2.5 text-xs text-[#3D3D3D] dark:text-[#D5D4CB] font-mono border-t pt-3 border-[#E5E2D9] dark:border-[#2F3329]">
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-3.5 space-y-2.5 text-xs text-[#3D3D3D] dark:text-[#D5D4CB] font-mono border-t pt-3 border-[#E5E2D9] dark:border-[#2F3329]"
+              >
                 <div className="p-2 rounded-lg bg-black/5 dark:bg-white/5">
                   <span className="text-[#8C897E] dark:text-[#9CA38C]">1. Estande (População):</span>
                   <div className="text-[#5A5A40] dark:text-[#A3B18A] font-bold">
@@ -585,14 +641,19 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                     {scHaBruto} - {quebraValor} = <strong>{produtividadeLiquida} sc/ha líquido colhido</strong>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
-          </div>
+          </motion.div>
 
-        </div>
+        </motion.div>
 
         {/* RIGHT COLUMN: 3D EAR & ESTIMATED YIELD RESULTS (5 COLS) */}
-        <div className="lg:col-span-5 space-y-6">
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ type: 'spring', stiffness: 250, damping: 30, delay: 0.2 }}
+          className="lg:col-span-5 space-y-6"
+        >
           
           {/* 3D CORN EAR VISUALIZER */}
           <CornEar3DVisualizer
@@ -616,24 +677,40 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
             </div>
 
             {/* BIG METRIC 1: PRODUTIVIDADE LÍQUIDA */}
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-[#5A5A40] to-[#454530] text-white shadow-md space-y-2">
+            <motion.div
+              className="p-5 rounded-2xl bg-gradient-to-br from-[#5A5A40] to-[#454530] text-white shadow-md space-y-2"
+              animate={{ scale: [1, 1.005, 1] }}
+              transition={{ duration: 0.4 }}
+              key={produtividadeLiquida}
+            >
               <div className="flex justify-between items-start">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-white/80">
                   Produtividade Líquida (Após Quebra)
                 </span>
-                <TrendingUp className="h-5 w-5 text-[#86efac]" />
+                <motion.span
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 0.6, delay: 0.5 }}
+                >
+                  <svg className="h-5 w-5 text-[#86efac]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </motion.span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl sm:text-5xl font-mono font-extrabold text-white tracking-tight">
+                <motion.span
+                  className="text-4xl sm:text-5xl font-mono font-extrabold text-white tracking-tight"
+                  key={produtividadeLiquida}
+                  initial={{ scale: 1.1, opacity: 0.7 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                >
                   {produtividadeLiquida}
-                </span>
+                </motion.span>
                 <span className="text-lg font-medium text-white/90">sc/ha</span>
               </div>
               <div className="text-xs text-white/80 pt-1 border-t border-white/20 flex justify-between">
                 <span>Total em Grãos:</span>
                 <strong>{Number((produtividadeLiquida * 60).toFixed(0)).toLocaleString('pt-BR')} kg/ha</strong>
               </div>
-            </div>
+            </motion.div>
 
             {/* SUB METRICS: BRUTO E QUEBRA */}
             <div className="grid grid-cols-2 gap-3">
@@ -661,20 +738,23 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
             </div>
 
             {/* ACTION BUTTON: APPLY TO NITROGEN CALCULATOR */}
-            <button
+            <Button3D
               id="btn_apply_yield_to_n"
+              variant="primary"
+              size="lg"
+              isDark={isDark}
               onClick={handleApplyToNitrogenCalculator}
-              className="w-full flex items-center justify-center gap-2 bg-[#2E6F40] hover:bg-[#255833] text-white font-bold py-3.5 px-5 rounded-2xl transition-all shadow-md active:scale-95 group text-sm"
-              title="Transfere esta produtividade diretamente para a calculadora de Nitrogênio"
+              icon={<Sparkles className="h-4 w-4 text-[#86efac]" />}
+              iconRight={<svg className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>}
+              tooltip="Transfere esta produtividade diretamente para a calculadora de Nitrogênio"
+              className="w-full"
             >
-              <Sparkles className="h-4 w-4 text-[#86efac] group-hover:rotate-12 transition-transform" />
-              <span>Usar esta Produtividade no Cálculo de Nitrogênio</span>
-              <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
-            </button>
+              Usar esta Produtividade no Cálculo de Nitrogênio
+            </Button3D>
 
           </div>
 
-        </div>
+        </motion.div>
 
       </div>
 

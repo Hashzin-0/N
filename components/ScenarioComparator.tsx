@@ -42,6 +42,7 @@ interface ScenarioComparatorProps {
     selectedV4V6Val: number;
     selectedV8V10Val: number;
     sumOfSplits: number;
+    [key: string]: number | string; // Allow extra fields
   };
 }
 

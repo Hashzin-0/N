@@ -30,7 +30,12 @@ import ScenarioComparator from '@/components/ScenarioComparator';
 import VoiceAssistantHUD from '@/components/VoiceAssistantHUD';
 import DarkMode3DToggle from '@/components/DarkMode3DToggle';
 import CornYieldCalculator from '@/components/CornYieldCalculator';
+import CornAlert3D, { AgronomicValidationIssue } from '@/components/CornAlert3D';
+import Input3D from '@/components/Input3D';
+import Button3D from '@/components/Button3D';
+import Select3D from '@/components/Select3D';
 import { useGeminiLiveAgent } from '@/hooks/useGeminiLiveAgent';
+import { useTheme } from '@/components/ThemeProvider';
 import { SQLikeCalculationDB, CalculationRecord, useCalculationRecords, notifyStorageChange } from '@/lib/storage';
 
 // Interfaces for structured data
@@ -44,8 +49,11 @@ interface Preset {
   soyNContribution: number; // kg N/ha
   efficiency: number; // 0.80 standard
   baseDose: number; // kg N/ha in base (typically 30-40)
+  baseDose2: number; // 2nd value for range (0 = single value)
   v4v6Percent: number; // default 50 or 60
+  v4v6Percent2: number; // 2nd % value for range (0 = single value)
   v8v10Percent: number; // default 20 or 30
+  v8v10Percent2: number; // 2nd % value for range (0 = single value)
 }
 
 const PRESETS: Preset[] = [
@@ -59,8 +67,11 @@ const PRESETS: Preset[] = [
     soyNContribution: 20,
     efficiency: 0.80,
     baseDose: 30,
+    baseDose2: 0,
     v4v6Percent: 50,
+    v4v6Percent2: 0,
     v8v10Percent: 30,
+    v8v10Percent2: 0,
   },
   {
     id: 'alta_produtividade',
@@ -71,9 +82,12 @@ const PRESETS: Preset[] = [
     mosNContribution: 25,
     soyNContribution: 25,
     efficiency: 0.80,
-    baseDose: 40,
-    v4v6Percent: 55,
-    v8v10Percent: 25,
+    baseDose: 35,
+    baseDose2: 45,
+    v4v6Percent: 50,
+    v4v6Percent2: 60,
+    v8v10Percent: 20,
+    v8v10Percent2: 30,
   },
   {
     id: 'solo_arenoso',
@@ -85,12 +99,17 @@ const PRESETS: Preset[] = [
     soyNContribution: 15,
     efficiency: 0.80,
     baseDose: 30,
+    baseDose2: 0,
     v4v6Percent: 60,
+    v4v6Percent2: 0,
     v8v10Percent: 20,
+    v8v10Percent2: 0,
   }
 ];
 
 export default function Home() {
+  const { isDark } = useTheme();
+
   // Input states
   const [yieldGoal, setYieldGoal] = useState<number>(150);
   const [nRequirementPerBag, setNRequirementPerBag] = useState<number>(1.35);
@@ -100,8 +119,16 @@ export default function Home() {
   
   // Custom interactive split parameters
   const [baseDose, setBaseDose] = useState<number>(30);
+  const [baseDose2, setBaseDose2] = useState<number>(0); // 0 = single value mode
   const [v4v6Percent, setV4v6Percent] = useState<number>(50);
+  const [v4v6Percent2, setV4v6Percent2] = useState<number>(0); // 0 = single value mode
   const [v8v10Percent, setV8v10Percent] = useState<number>(30);
+  const [v8v10Percent2, setV8v10Percent2] = useState<number>(0); // 0 = single value mode
+  
+  // Toggle for 1 vs 2 values per application
+  const [baseDoseMode, setBaseDoseMode] = useState<'single' | 'range'>('single');
+  const [v4v6Mode, setV4v6Mode] = useState<'single' | 'range'>('single');
+  const [v8v10Mode, setV8v10Mode] = useState<'single' | 'range'>('single');
   
   // Split base configuration: dose with losses (Dose de N a aplicar) or net requirement (Necessidade Líquida)
   const [splitBase, setSplitBase] = useState<'dose_perdas' | 'necessidade_liquida'>('dose_perdas');
@@ -130,8 +157,14 @@ export default function Home() {
     setSoyNContribution(preset.soyNContribution);
     setEfficiency(preset.efficiency * 100);
     setBaseDose(preset.baseDose);
+    setBaseDose2(preset.baseDose2);
+    setBaseDoseMode(preset.baseDose2 > 0 ? 'range' : 'single');
     setV4v6Percent(preset.v4v6Percent);
+    setV4v6Percent2(preset.v4v6Percent2);
+    setV4v6Mode(preset.v4v6Percent2 > 0 ? 'range' : 'single');
     setV8v10Percent(preset.v8v10Percent);
+    setV8v10Percent2(preset.v8v10Percent2);
+    setV8v10Mode(preset.v8v10Percent2 > 0 ? 'range' : 'single');
     setActivePreset(preset.id);
   };
 
@@ -153,43 +186,94 @@ export default function Home() {
     // Base target for split applications
     const targetSplitTotal = splitBase === 'dose_perdas' ? recommendedDose : liquidNeed;
 
-    // Split calculations for 50% and 60% for V4-V6 based on target
+    // 1st Application: kg N/ha (always absolute values)
+    const base1 = baseDose;
+    const base2 = baseDoseMode === 'range' ? baseDose2 : 0;
+    const base1_kg = base1;
+    const base2_kg = base2;
+
+    // 2nd Application: % values
+    const v4v6_1 = v4v6Percent;
+    const v4v6_2 = v4v6Mode === 'range' ? v4v6Percent2 : 0;
+    const v4v6_1_kg = Number((targetSplitTotal * (v4v6_1 / 100)).toFixed(2));
+    const v4v6_2_kg = v4v6_2 > 0 ? Number((targetSplitTotal * (v4v6_2 / 100)).toFixed(2)) : 0;
+
+    // 3rd Application: % values — AUTO-CALCULATED from what remains
+    // If user provides values, use them. If not, calculate automatically.
+    const v8v10_1 = v8v10Percent;
+    const v8v10_2 = v8v10Mode === 'range' ? v8v10Percent2 : 0;
+    
+    // Calculate remaining after 1st + 2nd application
+    const usedByBase1 = base1_kg;
+    const usedByV4v6_1 = v4v6_1_kg;
+    const usedByV4v6_2 = v4v6_2_kg;
+    
+    // Remaining N after 1st application and 2nd application (first value)
+    const remaining_after_base1 = targetSplitTotal - usedByBase1;
+    const remaining_after_v4v6_1 = remaining_after_base1 - usedByV4v6_1;
+    
+    // Auto-calculate 3rd application % from remaining
+    const v8v10_1_auto = remaining_after_v4v6_1 > 0
+      ? Number(((remaining_after_v4v6_1 / targetSplitTotal) * 100).toFixed(1))
+      : 0;
+    
+    // For range mode: 2nd value of 3rd application = remaining after both 2nd app values
+    const remaining_after_v4v6_both = remaining_after_base1 - usedByV4v6_1 - usedByV4v6_2;
+    const v8v10_2_auto = (v8v10_2 > 0 && v4v6_2 > 0)
+      ? Number(((remaining_after_v4v6_both / targetSplitTotal) * 100).toFixed(1))
+      : 0;
+
+    // Use user-provided or auto-calculated
+    const v8v10_1_final = v8v10_1 > 0 ? v8v10_1 : v8v10_1_auto;
+    const v8v10_2_final = v8v10_2 > 0 ? v8v10_2 : v8v10_2_auto;
+
+    const v8v10_1_kg = Number((targetSplitTotal * (v8v10_1_final / 100)).toFixed(2));
+    const v8v10_2_kg = v8v10_2_final > 0 ? Number((targetSplitTotal * (v8v10_2_final / 100)).toFixed(2)) : 0;
+
+    // Reference ranges for comparison
     const v4v6_50 = Number((targetSplitTotal * 0.50).toFixed(2));
     const v4v6_60 = Number((targetSplitTotal * 0.60).toFixed(2));
-
-    // Split calculations for 20% and 30% for V8-V10 based on target
     const v8v10_20 = Number((targetSplitTotal * 0.20).toFixed(2));
     const v8v10_30 = Number((targetSplitTotal * 0.30).toFixed(2));
 
-    // User selected split values
-    const selectedV4V6Val = Number((targetSplitTotal * (v4v6Percent / 100)).toFixed(2));
-    const selectedV8V10Val = Number((targetSplitTotal * (v8v10Percent / 100)).toFixed(2));
-
-    // Total of the three applications
-    const sumOfSplits = Number((baseDose + selectedV4V6Val + selectedV8V10Val).toFixed(2));
+    // Total of the three applications (summing first values + optional ranges)
+    const sumOfSplits = Number((base1_kg + v4v6_1_kg + v8v10_1_kg).toFixed(2));
     
-    // Difference between splits sum and actual net/recommended target
+    // Sum with ranges if applicable
+    const sumOfSplitsRange = (baseDoseMode === 'range' && base2_kg > 0)
+      ? Number((base2_kg + v4v6_2_kg + v8v10_2_kg).toFixed(2))
+      : 0;
+    
     const splitDiscrepancy = Number((sumOfSplits - targetSplitTotal).toFixed(2));
-
-    // Difference between the two main split doses (v4-v6 vs v8-v10)
-    const splitDifference = Number(Math.abs(selectedV4V6Val - selectedV8V10Val).toFixed(2));
+    const splitDifference = Number(Math.abs(v4v6_1_kg - v8v10_1_kg).toFixed(2));
 
     return {
       totalExtraction,
       liquidNeed,
       recommendedDose,
       targetSplitTotal,
+      base1_kg,
+      base2_kg,
+      v4v6_1,
+      v4v6_2,
+      v4v6_1_kg,
+      v4v6_2_kg,
       v4v6_50,
       v4v6_60,
+      v8v10_1_final,
+      v8v10_2_final,
+      v8v10_1_kg,
+      v8v10_2_kg,
       v8v10_20,
       v8v10_30,
-      selectedV4V6Val,
-      selectedV8V10Val,
+      v8v10_1_auto,
+      v8v10_2_auto,
       sumOfSplits,
+      sumOfSplitsRange,
       splitDiscrepancy,
       splitDifference
     };
-  }, [yieldGoal, nRequirementPerBag, mosNContribution, soyNContribution, efficiency, baseDose, v4v6Percent, v8v10Percent, splitBase]);
+  }, [yieldGoal, nRequirementPerBag, mosNContribution, soyNContribution, efficiency, baseDose, baseDose2, baseDoseMode, v4v6Percent, v4v6Percent2, v4v6Mode, v8v10Percent, v8v10Percent2, v8v10Mode, splitBase]);
 
   // Save scenario to SQLike local database
   const handleSaveScenario = (name: string, notes: string) => {
@@ -208,8 +292,8 @@ export default function Home() {
       total_extraction: calculations.totalExtraction,
       liquid_need: calculations.liquidNeed,
       recommended_dose: calculations.recommendedDose,
-      selected_v4v6_val: calculations.selectedV4V6Val,
-      selected_v8v10_val: calculations.selectedV8V10Val,
+      selected_v4v6_val: calculations.v4v6_1_kg,
+      selected_v8v10_val: calculations.v8v10_1_kg,
       sum_of_splits: calculations.sumOfSplits,
     });
     handleReloadRecords();
@@ -254,8 +338,8 @@ export default function Home() {
     totalExtraction: calculations.totalExtraction,
     liquidNeed: calculations.liquidNeed,
     recommendedDose: calculations.recommendedDose,
-    selectedV4V6Val: calculations.selectedV4V6Val,
-    selectedV8V10Val: calculations.selectedV8V10Val,
+    selectedV4V6Val: calculations.v4v6_1_kg,
+    selectedV8V10Val: calculations.v8v10_1_kg,
     sumOfSplits: calculations.sumOfSplits,
     onSetYieldGoal: (val) => {
       setYieldGoal(val);
@@ -568,204 +652,77 @@ export default function Home() {
 
               <div className="space-y-5">
                 {/* Product Goal */}
-                <div id="input_group_yield_goal" className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-[11px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase tracking-wider flex items-center gap-1.5">
-                      Produtividade Alvo
-                      <button 
-                        type="button" 
-                        onClick={() => setActiveTooltip(activeTooltip === 'prod' ? null : 'prod')}
-                        className="text-[#8C897E] dark:text-[#9EA399] hover:text-[#5A5A40] dark:hover:text-[#9CB386]"
-                      >
-                        <HelpCircle className="h-4 w-4" />
-                      </button>
-                    </label>
-                    <span className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF] bg-[#F9F8F6] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2 py-0.5 rounded-md">
-                      {yieldGoal} sc/ha
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="50"
-                    max="250"
-                    step="5"
-                    value={yieldGoal}
-                    onChange={(e) => handleCustomInputChange(() => setYieldGoal(Number(e.target.value)))}
-                    className="w-full h-2 bg-[#F0EDE5] dark:bg-[#2D3429] rounded-lg appearance-none cursor-pointer accent-[#5A5A40] dark:accent-[#9CB386]"
-                  />
-                  <div className="flex justify-between text-[10px] text-[#8C897E] dark:text-[#9EA399] font-semibold px-0.5">
-                    <span>50 sc/ha</span>
-                    <span>150 sc/ha</span>
-                    <span>250 sc/ha</span>
-                  </div>
-                  
-                  {activeTooltip === 'prod' && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-xs bg-[#F9F8F6] dark:bg-[#232821] text-[#3D3D3D] dark:text-[#E8E6DF] p-3 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328] mt-2 space-y-1"
-                    >
-                      <p><strong>Meta de Rendimento (sc/ha):</strong> Representa a expectativa de colheita em sacas de 60kg por hectare.</p>
-                    </motion.div>
-                  )}
-                </div>
+                <Input3D
+                  id="input_group_yield_goal"
+                  label="Produtividade Alvo"
+                  unit="sc/ha"
+                  value={yieldGoal}
+                  onChange={(v) => handleCustomInputChange(() => setYieldGoal(v))}
+                  step={5}
+                  min={50}
+                  max={250}
+                  isDark={isDark}
+                  accentColor="#5A5A40"
+                  hint="Meta de rendimento em sacas de 60kg por hectare."
+                />
 
                 {/* N Requirement */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-[11px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase tracking-wider flex items-center gap-1.5">
-                      N necessário por saca produzida
-                      <button 
-                        type="button" 
-                        onClick={() => setActiveTooltip(activeTooltip === 'n_req' ? null : 'n_req')}
-                        className="text-[#8C897E] dark:text-[#9EA399] hover:text-[#5A5A40] dark:hover:text-[#9CB386]"
-                      >
-                        <HelpCircle className="h-4 w-4" />
-                      </button>
-                    </label>
-                    <span className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF] bg-[#F9F8F6] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2 py-0.5 rounded-md">
-                      {nRequirementPerBag.toFixed(2)} kg N/sc
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="0.05"
-                      min="0.5"
-                      max="2.5"
-                      value={nRequirementPerBag}
-                      onChange={(e) => handleCustomInputChange(() => setNRequirementPerBag(Math.max(0, Number(e.target.value))))}
-                      className="w-full text-sm bg-[#F9F8F6] dark:bg-[#151813] border border-[#E5E2D9] dark:border-[#2C3328] rounded-xl px-4 py-3 font-semibold text-[#5A5A40] dark:text-[#E8E6DF] focus:outline-none focus:ring-2 focus:ring-[#5A5A40]/20"
-                    />
-                  </div>
-                  
-                  {activeTooltip === 'n_req' && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-xs bg-[#F9F8F6] dark:bg-[#232821] text-[#3D3D3D] dark:text-[#E8E6DF] p-3 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328] mt-2"
-                    >
-                      <p><strong>Extração Unitária:</strong> Quantidade de nitrogênio requerida pela cultura para produzir uma saca (60kg). O padrão na literatura de fertilidade varia geralmente entre <strong>1,2 e 1,5 kg N por saca</strong> produzida.</p>
-                    </motion.div>
-                  )}
-                </div>
+                <Input3D
+                  label="N necessário por saca produzida"
+                  unit="kg N/sc"
+                  value={nRequirementPerBag}
+                  onChange={(v) => handleCustomInputChange(() => setNRequirementPerBag(Math.max(0, v)))}
+                  step={0.05}
+                  min={0.5}
+                  max={2.5}
+                  isDark={isDark}
+                  accentColor="#5A5A40"
+                  hint="Extração unitária: 1.2 a 1.5 kg N por saca (padrão: 1.35)."
+                />
 
                 {/* MOS Contribution */}
-                <div id="input_group_soil" className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-[11px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase tracking-wider flex items-center gap-1.5">
-                      N fornecido pela M.O. (MOS)
-                      <button 
-                        type="button" 
-                        onClick={() => setActiveTooltip(activeTooltip === 'mos' ? null : 'mos')}
-                        className="text-[#8C897E] dark:text-[#9EA399] hover:text-[#5A5A40] dark:hover:text-[#9CB386]"
-                      >
-                        <HelpCircle className="h-4 w-4" />
-                      </button>
-                    </label>
-                    <span className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF] bg-[#F9F8F6] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2 py-0.5 rounded-md">
-                      {mosNContribution} kg N/ha
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min="0"
-                      max="150"
-                      value={mosNContribution}
-                      onChange={(e) => handleCustomInputChange(() => setMosNContribution(Math.max(0, Number(e.target.value))))}
-                      className="w-full text-sm bg-[#F9F8F6] dark:bg-[#151813] border border-[#E5E2D9] dark:border-[#2C3328] rounded-xl px-4 py-3 font-semibold text-[#5A5A40] dark:text-[#E8E6DF] focus:outline-none focus:ring-2 focus:ring-[#5A5A40]/20"
-                    />
-                  </div>
-
-                  {activeTooltip === 'mos' && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-xs bg-[#F9F8F6] dark:bg-[#232821] text-[#3D3D3D] dark:text-[#E8E6DF] p-3 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328] mt-2"
-                    >
-                      <p><strong>Mineralização da Matéria Orgânica do Solo (MOS):</strong> Quantidade estimada de nitrogênio liberada no solo pela matéria orgânica seca disponível para a cultura do milho durante o ciclo.</p>
-                    </motion.div>
-                  )}
-                </div>
+                <Input3D
+                  id="input_group_soil"
+                  label="N fornecido pela M.O. (MOS)"
+                  unit="kg N/ha"
+                  value={mosNContribution}
+                  onChange={(v) => handleCustomInputChange(() => setMosNContribution(Math.max(0, v)))}
+                  step={1}
+                  min={0}
+                  max={150}
+                  isDark={isDark}
+                  accentColor="#5A5A40"
+                  hint="Mineralização da Matéria Orgânica do Solo."
+                />
 
                 {/* Soy Credit */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-[11px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase tracking-wider flex items-center gap-1.5">
-                      Crédito de N pela Soja (cultura anterior)
-                      <button 
-                        type="button" 
-                        onClick={() => setActiveTooltip(activeTooltip === 'soy' ? null : 'soy')}
-                        className="text-[#8C897E] dark:text-[#9EA399] hover:text-[#5A5A40] dark:hover:text-[#9CB386]"
-                      >
-                        <HelpCircle className="h-4 w-4" />
-                      </button>
-                    </label>
-                    <span className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF] bg-[#F9F8F6] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2 py-0.5 rounded-md">
-                      {soyNContribution} kg N/ha
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={soyNContribution}
-                      onChange={(e) => handleCustomInputChange(() => setSoyNContribution(Math.max(0, Number(e.target.value))))}
-                      className="w-full text-sm bg-[#F9F8F6] dark:bg-[#151813] border border-[#E5E2D9] dark:border-[#2C3328] rounded-xl px-4 py-3 font-semibold text-[#5A5A40] dark:text-[#E8E6DF] focus:outline-none focus:ring-2 focus:ring-[#5A5A40]/20"
-                    />
-                  </div>
-
-                  {activeTooltip === 'soy' && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-xs bg-[#F9F8F6] dark:bg-[#232821] text-[#3D3D3D] dark:text-[#E8E6DF] p-3 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328] mt-2"
-                    >
-                      <p><strong>Crédito de Nitrogênio da Soja:</strong> Por ser uma leguminosa com fixação biológica de nitrogênio, a cultura da soja deixa resíduos ricos em N no solo. O crédito comumente adotado na sucessão Soja-Milho varia de <strong>15 a 30 kg N/ha</strong>.</p>
-                    </motion.div>
-                  )}
-                </div>
+                <Input3D
+                  label="Crédito de N pela Soja (cultura anterior)"
+                  unit="kg N/ha"
+                  value={soyNContribution}
+                  onChange={(v) => handleCustomInputChange(() => setSoyNContribution(Math.max(0, v)))}
+                  step={1}
+                  min={0}
+                  max={100}
+                  isDark={isDark}
+                  accentColor="#5A5A40"
+                  hint="Crédito de N da soja: 15 a 30 kg N/ha na sucessão Soja-Milho."
+                />
 
                 {/* Efficiency rate */}
-                <div id="input_group_efficiency" className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-[11px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase tracking-wider flex items-center gap-1.5">
-                      Eficiência de Aplicação (%)
-                      <button 
-                        type="button" 
-                        onClick={() => setActiveTooltip(activeTooltip === 'eff' ? null : 'eff')}
-                        className="text-[#8C897E] dark:text-[#9EA399] hover:text-[#5A5A40] dark:hover:text-[#9CB386]"
-                      >
-                        <HelpCircle className="h-4 w-4" />
-                      </button>
-                    </label>
-                    <span className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF] bg-[#F9F8F6] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2 py-0.5 rounded-md">
-                      {efficiency}%
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min="10"
-                      max="100"
-                      value={efficiency}
-                      onChange={(e) => handleCustomInputChange(() => setEfficiency(Math.min(100, Math.max(10, Number(e.target.value)))))}
-                      className="w-full text-sm bg-[#F9F8F6] dark:bg-[#151813] border border-[#E5E2D9] dark:border-[#2C3328] rounded-xl px-4 py-3 font-semibold text-[#5A5A40] dark:text-[#E8E6DF] focus:outline-none focus:ring-2 focus:ring-[#5A5A40]/20"
-                    />
-                  </div>
-
-                  {activeTooltip === 'eff' && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-xs bg-[#F9F8F6] dark:bg-[#232821] text-[#3D3D3D] dark:text-[#E8E6DF] p-3 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328] mt-2"
-                    >
-                      <p><strong>Eficiência de Aproveitamento (padrão 80%):</strong> Fração do nitrogênio aplicado que é efetivamente absorvida pela planta. Perdas por volatilização ou lixiviação reduzem esse valor. Uma eficiência de 80% (fator 0.8) indica que é necessário aplicar uma dose maior para compensar as perdas previstas.</p>
-                    </motion.div>
-                  )}
-                </div>
+                <Input3D
+                  id="input_group_efficiency"
+                  label="Eficiência de Aplicação (%)"
+                  unit="%"
+                  value={efficiency}
+                  onChange={(v) => handleCustomInputChange(() => setEfficiency(Math.min(100, Math.max(10, v))))}
+                  step={1}
+                  min={10}
+                  max={100}
+                  isDark={isDark}
+                  accentColor="#5A5A40"
+                  hint="Eficiência padrão: 80% (fator 0.8). Perdas por volatilização/lixiviação."
+                />
 
               </div>
 
@@ -782,109 +739,230 @@ export default function Home() {
 
               <div className="space-y-5">
                 {/* Switch split base */}
-                <div className="space-y-2">
-                  <label className="block text-[11px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase tracking-wider">
-                    Base para cálculo do parcelamento:
-                  </label>
-                  <div className="grid grid-cols-2 gap-2 bg-[#F9F8F6] dark:bg-[#151813] border border-[#E5E2D9] dark:border-[#2C3328] p-1 rounded-xl">
-                    <button
-                      type="button"
-                      onClick={() => setSplitBase('dose_perdas')}
-                      className={`text-xs py-2 px-3 rounded-lg font-bold transition-all ${
-                        splitBase === 'dose_perdas'
-                          ? 'bg-[#D4A373] text-white shadow-sm'
-                          : 'text-[#8C897E] dark:text-[#9EA399] hover:text-[#5A5A40] dark:hover:text-[#E8E6DF]'
-                      }`}
-                    >
-                      Dose com Perdas ({calculations.recommendedDose} kg N/ha)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSplitBase('necessidade_liquida')}
-                      className={`text-xs py-2 px-3 rounded-lg font-bold transition-all ${
-                        splitBase === 'necessidade_liquida'
-                          ? 'bg-[#D4A373] text-white shadow-sm'
-                          : 'text-[#8C897E] dark:text-[#9EA399] hover:text-[#5A5A40] dark:hover:text-[#E8E6DF]'
-                      }`}
-                    >
-                      Necessidade Líquida ({calculations.liquidNeed} kg N/ha)
-                    </button>
+                <Select3D
+                  label="Base para cálculo do parcelamento:"
+                  value={splitBase}
+                  onChange={(v) => handleCustomInputChange(() => setSplitBase(v as 'dose_perdas' | 'necessidade_liquida'))}
+                  isDark={isDark}
+                  accentColor="#D4A373"
+                  options={[
+                    {
+                      value: 'dose_perdas',
+                      label: `Dose com Perdas (${calculations.recommendedDose} kg N/ha)`,
+                      description: 'Inclui perdas por eficiência',
+                    },
+                    {
+                      value: 'necessidade_liquida',
+                      label: `Necessidade Líquida (${calculations.liquidNeed} kg N/ha)`,
+                      description: 'Sem correção de perdas',
+                    },
+                  ]}
+                />
+
+                {/* 1st Application — Base/Semeadura (kg N/ha) */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-[#3D3D3D] dark:text-[#E8E6DF]">
+                      1ª Aplicação (Base / Semeadura)
+                    </span>
+                    <Select3D
+                      value={baseDoseMode}
+                      onChange={(v) => handleCustomInputChange(() => {
+                        setBaseDoseMode(v as 'single' | 'range');
+                        if (v === 'single') setBaseDose2(0);
+                      })}
+                      isDark={isDark}
+                      accentColor="#D4A373"
+                      options={[
+                        { value: 'single', label: '1 valor' },
+                        { value: 'range', label: '2 valores' },
+                      ]}
+                      className="!inline-flex !w-auto"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-3 items-end">
+                    <Input3D
+                      label="Valor (kg N/ha)"
+                      unit="kg N/ha"
+                      value={baseDose}
+                      onChange={(v) => handleCustomInputChange(() => setBaseDose(v))}
+                      step={1}
+                      min={0}
+                      max={100}
+                      isDark={isDark}
+                      accentColor="#D4A373"
+                    />
+                    {baseDoseMode === 'range' && (
+                      <motion.div
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex-1"
+                      >
+                        <Input3D
+                          label="2º Valor (kg N/ha)"
+                          unit="kg N/ha"
+                          value={baseDose2}
+                          onChange={(v) => handleCustomInputChange(() => setBaseDose2(v))}
+                          step={1}
+                          min={0}
+                          max={100}
+                          isDark={isDark}
+                          accentColor="#D4A373"
+                        />
+                      </motion.div>
+                    )}
                   </div>
                   <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-1 leading-relaxed">
-                    *Nota: A prática mais segura é parcelar a dose real de fertilizante a aplicar (Dose com perdas).
+                    * Faixa agronômica típica: 30 a 40 kg N/ha.
                   </p>
                 </div>
 
-                {/* Base Application N (1a Aplicação) */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-semibold text-[#3D3D3D] dark:text-[#E8E6DF]">
-                      1ª Aplicação (Base / Semeadura)
-                    </label>
-                    <span className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF] bg-[#F9F8F6] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2.5 py-0.5 rounded-md">
-                      {baseDose} kg N/ha
+                {/* 2nd Application — V4-V6 (% values) */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-[#3D3D3D] dark:text-[#E8E6DF]">
+                      2ª Aplicação (V4-V6) — Percentual
+                    </span>
+                    <Select3D
+                      value={v4v6Mode}
+                      onChange={(v) => handleCustomInputChange(() => {
+                        setV4v6Mode(v as 'single' | 'range');
+                        if (v === 'single') setV4v6Percent2(0);
+                      })}
+                      isDark={isDark}
+                      accentColor="#5A5A40"
+                      options={[
+                        { value: 'single', label: '1 valor %' },
+                        { value: 'range', label: '2 valores %' },
+                      ]}
+                      className="!inline-flex !w-auto"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 items-end">
+                    <Input3D
+                      label={`${v4v6Mode === 'range' ? 'Min %' : '% do total'}`}
+                      unit="%"
+                      value={v4v6Percent}
+                      onChange={(v) => handleCustomInputChange(() => setV4v6Percent(v))}
+                      step={1}
+                      min={0}
+                      max={100}
+                      isDark={isDark}
+                      accentColor="#5A5A40"
+                    />
+                    {v4v6Mode === 'range' && (
+                      <motion.div
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex-1"
+                      >
+                        <Input3D
+                          label="Max %"
+                          unit="%"
+                          value={v4v6Percent2}
+                          onChange={(v) => handleCustomInputChange(() => setV4v6Percent2(v))}
+                          step={1}
+                          min={0}
+                          max={100}
+                          isDark={isDark}
+                          accentColor="#5A5A40"
+                        />
+                      </motion.div>
+                    )}
+                  </div>
+
+                  <div className={`p-3 rounded-xl border text-xs font-semibold ${
+                    isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
+                  }`}>
+                    <span className="text-[#8C897E] dark:text-[#9EA399]">Resultado: </span>
+                    <span className="text-[#5A5A40] dark:text-[#9CB386]">
+                      {calculations.v4v6_1_kg} kg N/ha
+                      {calculations.v4v6_2_kg > 0 && ` a ${calculations.v4v6_2_kg} kg N/ha`}
                     </span>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={baseDose}
-                    onChange={(e) => handleCustomInputChange(() => setBaseDose(Number(e.target.value)))}
-                    className="w-full h-2 bg-[#F0EDE5] dark:bg-[#2D3429] rounded-lg appearance-none cursor-pointer accent-[#D4A373]"
-                  />
-                  <div className="flex justify-between text-[10px] text-[#8C897E] dark:text-[#9EA399] font-medium">
-                    <span>Recomendado: 30 a 40 kg N/ha</span>
-                  </div>
+                  <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] leading-relaxed">
+                    * Faixa agronômica padrão: 50% a 60% do total.
+                  </p>
                 </div>
 
-                {/* V4-V6 Percentage Input */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-semibold text-[#3D3D3D] dark:text-[#E8E6DF]">
-                      2ª Aplicação (V4-V6) - % Escolhida
-                    </label>
-                    <span className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF] bg-[#F9F8F6] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2.5 py-0.5 rounded-md">
-                      {v4v6Percent}% do total
+                {/* 3rd Application — V8-V10 (% values, auto-calculated) */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-[#3D3D3D] dark:text-[#E8E6DF]">
+                      3ª Aplicação (V8-V10) — Percentual
                     </span>
+                    <Select3D
+                      value={v8v10Mode}
+                      onChange={(v) => handleCustomInputChange(() => {
+                        setV8v10Mode(v as 'single' | 'range');
+                        if (v === 'single') setV8v10Percent2(0);
+                      })}
+                      isDark={isDark}
+                      accentColor="#8D6E63"
+                      options={[
+                        { value: 'single', label: '1 valor %' },
+                        { value: 'range', label: '2 valores %' },
+                      ]}
+                      className="!inline-flex !w-auto"
+                    />
                   </div>
-                  <input
-                    type="range"
-                    min="20"
-                    max="80"
-                    step="5"
-                    value={v4v6Percent}
-                    onChange={(e) => handleCustomInputChange(() => setV4v6Percent(Number(e.target.value)))}
-                    className="w-full h-2 bg-[#F0EDE5] dark:bg-[#2D3429] rounded-lg appearance-none cursor-pointer accent-[#D4A373]"
-                  />
-                  <div className="flex justify-between text-[10px] text-[#8C897E] dark:text-[#9EA399] font-medium">
-                    <span>Recomendado padrão: 50% a 60%</span>
-                  </div>
-                </div>
 
-                {/* V8-V10 Percentage Input */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-semibold text-[#3D3D3D] dark:text-[#E8E6DF]">
-                      3ª Aplicação (V8-V10) - % Escolhida
-                    </label>
-                    <span className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF] bg-[#F9F8F6] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2.5 py-0.5 rounded-md">
-                      {v8v10Percent}% do total
+                  <div className="flex gap-3 items-end">
+                    <Input3D
+                      label={v8v10Mode === 'range' ? 'Min %' : '% do total'}
+                      unit="%"
+                      value={v8v10Percent}
+                      onChange={(v) => handleCustomInputChange(() => setV8v10Percent(v))}
+                      step={1}
+                      min={0}
+                      max={100}
+                      isDark={isDark}
+                      accentColor="#8D6E63"
+                      derived={v8v10Percent === 0}
+                      hint={v8v10Percent === 0 ? `Auto-calculado: ${calculations.v8v10_1_auto}%` : undefined}
+                    />
+                    {v8v10Mode === 'range' && (
+                      <motion.div
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex-1"
+                      >
+                        <Input3D
+                          label="Max %"
+                          unit="%"
+                          value={v8v10Percent2}
+                          onChange={(v) => handleCustomInputChange(() => setV8v10Percent2(v))}
+                          step={1}
+                          min={0}
+                          max={100}
+                          isDark={isDark}
+                          accentColor="#8D6E63"
+                          derived={v8v10Percent2 === 0 && v4v6Percent2 > 0}
+                          hint={v8v10Percent2 === 0 && v4v6Percent2 > 0 ? `Auto-calculado: ${calculations.v8v10_2_auto}%` : undefined}
+                        />
+                      </motion.div>
+                    )}
+                  </div>
+
+                  <div className={`p-3 rounded-xl border text-xs font-semibold ${
+                    isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
+                  }`}>
+                    <span className="text-[#8C897E] dark:text-[#9EA399]">Resultado: </span>
+                    <span className="text-[#8D6E63] dark:text-[#D4A373]">
+                      {calculations.v8v10_1_kg} kg N/ha
+                      {calculations.v8v10_2_kg > 0 && ` a ${calculations.v8v10_2_kg} kg N/ha`}
                     </span>
+                    {v8v10Percent === 0 && (
+                      <span className="ml-2 text-[10px] text-[#8C897E] dark:text-[#9EA399]">
+                        (Calculado automaticamente para fechar o balanço)
+                      </span>
+                    )}
                   </div>
-                  <input
-                    type="range"
-                    min="10"
-                    max="60"
-                    step="5"
-                    value={v8v10Percent}
-                    onChange={(e) => handleCustomInputChange(() => setV8v10Percent(Number(e.target.value)))}
-                    className="w-full h-2 bg-[#F0EDE5] dark:bg-[#2D3429] rounded-lg appearance-none cursor-pointer accent-[#D4A373]"
-                  />
-                  <div className="flex justify-between text-[10px] text-[#8C897E] dark:text-[#9EA399] font-medium">
-                    <span>Recomendado padrão: 20% a 30%</span>
-                  </div>
+                  <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] leading-relaxed">
+                    * Se deixar em 0%, o sistema calcula automaticamente para fechar o balanço. Faixa padrão: 20% a 30%.
+                  </p>
                 </div>
               </div>
             </div>
@@ -1016,7 +1094,7 @@ export default function Home() {
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="bg-[#5A5A40] dark:bg-[#3D4D35] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
-                        2ª Aplicação: V2-V6
+                        2ª Aplicação: V4-V6
                       </span>
                       <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
                         Padrão agronômico: <strong>50% a 60%</strong> da meta ({splitBase === 'dose_perdas' ? 'Dose com perdas' : 'N Líquido'})
@@ -1024,7 +1102,8 @@ export default function Home() {
                     </div>
                     <div className="text-right">
                       <span className="text-[10px] font-bold text-[#5A5A40] dark:text-[#9CB386] bg-[#FDFBF7] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2.5 py-1 rounded-md">
-                        Escolhido: {v4v6Percent}% ({calculations.selectedV4V6Val.toFixed(2)} kg N/ha)
+                        {calculations.v4v6_1}% ({calculations.v4v6_1_kg} kg N/ha)
+                        {calculations.v4v6_2 > 0 && ` a ${calculations.v4v6_2}% (${calculations.v4v6_2_kg} kg N/ha)`}
                       </span>
                     </div>
                   </div>
@@ -1058,7 +1137,8 @@ export default function Home() {
                     </div>
                     <div className="text-right">
                       <span className="text-[10px] font-bold text-[#8D6E63] dark:text-[#D4A373] bg-[#FDFBF7] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2.5 py-1 rounded-md">
-                        Escolhido: {v8v10Percent}% ({calculations.selectedV8V10Val.toFixed(2)} kg N/ha)
+                        {calculations.v8v10_1_final}% ({calculations.v8v10_1_kg} kg N/ha)
+                        {calculations.v8v10_2_final > 0 && ` a ${calculations.v8v10_2_final}% (${calculations.v8v10_2_kg} kg N/ha)`}
                       </span>
                     </div>
                   </div>
@@ -1124,34 +1204,34 @@ export default function Home() {
                 
                 <div className="h-4 bg-[#F0EDE5] dark:bg-[#2D3429] rounded-full flex overflow-hidden shadow-inner">
                   <div 
-                    style={{ width: `${Math.min(100, (baseDose / calculations.targetSplitTotal) * 100)}%` }} 
+                    style={{ width: `${Math.min(100, (calculations.base1_kg / calculations.targetSplitTotal) * 100)}%` }} 
                     className="bg-[#8C897E] h-full transition-all duration-300" 
-                    title={`Base: ${baseDose} kg N/ha`}
+                    title={`Base: ${calculations.base1_kg} kg N/ha`}
                   />
                   <div 
-                    style={{ width: `${Math.min(100, (calculations.selectedV4V6Val / calculations.targetSplitTotal) * 100)}%` }} 
+                    style={{ width: `${Math.min(100, (calculations.v4v6_1_kg / calculations.targetSplitTotal) * 100)}%` }} 
                     className="bg-[#5A5A40] dark:bg-[#9CB386] h-full transition-all duration-300" 
-                    title={`V4-V6: ${calculations.selectedV4V6Val} kg N/ha`}
+                    title={`V4-V6: ${calculations.v4v6_1_kg} kg N/ha`}
                   />
                   <div 
-                    style={{ width: `${Math.min(100, (calculations.selectedV8V10Val / calculations.targetSplitTotal) * 100)}%` }} 
+                    style={{ width: `${Math.min(100, (calculations.v8v10_1_kg / calculations.targetSplitTotal) * 100)}%` }} 
                     className="bg-[#8D6E63] dark:bg-[#D4A373] h-full transition-all duration-300" 
-                    title={`V8-V10: ${calculations.selectedV8V10Val} kg N/ha`}
+                    title={`V8-V10: ${calculations.v8v10_1_kg} kg N/ha`}
                   />
                 </div>
 
                 <div className="flex flex-wrap gap-4 text-xs font-semibold text-[#8C897E] dark:text-[#9EA399] justify-between border-b border-[#F0EDE5] dark:border-[#2C3328] pb-3">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 bg-[#8C897E] rounded-sm" />
-                    <span>1ª Base: {baseDose.toFixed(2)} kg/ha</span>
+                    <span>1ª Base: {calculations.base1_kg} kg/ha</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 bg-[#5A5A40] dark:bg-[#9CB386] rounded-sm" />
-                    <span>2ª V4-V6: {calculations.selectedV4V6Val.toFixed(2)} kg/ha ({v4v6Percent}%)</span>
+                    <span>2ª V4-V6: {calculations.v4v6_1_kg} kg/ha ({calculations.v4v6_1}%)</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 bg-[#8D6E63] dark:bg-[#D4A373] rounded-sm" />
-                    <span>3ª V8-V10: {calculations.selectedV8V10Val.toFixed(2)} kg/ha ({v8v10Percent}%)</span>
+                    <span>3ª V8-V10: {calculations.v8v10_1_kg} kg/ha ({calculations.v8v10_1_final}%)</span>
                   </div>
                 </div>
 
@@ -1160,7 +1240,7 @@ export default function Home() {
                   <div className="space-y-1">
                     <div className="text-xs text-[#8C897E] dark:text-[#9EA399]">Soma das Três Aplicações:</div>
                     <div className="text-sm font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
-                      {baseDose.toFixed(2)} + {calculations.selectedV4V6Val.toFixed(2)} + {calculations.selectedV8V10Val.toFixed(2)} = <span className="font-extrabold text-[#5A5A40] dark:text-[#9CB386] text-lg">{calculations.sumOfSplits.toFixed(2)} kg N/ha</span>
+                      {calculations.base1_kg} + {calculations.v4v6_1_kg} + {calculations.v8v10_1_kg} = <span className="font-extrabold text-[#5A5A40] dark:text-[#9CB386] text-lg">{calculations.sumOfSplits} kg N/ha</span>
                     </div>
                   </div>
                   
@@ -1271,11 +1351,11 @@ export default function Home() {
               </p>
               <div className="bg-white dark:bg-[#232821] p-2.5 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328] font-mono text-[11px] leading-relaxed mt-1 text-[#3D3D3D] dark:text-[#E8E6DF]">
                 <div className="text-[#8C897E] dark:text-[#9EA399] font-semibold mb-1">APLICAÇÕES:</div>
-                <div>Base: {baseDose.toFixed(2)} kg/ha</div>
-                <div>V4-V6 ({v4v6Percent}%): {calculations.selectedV4V6Val.toFixed(2)} kg/ha</div>
-                <div>V8-V10 ({v8v10Percent}%): {calculations.selectedV8V10Val.toFixed(2)} kg/ha</div>
+                <div>Base: {calculations.base1_kg} kg/ha</div>
+                <div>V4-V6 ({calculations.v4v6_1}%): {calculations.v4v6_1_kg} kg/ha</div>
+                <div>V8-V10 ({calculations.v8v10_1_final}%): {calculations.v8v10_1_kg} kg/ha</div>
                 <div className="border-t border-[#F0EDE5] dark:border-[#2C3328] my-1 pt-1 text-[#8D6E63] dark:text-[#D4A373] font-bold">
-                  Soma: {calculations.sumOfSplits.toFixed(2)} kg N/ha
+                  Soma: {calculations.sumOfSplits} kg N/ha
                 </div>
               </div>
             </div>
@@ -1296,11 +1376,11 @@ export default function Home() {
                 <div>• <strong>Dose de N a aplicar (com perdas):</strong> {calculations.recommendedDose.toFixed(2)} kg N/ha</div>
               </div>
               <div className="space-y-1.5">
-                <div>• <strong>Dose aplicada na Base:</strong> {baseDose.toFixed(2)} kg N/ha</div>
+                <div>• <strong>Dose aplicada na Base:</strong> {calculations.base1_kg} kg N/ha</div>
                 <div>• <strong>Faixa V4-V6 (50% a 60%):</strong> {calculations.v4v6_50.toFixed(2)} a {calculations.v4v6_60.toFixed(2)} kg N/ha</div>
                 <div>• <strong>Faixa V8-V10 (20% a 30%):</strong> {calculations.v8v10_20.toFixed(2)} a {calculations.v8v10_30.toFixed(2)} kg N/ha</div>
-                <div>• <strong>Diferença de dose (V4-V6 vs V8-V10):</strong> {calculations.splitDifference.toFixed(2)} kg N/ha</div>
-                <div>• <strong>Soma das parcelas aplicadas:</strong> {calculations.sumOfSplits.toFixed(2)} kg N/ha (Meta: {calculations.targetSplitTotal.toFixed(2)} kg N/ha)</div>
+                <div>• <strong>Diferença de dose (V4-V6 vs V8-V10):</strong> {calculations.splitDifference} kg N/ha</div>
+                <div>• <strong>Soma das parcelas aplicadas:</strong> {calculations.sumOfSplits} kg N/ha (Meta: {calculations.targetSplitTotal} kg N/ha)</div>
               </div>
             </div>
           </div>
@@ -1323,14 +1403,17 @@ export default function Home() {
               soyNContribution,
               efficiency,
               baseDose,
+              baseDose2,
               v4v6Percent,
+              v4v6Percent2,
               v8v10Percent,
+              v8v10Percent2,
               splitBase,
               totalExtraction: calculations.totalExtraction,
               liquidNeed: calculations.liquidNeed,
               recommendedDose: calculations.recommendedDose,
-              selectedV4V6Val: calculations.selectedV4V6Val,
-              selectedV8V10Val: calculations.selectedV8V10Val,
+              selectedV4V6Val: calculations.v4v6_1_kg,
+              selectedV8V10Val: calculations.v8v10_1_kg,
               sumOfSplits: calculations.sumOfSplits,
             }}
           />
@@ -1348,14 +1431,17 @@ export default function Home() {
             soyNContribution,
             efficiency,
             baseDose,
+            baseDose2,
             v4v6Percent,
+            v4v6Percent2,
             v8v10Percent,
+            v8v10Percent2,
             splitBase,
             totalExtraction: calculations.totalExtraction,
             liquidNeed: calculations.liquidNeed,
             recommendedDose: calculations.recommendedDose,
-            selectedV4V6Val: calculations.selectedV4V6Val,
-            selectedV8V10Val: calculations.selectedV8V10Val,
+            selectedV4V6Val: calculations.v4v6_1_kg,
+            selectedV8V10Val: calculations.v8v10_1_kg,
             sumOfSplits: calculations.sumOfSplits,
           }}
         />

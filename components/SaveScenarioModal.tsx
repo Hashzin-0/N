@@ -25,6 +25,7 @@ interface SaveScenarioModalProps {
     selectedV4V6Val: number;
     selectedV8V10Val: number;
     sumOfSplits?: number;
+    [key: string]: number | string | undefined; // Allow extra fields
   };
 }
 
