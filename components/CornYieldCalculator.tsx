@@ -8,7 +8,6 @@ import {
   HelpCircle, 
   CheckCircle2, 
   RotateCcw,
-  Sparkles,
   Layers,
   ChevronDown,
   Info,
@@ -19,9 +18,8 @@ import CornAlert3D, { AgronomicValidationIssue } from './CornAlert3D';
 import Input3D from './Input3D';
 import Button3D from './Button3D';
 import Elastic3DSlider from './Elastic3DSlider';
-import CalculationIsland from './CalculationIsland';
-import CalculationMemoryPanel from './CalculationMemoryPanel';
 import { useTheme } from './ThemeProvider';
+import CornYieldResultCard from './metrics/CornYieldResultCard';
 
 interface CornYieldCalculatorProps {
   onApplyYieldGoal?: (scHa: number) => void;
@@ -55,7 +53,6 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
   const [activePreset, setActivePreset] = useState<string>('personalizado');
   const [showFormulaDetails, setShowFormulaDetails] = useState<boolean>(true);
   const [appliedToast, setAppliedToast] = useState<string | null>(null);
-  const [showCalcYield, setShowCalcYield] = useState<boolean>(false);
 
   // Calculations
   const estande = useMemo(() => {
@@ -651,119 +648,23 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
           </div>
 
           {/* RESULTS CARD */}
-          <div id="corn_yield_results" className={`calc-island-scoop p-6 rounded-3xl border shadow-md space-y-5 transition-colors relative ${
-            isDark ? 'bg-[#1F221B] border-[#373C2C]' : 'bg-white border-[#E5E2D9]'
-          }`}>
-            <CalculationIsland
-              isVisible={showCalcYield}
-              onToggle={() => setShowCalcYield(!showCalcYield)}
-              accentColor="#5A5A40"
-              darkAccentColor="#9CB386"
-              isDark={isDark}
-            />
-            
-            <div className="border-b pb-3 border-[#F0EDE5] dark:border-[#2F3329] flex justify-between items-center">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#A6A395]">
-                Resultado Final da Estimativa
-              </span>
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#D4A373]/20 text-[#D4A373] font-bold">
-                Safra Milho
-              </span>
-            </div>
-
-            {/* BIG METRIC 1: PRODUTIVIDADE LÍQUIDA */}
-            <motion.div
-              className="p-5 rounded-2xl bg-gradient-to-br from-[#5A5A40] to-[#454530] text-white shadow-md space-y-2"
-              animate={{ scale: [1, 1.005, 1] }}
-              transition={{ duration: 0.4 }}
-              key={produtividadeLiquida}
-            >
-              <div className="flex justify-between items-start">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-white/80">
-                  Produtividade Líquida (Após Quebra)
-                </span>
-                <motion.span
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 0.6, delay: 0.5 }}
-                >
-                  <svg className="h-5 w-5 text-[#86efac]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                </motion.span>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <motion.span
-                  className="text-4xl sm:text-5xl font-mono font-extrabold text-white tracking-tight"
-                  key={produtividadeLiquida}
-                  initial={{ scale: 1.1, opacity: 0.7 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                >
-                  {produtividadeLiquida}
-                </motion.span>
-                <span className="text-lg font-medium text-white/90">sc/ha</span>
-              </div>
-              <div className="text-xs text-white/80 pt-1 border-t border-white/20 flex justify-between">
-                <span>Total em Grãos:</span>
-                <strong>{Number((produtividadeLiquida * 60).toFixed(0)).toLocaleString('pt-BR')} kg/ha</strong>
-              </div>
-            </motion.div>
-
-            {/* SUB METRICS: BRUTO E QUEBRA */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className={`p-3.5 rounded-2xl border transition-colors ${
-                isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
-              }`}>
-                <span className="text-[10px] uppercase font-bold text-[#8C897E] dark:text-[#A6A395] block">
-                  Produtividade Bruta
-                </span>
-                <div className="text-xl font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A] mt-1">
-                  {scHaBruto} <span className="text-xs font-normal">sc/ha</span>
-                </div>
-              </div>
-
-              <div className={`p-3.5 rounded-2xl border transition-colors ${
-                isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
-              }`}>
-                <span className="text-[10px] uppercase font-bold text-[#D4A373] block">
-                  Quebra / Perda ({quebraDecimal * 100}%)
-                </span>
-                <div className="text-xl font-mono font-bold text-[#D4A373] mt-1">
-                  -{quebraValor} <span className="text-xs font-normal">sc/ha</span>
-                </div>
-              </div>
-            </div>
-
-            {/* ACTION BUTTON: APPLY TO NITROGEN CALCULATOR */}
-            <Button3D
-              id="btn_apply_yield_to_n"
-              variant="primary"
-              size="lg"
-              isDark={isDark}
-              onClick={handleApplyToNitrogenCalculator}
-              icon={<Sparkles className="h-4 w-4 text-[#86efac]" />}
-              iconRight={<svg className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>}
-              tooltip="Transfere esta produtividade diretamente para a calculadora de Nitrogênio"
-              className="w-full"
-            >
-              Usar esta Produtividade no Cálculo de Nitrogênio
-            </Button3D>
-
-            <CalculationMemoryPanel isVisible={showCalcYield} isDark={isDark}>
-              <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
-                isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
-              }`}>
-                <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Passo a Passo — Estimativa de Milho:</div>
-                <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>1. Estande:</span> {plantasPorMetro} × {espacamentoLinhas} × 10.000 = {estande} plantas/ha</div>
-                <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>2. Grãos/espiga:</span> {fileiras} × {graosPorFileira} = {quantidadeGraos} grãos</div>
-                <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>3. PMG unitário:</span> {pmg} ÷ 1000 = {pmgUnitario.toFixed(3)} g/grão</div>
-                <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>4. sc/ha Bruto:</span> ({estande} × {espigas} × {quantidadeGraos} × {pmgUnitario.toFixed(3)}) ÷ 1000 = {scHaBruto} sc/ha</div>
-                <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>5. Quebra ({quebraDecimal * 100}%):</span> {scHaBruto} × {quebraDecimal} = -{quebraValor} sc/ha</div>
-                <div className={`border-t pt-1.5 mt-1.5 font-bold ${isDark ? 'border-[#2C3328] text-[#D4A373]' : 'border-[#F0EDE5] text-[#8D6E63]'}`}>
-                  6. Produtividade Líquida: {scHaBruto} - {quebraValor} = {produtividadeLiquida} sc/ha ({Number((produtividadeLiquida * 60).toFixed(0)).toLocaleString('pt-BR')} kg/ha)
-                </div>
-              </div>
-            </CalculationMemoryPanel>
-
-          </div>
+          <CornYieldResultCard
+            isDark={isDark}
+            produtividadeLiquida={produtividadeLiquida}
+            scHaBruto={scHaBruto}
+            quebraValor={quebraValor}
+            quebraDecimal={quebraDecimal}
+            plantasPorMetro={plantasPorMetro}
+            espacamentoLinhas={espacamentoLinhas}
+            fileiras={fileiras}
+            graosPorFileira={graosPorFileira}
+            espigas={espigas}
+            pmg={pmg}
+            pmgUnitario={pmgUnitario}
+            quantidadeGraos={quantidadeGraos}
+            estande={estande}
+            onApplyToNitrogen={handleApplyToNitrogenCalculator}
+          />
 
         </motion.div>
 

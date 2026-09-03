@@ -1,0 +1,126 @@
+'use client';
+
+import React, { useState } from 'react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
+import CalculationIsland from '@/components/CalculationIsland';
+import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
+import { useTheme } from '@/components/ThemeProvider';
+import { Calculations } from '@/lib/types';
+
+interface Props {
+  calculations: Calculations;
+}
+
+export default function BalancoSection({ calculations }: Props) {
+  const { isDark } = useTheme();
+  const [showCalc, setShowCalc] = useState(false);
+
+  return (
+    <div className="calc-island-scoop bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-6 shadow-sm space-y-4 transition-colors relative">
+      <CalculationIsland
+        isVisible={showCalc}
+        onToggle={() => setShowCalc(!showCalc)}
+        accentColor="#2E6F40"
+        darkAccentColor="#86efac"
+        isDark={isDark}
+      />
+
+      <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-3 flex justify-between items-center">
+        <div>
+          <h3 className="text-sm font-bold text-[#5A5A40] dark:text-[#E8E6DF] uppercase tracking-wider flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> Validação e Fechamento de Balanço
+          </h3>
+          <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
+            Verifique se o parcelamento soma exatamente a sua meta planejada
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex justify-between items-center text-xs font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
+          <span>Visualização do Balanço:</span>
+          <span className="text-[#5A5A40] dark:text-[#9CB386]">Meta: {calculations.targetSplitTotal.toFixed(2)} kg N/ha</span>
+        </div>
+
+        <div className="h-4 bg-[#F0EDE5] dark:bg-[#2D3429] rounded-full flex overflow-hidden shadow-inner">
+          <div
+            style={{ width: `${Math.min(100, (calculations.base1_kg / calculations.targetSplitTotal) * 100)}%` }}
+            className="bg-[#8C897E] h-full transition-all duration-300"
+            title={`Base: ${calculations.base1_kg} kg N/ha`}
+          />
+          <div
+            style={{ width: `${Math.min(100, (calculations.v4v6_1_kg / calculations.targetSplitTotal) * 100)}%` }}
+            className="bg-[#5A5A40] dark:bg-[#9CB386] h-full transition-all duration-300"
+            title={`V4-V6: ${calculations.v4v6_1_kg} kg N/ha`}
+          />
+          <div
+            style={{ width: `${Math.min(100, (calculations.v8v10_1_kg / calculations.targetSplitTotal) * 100)}%` }}
+            className="bg-[#8D6E63] dark:bg-[#D4A373] h-full transition-all duration-300"
+            title={`V8-V10: ${calculations.v8v10_1_kg} kg N/ha`}
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-4 text-xs font-semibold text-[#8C897E] dark:text-[#9EA399] justify-between border-b border-[#F0EDE5] dark:border-[#2C3328] pb-3">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 bg-[#8C897E] rounded-sm" />
+            <span>1ª Base: {calculations.base1_kg} kg/ha</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 bg-[#5A5A40] dark:bg-[#9CB386] rounded-sm" />
+            <span>2ª V4-V6: {calculations.v4v6_1_kg} kg/ha ({calculations.v4v6_1}%)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 bg-[#8D6E63] dark:bg-[#D4A373] rounded-sm" />
+            <span>3ª V8-V10: {calculations.v8v10_1_kg} kg/ha ({calculations.v8v10_1_final}%)</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center pt-2">
+          <div className="space-y-1">
+            <div className="text-xs text-[#8C897E] dark:text-[#9EA399]">Soma das Três Aplicações:</div>
+            <div className="text-sm font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
+              {calculations.base1_kg} + {calculations.v4v6_1_kg} + {calculations.v8v10_1_kg} = <span className="font-extrabold text-[#5A5A40] dark:text-[#9CB386] text-lg">{calculations.sumOfSplits} kg N/ha</span>
+            </div>
+          </div>
+
+          <div>
+            {calculations.splitDiscrepancy === 0 ? (
+              <div className="bg-[#F9F8F6] dark:bg-[#151813] text-[#5A5A40] dark:text-[#9CB386] border border-[#E5E2D9] dark:border-[#2C3328] p-3 rounded-xl flex items-center gap-2.5 text-xs font-bold">
+                <CheckCircle2 className="h-4.5 w-4.5 text-[#5A5A40] dark:text-[#9CB386] shrink-0" />
+                <div>
+                  <span>Balanço Fechado! (100% OK)</span>
+                  <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] font-normal mt-0.5">A soma corresponde exatamente à meta.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-[#FDFBF7] dark:bg-[#201C16] text-[#8D6E63] dark:text-[#E0A96D] border border-[#E5E2D9] dark:border-[#2C3328] p-3 rounded-xl flex items-center gap-2.5 text-xs font-bold">
+                <AlertCircle className="h-4.5 w-4.5 text-[#8D6E63] dark:text-[#E0A96D] shrink-0" />
+                <div>
+                  <span>Diferença de {calculations.splitDiscrepancy > 0 ? '+' : ''}{calculations.splitDiscrepancy.toFixed(2)} kg N/ha</span>
+                  <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] font-normal mt-0.5">Ajuste as frações percentuais para obter um fechamento exato.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <CalculationMemoryPanel isVisible={showCalc} isDark={isDark}>
+        <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
+          isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
+        }`}>
+          <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Fechamento de Balanço:</div>
+          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Meta:</span> {calculations.targetSplitTotal.toFixed(2)} kg N/ha</div>
+          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Soma:</span> {calculations.base1_kg} + {calculations.v4v6_1_kg} + {calculations.v8v10_1_kg} = {calculations.sumOfSplits} kg N/ha</div>
+          <div className={`border-t pt-1.5 mt-1.5 font-bold ${isDark ? 'border-[#2C3328]' : 'border-[#F0EDE5]'}`}>
+            {calculations.splitDiscrepancy === 0 ? (
+              <span className={isDark ? 'text-[#86efac]' : 'text-[#2E6F40]'}>Balanço Fechado! (100% OK) — A soma corresponde exatamente à meta.</span>
+            ) : (
+              <span className={isDark ? 'text-[#E0A96D]' : 'text-[#8D6E63]'}>Diferença de {calculations.splitDiscrepancy > 0 ? '+' : ''}{calculations.splitDiscrepancy.toFixed(2)} kg N/ha — Ajuste as frações percentuais para fechamento exato.</span>
+            )}
+          </div>
+        </div>
+      </CalculationMemoryPanel>
+    </div>
+  );
+}

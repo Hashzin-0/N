@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react'
 import * as THREE from 'three';
 import { useTheme } from './ThemeProvider';
 import { useScrollSpy } from '@/hooks/useScrollSpy';
+import { useScrollProgress } from '@/hooks/useScrollProgress';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SectionConfig {
   id: string;
@@ -188,10 +190,12 @@ function TransitionEffect({
   active,
   isDark,
   onComplete,
+  vertical,
 }: {
   active: boolean;
   isDark: boolean;
   onComplete: () => void;
+  vertical: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animRef = useRef<number | null>(null);
@@ -205,8 +209,8 @@ function TransitionEffect({
 
     try {
       const parent = canvas.parentElement;
-      const width = parent?.clientWidth || 800;
-      const height = 90;
+      const width = vertical ? 90 : (parent?.clientWidth || 800);
+      const height = vertical ? (parent?.clientHeight || 400) : 90;
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 200);
@@ -321,7 +325,7 @@ function TransitionEffect({
       if (animRef.current) cancelAnimationFrame(animRef.current);
       renderer?.dispose();
     };
-  }, [active, isDark, onComplete]);
+  }, [active, isDark, onComplete, vertical]);
 
   if (!active) return null;
 
@@ -343,12 +347,14 @@ export default function SectionNav3D({
   onNavigate?: (sectionId: string) => void;
 }) {
   const { isDark } = useTheme();
+  const isMobile = useIsMobile();
+  const scrollProgress = useScrollProgress();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const prevTabRef = useRef(activeTab);
   const containerRef = useRef<HTMLDivElement>(null);
   const iconRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
-  const [indicatorStyle, setIndicatorStyle] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
+  const [iconPositions, setIconPositions] = useState<Map<string, number>>(new Map());
 
   const sections = useMemo(() => {
     if (activeTab === 'estimativa_milho') return CORN_SECTIONS;
@@ -369,23 +375,53 @@ export default function SectionNav3D({
     return idx >= 0 ? idx : 0;
   }, [currentSection, sections]);
 
-  // Calculate indicator position based on active icon
+  // Measure icon positions along the scroll axis
   useEffect(() => {
     const container = containerRef.current;
     if (!container || sections.length === 0) return;
 
-    const activeId = sections[activeIndex]?.id;
-    const btn = iconRefs.current.get(activeId);
-    if (!btn) return;
+    const measure = () => {
+      const positions = new Map<string, number>();
+      sections.forEach((config) => {
+        const btn = iconRefs.current.get(config.id);
+        if (!btn) return;
+        const containerRect = container.getBoundingClientRect();
+        const btnRect = btn.getBoundingClientRect();
+        if (isMobile) {
+          // Horizontal: position along X axis as fraction of container width
+          const pos = (btnRect.left - containerRect.left + btnRect.width / 2) / containerRect.width;
+          positions.set(config.id, pos);
+        } else {
+          // Vertical: position along Y axis as fraction of container height
+          const pos = (btnRect.top - containerRect.top + btnRect.height / 2) / containerRect.height;
+          positions.set(config.id, pos);
+        }
+      });
+      setIconPositions(positions);
+    };
 
-    const containerRect = container.getBoundingClientRect();
-    const btnRect = btn.getBoundingClientRect();
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [sections, isMobile]);
 
-    setIndicatorStyle({
-      left: btnRect.left - containerRect.left + btnRect.width / 2 - 24,
-      width: 48,
+  // Map scroll progress to indicator position along the icon axis
+  const indicatorProgress = useMemo(() => {
+    if (iconPositions.size === 0) return 0;
+    // The scroll progress maps linearly to the indicator travel
+    return scrollProgress;
+  }, [scrollProgress, iconPositions]);
+
+  // Determine which icons the progress bar has "passed" (for activation animation)
+  const passedIcons = useMemo(() => {
+    const passed = new Set<string>();
+    iconPositions.forEach((pos, id) => {
+      if (indicatorProgress >= pos) {
+        passed.add(id);
+      }
     });
-  }, [activeIndex, sections]);
+    return passed;
+  }, [indicatorProgress, iconPositions]);
 
   const handleClick = useCallback((sectionId: string) => {
     const el = document.getElementById(sectionId);
@@ -396,15 +432,8 @@ export default function SectionNav3D({
   }, [onNavigate]);
 
   // Transition effect when tab changes
-  const [fromSections, setFromSections] = useState<SectionConfig[]>(NITROGEN_SECTIONS);
   useEffect(() => {
     if (prevTabRef.current !== activeTab) {
-      setFromSections(prevTabRef.current === 'estimativa_milho'
-        ? CORN_SECTIONS
-        : prevTabRef.current === 'comparador'
-          ? COMPARATOR_SECTIONS
-          : NITROGEN_SECTIONS
-      );
       setIsTransitioning(true);
       prevTabRef.current = activeTab;
     }
@@ -414,10 +443,17 @@ export default function SectionNav3D({
     setIsTransitioning(false);
   }, []);
 
+  // Compute indicator transform
+  const indicatorTransform = isMobile
+    ? `translateX(${indicatorProgress * 100}%)`
+    : `translateY(${indicatorProgress * 100}%)`;
+
+  const indicatorLength = isMobile ? '24px' : '24px';
+
   return (
     <div
       ref={containerRef}
-      className="relative w-full"
+      className={`relative ${isMobile ? 'w-full' : 'h-full'}`}
       role="tablist"
       aria-label="Navegação de seções"
     >
@@ -425,14 +461,78 @@ export default function SectionNav3D({
         active={isTransitioning}
         isDark={isDark}
         onComplete={handleTransitionComplete}
+        vertical={!isMobile}
       />
 
-      {/* Icons Row */}
-      <div className="relative flex items-end justify-between px-2 sm:px-4">
+      {/* Icons + Progress Track */}
+      <div
+        className={`relative ${
+          isMobile
+            ? 'flex items-end justify-between px-2 sm:px-4'
+            : 'flex flex-col items-center justify-between py-2 px-1 h-full'
+        }`}
+      >
+        {/* Progress Track (background line) */}
+        <div
+          className={`absolute ${
+            isMobile
+              ? 'bottom-[28px] left-2 right-2 h-1'
+              : 'left-[28px] top-2 bottom-2 w-1'
+          } bg-[#E5E2D9] dark:bg-[#2C3328] rounded-full overflow-hidden`}
+        >
+          {/* Filled portion - continuous with scroll */}
+          <div
+            className="absolute rounded-full"
+            style={{
+              background: isDark
+                ? 'linear-gradient(to right, #9CB386, #D4A373, #CBB5A1)'
+                : 'linear-gradient(to right, #5A5A40, #D4A373, #8D6E63)',
+              ...(isMobile
+                ? {
+                    top: 0,
+                    left: 0,
+                    height: '100%',
+                    width: `${indicatorProgress * 100}%`,
+                    transition: 'width 0.15s ease-out',
+                  }
+                : {
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${indicatorProgress * 100}%`,
+                    transition: 'height 0.15s ease-out',
+                  }),
+            }}
+          />
+          {/* Glowing dot at the tip */}
+          <div
+            className="absolute rounded-full bg-white shadow-lg"
+            style={{
+              width: isMobile ? '8px' : '8px',
+              height: isMobile ? '8px' : '8px',
+              boxShadow: `0 0 8px ${isDark ? '#9CB386' : '#5A5A40'}`,
+              ...(isMobile
+                ? {
+                    top: '50%',
+                    left: `calc(${indicatorProgress * 100}% - 4px)`,
+                    transform: 'translateY(-50%)',
+                    transition: 'left 0.15s ease-out',
+                  }
+                : {
+                    left: '50%',
+                    top: `calc(${indicatorProgress * 100}% - 4px)`,
+                    transform: 'translateX(-50%)',
+                    transition: 'top 0.15s ease-out',
+                  }),
+            }}
+          />
+        </div>
+
+        {/* Icon Buttons */}
         {sections.map((config, index) => {
           const isActive = currentSection === config.id;
+          const isPassed = passedIcons.has(config.id);
           const isHoveredBtn = hoveredId === config.id;
-          const isNearActive = Math.abs(index - activeIndex) <= 1;
 
           return (
             <button
@@ -447,19 +547,25 @@ export default function SectionNav3D({
               onClick={() => handleClick(config.id)}
               onMouseEnter={() => setHoveredId(config.id)}
               onMouseLeave={() => setHoveredId(null)}
-              className="relative flex flex-col items-center gap-1 group outline-none"
+              className={`relative flex ${
+                isMobile ? 'flex-col items-center gap-1' : 'flex-row items-center gap-2'
+              } group outline-none z-10`}
             >
               {/* 3D Icon */}
               <div
                 className="transition-transform duration-400"
                 style={{
-                  transform: isActive ? 'translateY(-4px)' : isHoveredBtn ? 'translateY(-2px)' : 'translateY(0)',
+                  transform: isActive
+                    ? isMobile ? 'translateY(-4px)' : 'translateX(-4px)'
+                    : isHoveredBtn
+                      ? isMobile ? 'translateY(-2px)' : 'translateX(-2px)'
+                      : 'translate(0)',
                   transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 }}
               >
                 <NavIcon3D
                   config={config}
-                  isActive={isActive}
+                  isActive={isActive || isPassed}
                   isHovered={isHoveredBtn}
                   isDark={isDark}
                 />
@@ -467,39 +573,34 @@ export default function SectionNav3D({
 
               {/* Label */}
               <span
-                className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-all duration-300 text-center leading-tight max-w-[80px] ${
+                className={`${
+                  isMobile
+                    ? 'text-[10px] sm:text-[11px] max-w-[80px]'
+                    : 'text-[10px] max-w-[70px]'
+                } font-bold uppercase tracking-wider transition-all duration-300 text-center leading-tight ${
                   isActive
                     ? 'text-[#5A5A40] dark:text-[#9CB386] opacity-100'
-                    : isNearActive
-                      ? 'text-[#8C897E] dark:text-[#9EA399] opacity-70 group-hover:opacity-100 group-hover:text-[#5A5A40] dark:group-hover:text-[#E8E6DF]'
-                      : 'text-[#8C897E] dark:text-[#9EA399] opacity-50'
+                    : isPassed
+                      ? 'text-[#D4A373] dark:text-[#D4A373] opacity-90'
+                      : 'text-[#8C897E] dark:text-[#9EA399] opacity-50 group-hover:opacity-100 group-hover:text-[#5A5A40] dark:group-hover:text-[#E8E6DF]'
                 }`}
               >
-                {config.shortLabel}
+                {isMobile ? config.shortLabel : config.label}
               </span>
 
               {/* Active dot */}
               {isActive && (
-                <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#D4A373] animate-pulse" />
+                <span
+                  className={`absolute ${
+                    isMobile
+                      ? '-bottom-2 left-1/2 -translate-x-1/2'
+                      : '-right-2 top-1/2 -translate-y-1/2'
+                  } w-1.5 h-1.5 rounded-full bg-[#D4A373] animate-pulse`}
+                />
               )}
             </button>
           );
         })}
-      </div>
-
-      {/* Sliding Indicator Bar */}
-      <div className="relative mt-3 h-1 bg-[#E5E2D9] dark:bg-[#2C3328] rounded-full overflow-hidden mx-2 sm:mx-4">
-        <div
-          className="absolute top-0 left-0 h-full rounded-full"
-          style={{
-            transform: `translateX(${indicatorStyle.left}px)`,
-            width: `${indicatorStyle.width}px`,
-            transition: 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.3s ease',
-            background: isDark
-              ? 'linear-gradient(90deg, #9CB386, #D4A373, #CBB5A1)'
-              : 'linear-gradient(90deg, #5A5A40, #D4A373, #8D6E63)',
-          }}
-        />
       </div>
     </div>
   );

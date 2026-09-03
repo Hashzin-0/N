@@ -1,22 +1,18 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Calculator, 
   HelpCircle, 
   RotateCcw, 
   CheckCircle2, 
-  AlertCircle, 
   ChevronRight, 
   Percent, 
-  Scale, 
   Printer, 
   TrendingUp, 
   Sprout, 
   Layers, 
-  ArrowRightLeft,
-  Info,
   BookmarkPlus,
   Database,
   Columns,
@@ -27,8 +23,6 @@ import {
 import SaveScenarioModal from '@/components/SaveScenarioModal';
 import ScenarioComparator from '@/components/ScenarioComparator';
 import VoiceAssistantHUD from '@/components/VoiceAssistantHUD';
-import CalculationIsland from '@/components/CalculationIsland';
-import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
 import DarkMode3DToggle from '@/components/DarkMode3DToggle';
 import SectionNav3D from '@/components/SectionNav3D';
 import CornYieldCalculator from '@/components/CornYieldCalculator';
@@ -36,9 +30,18 @@ import CornAlert3D, { AgronomicValidationIssue } from '@/components/CornAlert3D'
 import Input3D from '@/components/Input3D';
 import Button3D from '@/components/Button3D';
 import Select3D from '@/components/Select3D';
+import CellDivisionContainer from '@/components/CellDivisionContainer';
 import { useGeminiLiveAgent } from '@/hooks/useGeminiLiveAgent';
 import { useTheme } from '@/components/ThemeProvider';
 import { SQLikeCalculationDB, CalculationRecord, useCalculationRecords, notifyStorageChange } from '@/lib/storage';
+import { computeCalculations } from '@/lib/calculations';
+import ExtracaoTotalCard from '@/components/metrics/ExtracaoTotalCard';
+import NecessidadeLiquidaCard from '@/components/metrics/NecessidadeLiquidaCard';
+import DoseRecomendadaCard from '@/components/metrics/DoseRecomendadaCard';
+import SecondaryCreditsCard from '@/components/metrics/SecondaryCreditsCard';
+import ParcelamentoSection from '@/components/metrics/ParcelamentoSection';
+import BalancoSection from '@/components/metrics/BalancoSection';
+import DetailedMathPanel from '@/components/metrics/DetailedMathPanel';
 
 // Interfaces for structured data
 interface Preset {
@@ -98,12 +101,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'calculadora' | 'estimativa_milho' | 'comparador'>('calculadora');
   const [saveToast, setSaveToast] = useState<string | null>(null);
 
-  // Calculation memory panel toggles (per result container)
-  const [showCalcExtracao, setShowCalcExtracao] = useState(false);
-  const [showCalcLiquida, setShowCalcLiquida] = useState(false);
-  const [showCalcDose, setShowCalcDose] = useState(false);
-  const [showCalcParcelamento, setShowCalcParcelamento] = useState(false);
-  const [showCalcBalanco, setShowCalcBalanco] = useState(false);
+
 
   const handleReloadRecords = () => {
     notifyStorageChange();
@@ -135,105 +133,23 @@ export default function Home() {
   };
 
   // Calculations
-  const calculations = useMemo(() => {
-    const totalExtraction = Number((yieldGoal * nRequirementPerBag).toFixed(2));
-    const liquidNeed = Number((totalExtraction - mosNContribution - soyNContribution).toFixed(2));
-    
-    // Correction for efficiency (e.g. 80% = / 0.8)
-    const effDecimal = efficiency / 100;
-    const recommendedDose = Number((liquidNeed / effDecimal).toFixed(2));
-
-    // Base target for split applications
-    const targetSplitTotal = splitBase === 'dose_perdas' ? recommendedDose : liquidNeed;
-
-    // 1st Application: kg N/ha (always absolute values)
-    const base1 = baseDose;
-    const base2 = baseDoseMode === 'range' ? baseDose2 : 0;
-    const base1_kg = base1;
-    const base2_kg = base2;
-
-    // 2nd Application: % values
-    const v4v6_1 = v4v6Percent;
-    const v4v6_2 = v4v6Mode === 'range' ? v4v6Percent2 : 0;
-    const v4v6_1_kg = Number((targetSplitTotal * (v4v6_1 / 100)).toFixed(2));
-    const v4v6_2_kg = v4v6_2 > 0 ? Number((targetSplitTotal * (v4v6_2 / 100)).toFixed(2)) : 0;
-
-    // 3rd Application: % values — AUTO-CALCULATED from what remains
-    // If user provides values, use them. If not, calculate automatically.
-    const v8v10_1 = v8v10Percent;
-    const v8v10_2 = v8v10Mode === 'range' ? v8v10Percent2 : 0;
-    
-    // Calculate remaining after 1st + 2nd application
-    const usedByBase1 = base1_kg;
-    const usedByV4v6_1 = v4v6_1_kg;
-    const usedByV4v6_2 = v4v6_2_kg;
-    
-    // Remaining N after 1st application and 2nd application (first value)
-    const remaining_after_base1 = targetSplitTotal - usedByBase1;
-    const remaining_after_v4v6_1 = remaining_after_base1 - usedByV4v6_1;
-    
-    // Auto-calculate 3rd application % from remaining
-    const v8v10_1_auto = remaining_after_v4v6_1 > 0
-      ? Number(((remaining_after_v4v6_1 / targetSplitTotal) * 100).toFixed(1))
-      : 0;
-    
-    // For range mode: 2nd value of 3rd application = remaining after both 2nd app values
-    const remaining_after_v4v6_both = remaining_after_base1 - usedByV4v6_1 - usedByV4v6_2;
-    const v8v10_2_auto = (v8v10_2 > 0 && v4v6_2 > 0)
-      ? Number(((remaining_after_v4v6_both / targetSplitTotal) * 100).toFixed(1))
-      : 0;
-
-    // Use user-provided or auto-calculated
-    const v8v10_1_final = v8v10_1 > 0 ? v8v10_1 : v8v10_1_auto;
-    const v8v10_2_final = v8v10_2 > 0 ? v8v10_2 : v8v10_2_auto;
-
-    const v8v10_1_kg = Number((targetSplitTotal * (v8v10_1_final / 100)).toFixed(2));
-    const v8v10_2_kg = v8v10_2_final > 0 ? Number((targetSplitTotal * (v8v10_2_final / 100)).toFixed(2)) : 0;
-
-    // Reference ranges for comparison
-    const v4v6_50 = Number((targetSplitTotal * 0.50).toFixed(2));
-    const v4v6_60 = Number((targetSplitTotal * 0.60).toFixed(2));
-    const v8v10_20 = Number((targetSplitTotal * 0.20).toFixed(2));
-    const v8v10_30 = Number((targetSplitTotal * 0.30).toFixed(2));
-
-    // Total of the three applications (summing first values + optional ranges)
-    const sumOfSplits = Number((base1_kg + v4v6_1_kg + v8v10_1_kg).toFixed(2));
-    
-    // Sum with ranges if applicable
-    const sumOfSplitsRange = (baseDoseMode === 'range' && base2_kg > 0)
-      ? Number((base2_kg + v4v6_2_kg + v8v10_2_kg).toFixed(2))
-      : 0;
-    
-    const splitDiscrepancy = Number((sumOfSplits - targetSplitTotal).toFixed(2));
-    const splitDifference = Number(Math.abs(v4v6_1_kg - v8v10_1_kg).toFixed(2));
-
-    return {
-      totalExtraction,
-      liquidNeed,
-      recommendedDose,
-      targetSplitTotal,
-      base1_kg,
-      base2_kg,
-      v4v6_1,
-      v4v6_2,
-      v4v6_1_kg,
-      v4v6_2_kg,
-      v4v6_50,
-      v4v6_60,
-      v8v10_1_final,
-      v8v10_2_final,
-      v8v10_1_kg,
-      v8v10_2_kg,
-      v8v10_20,
-      v8v10_30,
-      v8v10_1_auto,
-      v8v10_2_auto,
-      sumOfSplits,
-      sumOfSplitsRange,
-      splitDiscrepancy,
-      splitDifference
-    };
-  }, [yieldGoal, nRequirementPerBag, mosNContribution, soyNContribution, efficiency, baseDose, baseDose2, baseDoseMode, v4v6Percent, v4v6Percent2, v4v6Mode, v8v10Percent, v8v10Percent2, v8v10Mode, splitBase]);
+  const calculations = computeCalculations({
+    yieldGoal,
+    nRequirementPerBag,
+    mosNContribution,
+    soyNContribution,
+    efficiency,
+    baseDose,
+    baseDose2,
+    baseDoseMode,
+    v4v6Percent,
+    v4v6Percent2,
+    v4v6Mode,
+    v8v10Percent,
+    v8v10Percent2,
+    v8v10Mode,
+    splitBase,
+  });
 
   // Save scenario to SQLike local database
   const handleSaveScenario = (name: string, notes: string) => {
@@ -327,12 +243,11 @@ export default function Home() {
   });
 
   return (
-    <main id="main_container" className="min-h-screen bg-[#FDFBF7] dark:bg-[#121511] text-[#3D3D3D] dark:text-[#E8E6DF] antialiased pt-[200px] pb-8 px-4 sm:px-6 lg:px-8 font-sans transition-colors duration-300">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* TOP BRANDING / HEADER - FIXED HERO */}
-        <header id="app_header" className="fixed top-0 left-0 right-0 z-50 bg-[#5A5A40] dark:bg-[#1E241B] text-white px-4 sm:px-6 lg:px-8 pt-4 pb-0 shadow-lg border-b border-[#4A4A30] dark:border-[#2D3528] transition-all">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+    <main id="main_container" className="min-h-screen bg-[#FDFBF7] dark:bg-[#121511] text-[#3D3D3D] dark:text-[#E8E6DF] antialiased pb-8 font-sans transition-colors duration-300">
+      {/* HERO SECTION - rolls with page */}
+      <section className="bg-[#5A5A40] dark:bg-[#1E241B] text-white px-4 sm:px-6 lg:px-8 pt-6 pb-4 shadow-lg">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <div className="flex items-center gap-3">
                 <div className="bg-white/10 dark:bg-white/5 text-white p-2.5 rounded-2xl border border-white/20 dark:border-white/10">
@@ -348,9 +263,8 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2 self-stretch md:self-auto flex-wrap">
-              {/* 3D Dark Mode Toggle */}
               <div className="flex items-center">
                 <DarkMode3DToggle />
               </div>
@@ -430,12 +344,27 @@ export default function Home() {
               </button>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* 3D SECTION NAVIGATION - SLIDING INDICATOR */}
-          <div className="max-w-7xl mx-auto mt-3 pb-2">
-            <SectionNav3D activeTab={activeTab} />
-          </div>
-        </header>
+      {/* STICKY SECTION NAV - sticks to top when scrolling */}
+      <header
+        id="app_header"
+        className="sticky top-0 z-50 bg-[#5A5A40] dark:bg-[#1E241B] shadow-lg border-b border-[#4A4A30] dark:border-[#2D3528] transition-all"
+      >
+        {/* Mobile: horizontal nav inside sticky header */}
+        <div className="lg:hidden px-4 sm:px-6 py-2">
+          <SectionNav3D activeTab={activeTab} />
+        </div>
+      </header>
+
+      {/* Desktop: fixed sidebar nav */}
+      <aside className="hidden lg:block fixed top-0 left-0 h-screen w-[180px] bg-[#5A5A40] dark:bg-[#1E241B] shadow-lg border-r border-[#4A4A30] dark:border-[#2D3528] p-2 z-40">
+        <SectionNav3D activeTab={activeTab} />
+      </aside>
+
+      {/* Main content area - offset for desktop sidebar */}
+      <div className="lg:ml-[180px] px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
         {/* TOP NAVIGATION / MODE SWITCHER BAR */}
         <nav id="app_mode_nav" className="bg-white dark:bg-[#1C201A] p-2 rounded-2xl border border-[#E5E2D9] dark:border-[#2C3328] shadow-sm flex flex-wrap gap-2 items-center justify-between">
@@ -742,7 +671,7 @@ export default function Home() {
                   ]}
                 />
 
-                {/* 1st Application — Base/Semeadura (kg N/ha) */}
+                {/* 1st Application — Base/Semeadura (kg N/ha) — Cell Division Animation */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-[#3D3D3D] dark:text-[#E8E6DF]">
@@ -763,10 +692,18 @@ export default function Home() {
                       className="!inline-flex !w-auto"
                     />
                   </div>
-                  
-                  <div className="flex gap-3 items-end">
+
+                  <CellDivisionContainer
+                    mode={baseDoseMode}
+                    onModeChange={(m) => handleCustomInputChange(() => {
+                      setBaseDoseMode(m);
+                      if (m === 'single') setBaseDose2(0);
+                    })}
+                    accentColor="#D4A373"
+                    isDark={isDark}
+                  >
                     <Input3D
-                      label="Valor (kg N/ha)"
+                      label={baseDoseMode === 'range' ? 'Min (kg N/ha)' : 'Valor (kg N/ha)'}
                       unit="kg N/ha"
                       value={baseDose}
                       onChange={(v) => handleCustomInputChange(() => setBaseDose(v))}
@@ -776,32 +713,25 @@ export default function Home() {
                       isDark={isDark}
                       accentColor="#D4A373"
                     />
-                    {baseDoseMode === 'range' && (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex-1"
-                      >
-                        <Input3D
-                          label="2º Valor (kg N/ha)"
-                          unit="kg N/ha"
-                          value={baseDose2}
-                          onChange={(v) => handleCustomInputChange(() => setBaseDose2(v))}
-                          step={1}
-                          min={0}
-                          max={100}
-                          isDark={isDark}
-                          accentColor="#D4A373"
-                        />
-                      </motion.div>
-                    )}
-                  </div>
+                    <Input3D
+                      label="Max (kg N/ha)"
+                      unit="kg N/ha"
+                      value={baseDose2}
+                      onChange={(v) => handleCustomInputChange(() => setBaseDose2(v))}
+                      step={1}
+                      min={0}
+                      max={100}
+                      isDark={isDark}
+                      accentColor="#D4A373"
+                    />
+                  </CellDivisionContainer>
+
                   <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-1 leading-relaxed">
                     * Faixa agronômica típica: 30 a 40 kg N/ha.
                   </p>
                 </div>
 
-                {/* 2nd Application — V4-V6 (% values) */}
+                {/* 2nd Application — V4-V6 (% values) — Cell Division Animation */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-[#3D3D3D] dark:text-[#E8E6DF]">
@@ -823,7 +753,15 @@ export default function Home() {
                     />
                   </div>
 
-                  <div className="flex gap-3 items-end">
+                  <CellDivisionContainer
+                    mode={v4v6Mode}
+                    onModeChange={(m) => handleCustomInputChange(() => {
+                      setV4v6Mode(m);
+                      if (m === 'single') setV4v6Percent2(0);
+                    })}
+                    accentColor="#5A5A40"
+                    isDark={isDark}
+                  >
                     <Input3D
                       label={`${v4v6Mode === 'range' ? 'Min %' : '% do total'}`}
                       unit="%"
@@ -835,26 +773,18 @@ export default function Home() {
                       isDark={isDark}
                       accentColor="#5A5A40"
                     />
-                    {v4v6Mode === 'range' && (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex-1"
-                      >
-                        <Input3D
-                          label="Max %"
-                          unit="%"
-                          value={v4v6Percent2}
-                          onChange={(v) => handleCustomInputChange(() => setV4v6Percent2(v))}
-                          step={1}
-                          min={0}
-                          max={100}
-                          isDark={isDark}
-                          accentColor="#5A5A40"
-                        />
-                      </motion.div>
-                    )}
-                  </div>
+                    <Input3D
+                      label="Max %"
+                      unit="%"
+                      value={v4v6Percent2}
+                      onChange={(v) => handleCustomInputChange(() => setV4v6Percent2(v))}
+                      step={1}
+                      min={0}
+                      max={100}
+                      isDark={isDark}
+                      accentColor="#5A5A40"
+                    />
+                  </CellDivisionContainer>
 
                   <div className={`p-3 rounded-xl border text-xs font-semibold ${
                     isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
@@ -870,7 +800,7 @@ export default function Home() {
                   </p>
                 </div>
 
-                {/* 3rd Application — V8-V10 (% values, auto-calculated) */}
+                {/* 3rd Application — V8-V10 (% values, auto-calculated) — Cell Division Animation */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-[#3D3D3D] dark:text-[#E8E6DF]">
@@ -892,7 +822,15 @@ export default function Home() {
                     />
                   </div>
 
-                  <div className="flex gap-3 items-end">
+                  <CellDivisionContainer
+                    mode={v8v10Mode}
+                    onModeChange={(m) => handleCustomInputChange(() => {
+                      setV8v10Mode(m);
+                      if (m === 'single') setV8v10Percent2(0);
+                    })}
+                    accentColor="#8D6E63"
+                    isDark={isDark}
+                  >
                     <Input3D
                       label={v8v10Mode === 'range' ? 'Min %' : '% do total'}
                       unit="%"
@@ -906,28 +844,20 @@ export default function Home() {
                       derived={v8v10Percent === 0}
                       hint={v8v10Percent === 0 ? `Auto-calculado: ${calculations.v8v10_1_auto}%` : undefined}
                     />
-                    {v8v10Mode === 'range' && (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex-1"
-                      >
-                        <Input3D
-                          label="Max %"
-                          unit="%"
-                          value={v8v10Percent2}
-                          onChange={(v) => handleCustomInputChange(() => setV8v10Percent2(v))}
-                          step={1}
-                          min={0}
-                          max={100}
-                          isDark={isDark}
-                          accentColor="#8D6E63"
-                          derived={v8v10Percent2 === 0 && v4v6Percent2 > 0}
-                          hint={v8v10Percent2 === 0 && v4v6Percent2 > 0 ? `Auto-calculado: ${calculations.v8v10_2_auto}%` : undefined}
-                        />
-                      </motion.div>
-                    )}
-                  </div>
+                    <Input3D
+                      label="Max %"
+                      unit="%"
+                      value={v8v10Percent2}
+                      onChange={(v) => handleCustomInputChange(() => setV8v10Percent2(v))}
+                      step={1}
+                      min={0}
+                      max={100}
+                      isDark={isDark}
+                      accentColor="#8D6E63"
+                      derived={v8v10Percent2 === 0 && v4v6Percent2 > 0}
+                      hint={v8v10Percent2 === 0 && v4v6Percent2 > 0 ? `Auto-calculado: ${calculations.v8v10_2_auto}%` : undefined}
+                    />
+                  </CellDivisionContainer>
 
                   <div className={`p-3 rounded-xl border text-xs font-semibold ${
                     isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
@@ -957,437 +887,52 @@ export default function Home() {
             
             {/* CORE METRICS GRID */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              
-              {/* Metric 1: Necessidade Total */}
-              <div className="calc-island-scoop bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-5 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[120px] transition-colors">
-                <CalculationIsland
-                  isVisible={showCalcExtracao}
-                  onToggle={() => setShowCalcExtracao(!showCalcExtracao)}
-                  accentColor="#5A5A40"
-                  darkAccentColor="#9CB386"
-                  isDark={isDark}
+              <ExtracaoTotalCard
+                totalExtraction={calculations.totalExtraction}
+                yieldGoal={yieldGoal}
+                nRequirementPerBag={nRequirementPerBag}
+              />
+              <NecessidadeLiquidaCard
+                liquidNeed={calculations.liquidNeed}
+                totalExtraction={calculations.totalExtraction}
+                mosNContribution={mosNContribution}
+                soyNContribution={soyNContribution}
+              />
+              <div id="card_dose_total">
+                <DoseRecomendadaCard
+                  recommendedDose={calculations.recommendedDose}
+                  liquidNeed={calculations.liquidNeed}
+                  efficiency={efficiency}
+                  onSaveClick={() => setIsSaveModalOpen(true)}
                 />
-                <div>
-                  <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">
-                    1. Extração Total (Cultivo)
-                  </span>
-                  <div className="text-2xl font-bold text-[#5A5A40] dark:text-[#9CB386] mt-1.5">
-                    {calculations.totalExtraction.toFixed(2)} <span className="text-xs font-semibold text-[#8C897E] dark:text-[#9EA399]">kg N/ha</span>
-                  </div>
-                </div>
-                <div className="mt-2 text-[10px] text-[#8C897E] dark:text-[#9EA399] border-t border-[#F0EDE5] dark:border-[#2C3328] pt-2 font-medium">
-                  {yieldGoal} sc/ha × {nRequirementPerBag.toFixed(2)} kg/sc
-                </div>
-                <CalculationMemoryPanel isVisible={showCalcExtracao} isDark={isDark}>
-                  <div className={`p-2.5 rounded-lg border font-mono text-[11px] leading-relaxed ${
-                    isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
-                  }`}>
-                    <div className={`font-semibold mb-1 ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>FÓRMULA:</div>
-                    <div className={`font-bold ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>E = sc/ha × N_saca</div>
-                    <div className={`border-t my-1 pt-1 font-bold ${isDark ? 'border-[#2C3328] text-[#D4A373]' : 'border-[#F0EDE5] text-[#8D6E63]'}`}>
-                      {yieldGoal} × {nRequirementPerBag.toFixed(2)} = {calculations.totalExtraction.toFixed(2)} kg N/ha
-                    </div>
-                    <p className={`mt-1 ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>
-                      N total extraído pela cultura para a produtividade planejada.
-                    </p>
-                  </div>
-                </CalculationMemoryPanel>
               </div>
-
-              {/* Metric 2: Necessidade Líquida */}
-              <div className="calc-island-scoop bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-5 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[120px] transition-colors">
-                <CalculationIsland
-                  isVisible={showCalcLiquida}
-                  onToggle={() => setShowCalcLiquida(!showCalcLiquida)}
-                  accentColor="#5A5A40"
-                  darkAccentColor="#9CB386"
-                  isDark={isDark}
-                />
-                <div>
-                  <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">
-                    2. Necessidade Líquida
-                  </span>
-                  <div className="text-2xl font-bold text-[#5A5A40] dark:text-[#9CB386] mt-1.5">
-                    {calculations.liquidNeed.toFixed(2)} <span className="text-xs font-semibold text-[#8C897E] dark:text-[#9EA399]">kg N/ha</span>
-                  </div>
-                </div>
-                <div className="mt-2 text-[10px] text-[#8C897E] dark:text-[#9EA399] border-t border-[#F0EDE5] dark:border-[#2C3328] pt-2 font-medium">
-                  Extração - MOS - Crédito Soja
-                </div>
-                <CalculationMemoryPanel isVisible={showCalcLiquida} isDark={isDark}>
-                  <div className={`p-2.5 rounded-lg border font-mono text-[11px] leading-relaxed ${
-                    isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
-                  }`}>
-                    <div className={`font-semibold mb-1 ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>FÓRMULA:</div>
-                    <div className={`font-bold ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>N_Liq = E - MOS - Soja</div>
-                    <div className={`border-t my-1 pt-1 font-bold ${isDark ? 'border-[#2C3328] text-[#D4A373]' : 'border-[#F0EDE5] text-[#8D6E63]'}`}>
-                      {calculations.totalExtraction.toFixed(2)} - {mosNContribution} - {soyNContribution} = {calculations.liquidNeed.toFixed(2)} kg N/ha
-                    </div>
-                    <p className={`mt-1 ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>
-                      Deduz as contribuições da M.O. e crédito de nitrogênio da soja.
-                    </p>
-                  </div>
-                </CalculationMemoryPanel>
-              </div>
-
-              {/* Metric 3: Dose Recomendada com Perdas */}
-              <div id="card_dose_total" className="calc-island-scoop bg-[#5A5A40] dark:bg-[#263122] text-white rounded-3xl p-5 shadow-md flex flex-col justify-between min-h-[120px] col-span-2 sm:col-span-1 border border-transparent dark:border-[#3D4C37] transition-colors relative">
-                <CalculationIsland
-                  isVisible={showCalcDose}
-                  onToggle={() => setShowCalcDose(!showCalcDose)}
-                  accentColor="#8D6E63"
-                  darkAccentColor="#D4A373"
-                  isDark={isDark}
-                />
-                <div>
-                  <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-85 block">
-                      Dose Total a Aplicar
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setIsSaveModalOpen(true)}
-                      className="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all text-[10px] flex items-center gap-1 font-bold border border-white/15"
-                      title="Salvar este cálculo no histórico local"
-                    >
-                      <BookmarkPlus className="h-3 w-3 text-[#D4A373]" />
-                      <span>Salvar</span>
-                    </button>
-                  </div>
-                  <div className="text-3xl font-bold font-serif mt-1">
-                    {calculations.recommendedDose.toFixed(2)} <span className="text-xs font-sans font-normal opacity-80">kg N/ha</span>
-                  </div>
-                </div>
-                <div className="mt-2 text-[10px] opacity-75 border-t border-white/20 pt-2 font-medium">
-                  Eficiência: {efficiency}% (Perdas de {100 - efficiency}%)
-                </div>
-                <CalculationMemoryPanel isVisible={showCalcDose} isDark={isDark}>
-                  <div className="p-2.5 rounded-lg border font-mono text-[11px] leading-relaxed bg-[#232821] border-[#2C3328] text-[#E8E6DF]">
-                    <div className="text-[#9EA399] font-semibold mb-1">FÓRMULA:</div>
-                    <div className="font-bold text-[#9CB386]">Dose = N_Liq ÷ Efic</div>
-                    <div className="border-t border-[#2C3328] my-1 pt-1 text-[#D4A373] font-bold">
-                      {calculations.liquidNeed.toFixed(2)} ÷ {efficiency / 100} = {calculations.recommendedDose.toFixed(2)} kg N/ha
-                    </div>
-                    <p className="mt-1 text-[#9EA399]">
-                      Dose corrigida considerando a eficiência de {efficiency}%. Perdas estimadas: {100 - efficiency}%.
-                    </p>
-                  </div>
-                </CalculationMemoryPanel>
-              </div>
-
             </div>
 
             {/* SECONDARY METRICS: MOS AND SOY CREDITS */}
-            <div className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-5 shadow-sm grid grid-cols-2 gap-4 transition-colors">
-              <div className="border-r border-[#F0EDE5] dark:border-[#2C3328] pr-2">
-                <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">
-                  N Proveniente da MOS
-                </span>
-                <span className="text-base font-bold text-[#8D6E63] dark:text-[#CBB5A1] block mt-1">
-                  -{mosNContribution.toFixed(2)} kg N/ha
-                </span>
-                <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-0.5">Reduz a necessidade química</p>
-              </div>
-              <div className="pl-2">
-                <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">
-                  Crédito da Soja
-                </span>
-                <span className="text-base font-bold text-[#5A5A40] dark:text-[#9CB386] block mt-1">
-                  -{soyNContribution.toFixed(2)} kg N/ha
-                </span>
-                <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-0.5">Leguminosa anterior</p>
-              </div>
-            </div>
+            <SecondaryCreditsCard
+              mosNContribution={mosNContribution}
+              soyNContribution={soyNContribution}
+            />
 
             {/* DYNAMIC PARCELAMENTO DISCLOSURES PANEL */}
-            <div id="parceling_section" className="calc-island-scoop bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-6 shadow-sm space-y-6 transition-colors relative">
-              <CalculationIsland
-                isVisible={showCalcParcelamento}
-                onToggle={() => setShowCalcParcelamento(!showCalcParcelamento)}
-                accentColor="#D4A373"
-                darkAccentColor="#D4A373"
-                isDark={isDark}
-              />
-              
-              <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-4 flex justify-between items-center">
-                <div>
-                  <h3 className="text-sm font-bold text-[#5A5A40] dark:text-[#E8E6DF] uppercase tracking-wider flex items-center gap-2">
-                    <Scale className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> Cronograma de Parcelamento
-                  </h3>
-                  <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
-                    Comparação de dosagens em cada estádio fenológico (Foco da Questão)
-                  </p>
-                </div>
-              </div>
+            <ParcelamentoSection
+              calculations={calculations}
+              splitBase={splitBase}
+            />
 
-              <div className="space-y-5">
-                
-                {/* 1st Application Display */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#D4A373] dark:border-[#A27B5C]">
-                  <div>
-                    <span className="bg-[#D4A373] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
-                      1ª Aplicação: Base
-                    </span>
-                    <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
-                      Padrão agronômico inicial: <strong>30 a 40 kg N/ha</strong>
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
-                      {baseDose.toFixed(2)} <span className="text-xs font-semibold text-[#8C897E] dark:text-[#9EA399]">kg N/ha</span>
-                    </div>
-                    <span className="text-[10px] text-[#D4A373] dark:text-[#E0A96D] font-serif italic font-bold">Aplicado na base</span>
-                  </div>
-                </div>
-
-                {/* 2nd Application Compare (50% and 60%) */}
-                <div className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#5A5A40] dark:border-[#4B5E40] space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="bg-[#5A5A40] dark:bg-[#3D4D35] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
-                        2ª Aplicação: V4-V6
-                      </span>
-                      <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
-                        Padrão agronômico: <strong>50% a 60%</strong> da meta ({splitBase === 'dose_perdas' ? 'Dose com perdas' : 'N Líquido'})
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[10px] font-bold text-[#5A5A40] dark:text-[#9CB386] bg-[#FDFBF7] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2.5 py-1 rounded-md">
-                        {calculations.v4v6_1}% ({calculations.v4v6_1_kg} kg N/ha)
-                        {calculations.v4v6_2 > 0 && ` a ${calculations.v4v6_2}% (${calculations.v4v6_2_kg} kg N/ha)`}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[#F0EDE5] dark:border-[#2C3328] text-center">
-                    <div className="bg-white dark:bg-[#232821] p-2.5 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328]">
-                      <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] block">Com 50%</span>
-                      <span className="text-base font-bold text-[#3D3D3D] dark:text-[#E8E6DF] mt-0.5 block">
-                        {calculations.v4v6_50.toFixed(2)} <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
-                      </span>
-                    </div>
-                    <div className="bg-white dark:bg-[#232821] p-2.5 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328]">
-                      <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] block">Com 60%</span>
-                      <span className="text-base font-bold text-[#3D3D3D] dark:text-[#E8E6DF] mt-0.5 block">
-                        {calculations.v4v6_60.toFixed(2)} <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3rd Application Compare (20% and 30%) */}
-                <div className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#8D6E63] dark:border-[#6D544C] space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="bg-[#8D6E63] dark:bg-[#6D544C] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
-                        3ª Aplicação: V8-V10
-                      </span>
-                      <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
-                        Padrão agronômico: <strong>20% a 30%</strong> da meta ({splitBase === 'dose_perdas' ? 'Dose com perdas' : 'N Líquido'})
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[10px] font-bold text-[#8D6E63] dark:text-[#D4A373] bg-[#FDFBF7] dark:bg-[#232821] border border-[#E5E2D9] dark:border-[#2C3328] px-2.5 py-1 rounded-md">
-                        {calculations.v8v10_1_final}% ({calculations.v8v10_1_kg} kg N/ha)
-                        {calculations.v8v10_2_final > 0 && ` a ${calculations.v8v10_2_final}% (${calculations.v8v10_2_kg} kg N/ha)`}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[#F0EDE5] dark:border-[#2C3328] text-center">
-                    <div className="bg-white dark:bg-[#232821] p-2.5 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328]">
-                      <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] block">Com 20%</span>
-                      <span className="text-base font-bold text-[#3D3D3D] dark:text-[#E8E6DF] mt-0.5 block">
-                        {calculations.v8v10_20.toFixed(2)} <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
-                      </span>
-                    </div>
-                    <div className="bg-white dark:bg-[#232821] p-2.5 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328]">
-                      <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] block">Com 30%</span>
-                      <span className="text-base font-bold text-[#3D3D3D] dark:text-[#E8E6DF] mt-0.5 block">
-                        {calculations.v8v10_30.toFixed(2)} <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* DIFFERENCE BETWEEN BOTH SELECTED MAIN APPLICATIONS */}
-                <div className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-[#E5E2D9] dark:border-[#2C3328] flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <ArrowRightLeft className="h-4 w-4 text-[#8C897E] dark:text-[#9EA399]" />
-                    <div>
-                      <span className="text-xs font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
-                        Diferença entre as duas doses principais
-                      </span>
-                      <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399]">Módulo da diferença: | V4-V6 - V8-V10 |</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-bold text-[#5A5A40] dark:text-[#9CB386]">
-                      {calculations.splitDifference.toFixed(2)} kg N/ha
-                    </span>
-                  </div>
-                </div>
-
-              </div>
-
-              <CalculationMemoryPanel isVisible={showCalcParcelamento} isDark={isDark}>
-                <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
-                  isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
-                }`}>
-                  <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Cronograma de Parcelamento:</div>
-                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Meta (base):</span> {calculations.targetSplitTotal.toFixed(2)} kg N/ha</div>
-                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>1ª Base:</span> {calculations.base1_kg} kg N/ha (valor absoluto)</div>
-                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>2ª V4-V6:</span> {calculations.v4v6_1}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v4v6_1_kg} kg N/ha</div>
-                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>3ª V8-V10:</span> {calculations.v8v10_1_final}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v8v10_1_kg} kg N/ha</div>
-                  <div className={`border-t pt-1.5 mt-1.5 font-bold ${isDark ? 'border-[#2C3328] text-[#D4A373]' : 'border-[#F0EDE5] text-[#8D6E63]'}`}>
-                    Soma: {calculations.base1_kg} + {calculations.v4v6_1_kg} + {calculations.v8v10_1_kg} = {calculations.sumOfSplits} kg N/ha
-                  </div>
-                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Diferença V4-V6 vs V8-V10:</span> {calculations.splitDifference.toFixed(2)} kg N/ha</div>
-                </div>
-              </CalculationMemoryPanel>
-
-            </div>
-            <div className="calc-island-scoop bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-6 shadow-sm space-y-4 transition-colors relative">
-              <CalculationIsland
-                isVisible={showCalcBalanco}
-                onToggle={() => setShowCalcBalanco(!showCalcBalanco)}
-                accentColor="#2E6F40"
-                darkAccentColor="#86efac"
-                isDark={isDark}
-              />
-              
-              <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-3 flex justify-between items-center">
-                <div>
-                  <h3 className="text-sm font-bold text-[#5A5A40] dark:text-[#E8E6DF] uppercase tracking-wider flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> Validação e Fechamento de Balanço
-                  </h3>
-                  <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
-                    Verifique se o parcelamento soma exatamente a sua meta planejada
-                  </p>
-                </div>
-              </div>
-
-              {/* STACKED BAR / CHIPS DIAGRAM */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-xs font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
-                  <span>Visualização do Balanço:</span>
-                  <span className="text-[#5A5A40] dark:text-[#9CB386]">Meta: {calculations.targetSplitTotal.toFixed(2)} kg N/ha</span>
-                </div>
-                
-                <div className="h-4 bg-[#F0EDE5] dark:bg-[#2D3429] rounded-full flex overflow-hidden shadow-inner">
-                  <div 
-                    style={{ width: `${Math.min(100, (calculations.base1_kg / calculations.targetSplitTotal) * 100)}%` }} 
-                    className="bg-[#8C897E] h-full transition-all duration-300" 
-                    title={`Base: ${calculations.base1_kg} kg N/ha`}
-                  />
-                  <div 
-                    style={{ width: `${Math.min(100, (calculations.v4v6_1_kg / calculations.targetSplitTotal) * 100)}%` }} 
-                    className="bg-[#5A5A40] dark:bg-[#9CB386] h-full transition-all duration-300" 
-                    title={`V4-V6: ${calculations.v4v6_1_kg} kg N/ha`}
-                  />
-                  <div 
-                    style={{ width: `${Math.min(100, (calculations.v8v10_1_kg / calculations.targetSplitTotal) * 100)}%` }} 
-                    className="bg-[#8D6E63] dark:bg-[#D4A373] h-full transition-all duration-300" 
-                    title={`V8-V10: ${calculations.v8v10_1_kg} kg N/ha`}
-                  />
-                </div>
-
-                <div className="flex flex-wrap gap-4 text-xs font-semibold text-[#8C897E] dark:text-[#9EA399] justify-between border-b border-[#F0EDE5] dark:border-[#2C3328] pb-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 bg-[#8C897E] rounded-sm" />
-                    <span>1ª Base: {calculations.base1_kg} kg/ha</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 bg-[#5A5A40] dark:bg-[#9CB386] rounded-sm" />
-                    <span>2ª V4-V6: {calculations.v4v6_1_kg} kg/ha ({calculations.v4v6_1}%)</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 bg-[#8D6E63] dark:bg-[#D4A373] rounded-sm" />
-                    <span>3ª V8-V10: {calculations.v8v10_1_kg} kg/ha ({calculations.v8v10_1_final}%)</span>
-                  </div>
-                </div>
-
-                {/* RESULTS INTEGRITY COMPOSER */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center pt-2">
-                  <div className="space-y-1">
-                    <div className="text-xs text-[#8C897E] dark:text-[#9EA399]">Soma das Três Aplicações:</div>
-                    <div className="text-sm font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
-                      {calculations.base1_kg} + {calculations.v4v6_1_kg} + {calculations.v8v10_1_kg} = <span className="font-extrabold text-[#5A5A40] dark:text-[#9CB386] text-lg">{calculations.sumOfSplits} kg N/ha</span>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    {calculations.splitDiscrepancy === 0 ? (
-                      <div className="bg-[#F9F8F6] dark:bg-[#151813] text-[#5A5A40] dark:text-[#9CB386] border border-[#E5E2D9] dark:border-[#2C3328] p-3 rounded-xl flex items-center gap-2.5 text-xs font-bold">
-                        <CheckCircle2 className="h-4.5 w-4.5 text-[#5A5A40] dark:text-[#9CB386] shrink-0" />
-                        <div>
-                          <span>Balanço Fechado! (100% OK)</span>
-                          <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] font-normal mt-0.5">A soma corresponde exatamente à meta.</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-[#FDFBF7] dark:bg-[#201C16] text-[#8D6E63] dark:text-[#E0A96D] border border-[#E5E2D9] dark:border-[#2C3328] p-3 rounded-xl flex items-center gap-2.5 text-xs font-bold">
-                        <AlertCircle className="h-4.5 w-4.5 text-[#8D6E63] dark:text-[#E0A96D] shrink-0" />
-                        <div>
-                          <span>Diferença de {calculations.splitDiscrepancy > 0 ? '+' : ''}{calculations.splitDiscrepancy.toFixed(2)} kg N/ha</span>
-                          <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] font-normal mt-0.5">Ajuste as frações percentuais para obter um fechamento exato.</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-
-              <CalculationMemoryPanel isVisible={showCalcBalanco} isDark={isDark}>
-                <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
-                  isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
-                }`}>
-                  <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Fechamento de Balanço:</div>
-                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Meta:</span> {calculations.targetSplitTotal.toFixed(2)} kg N/ha</div>
-                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Soma:</span> {calculations.base1_kg} + {calculations.v4v6_1_kg} + {calculations.v8v10_1_kg} = {calculations.sumOfSplits} kg N/ha</div>
-                  <div className={`border-t pt-1.5 mt-1.5 font-bold ${isDark ? 'border-[#2C3328]' : 'border-[#F0EDE5]'}`}>
-                    {calculations.splitDiscrepancy === 0 ? (
-                      <span className={isDark ? 'text-[#86efac]' : 'text-[#2E6F40]'}>Balanço Fechado! (100% OK) — A soma corresponde exatamente à meta.</span>
-                    ) : (
-                      <span className={isDark ? 'text-[#E0A96D]' : 'text-[#8D6E63]'}>Diferença de {calculations.splitDiscrepancy > 0 ? '+' : ''}{calculations.splitDiscrepancy.toFixed(2)} kg N/ha — Ajuste as frações percentuais para fechamento exato.</span>
-                    )}
-                  </div>
-                </div>
-              </CalculationMemoryPanel>
-
-            </div>
+            {/* BALANCO SECTION */}
+            <BalancoSection calculations={calculations} />
 
           </section>
 
         </div>
 
         {/* DETAILED FORMULA AND MATHEMATICAL EXPLANATIONS PANEL */}
-        <section id="detailed_math_panel" className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-6 shadow-sm transition-colors">
-          
-          {/* DETAILED EXPLANATION CORNER */}
-          <div className="bg-[#FDFBF7] dark:bg-[#151813] border border-[#E5E2D9] dark:border-[#2C3328] p-5 rounded-xl text-xs text-[#3D3D3D] dark:text-[#E8E6DF] leading-relaxed space-y-2">
-            <h4 className="font-bold text-[#5A5A40] dark:text-[#9CB386] flex items-center gap-1.5 text-sm">
-              <Info className="h-4 w-4 text-[#5A5A40] dark:text-[#9CB386]" /> Resumo de Respostas e Conferência (Pronto para Copiar)
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans pt-2">
-              <div className="space-y-1.5">
-                <div>• <strong>Necessidade total de N (Extração):</strong> {calculations.totalExtraction.toFixed(2)} kg N/ha</div>
-                <div>• <strong>N proveniente da MOS:</strong> {mosNContribution.toFixed(2)} kg N/ha</div>
-                <div>• <strong>Crédito da Soja:</strong> {soyNContribution.toFixed(2)} kg N/ha</div>
-                <div>• <strong>Necessidade líquida de N:</strong> {calculations.liquidNeed.toFixed(2)} kg N/ha</div>
-                <div>• <strong>Dose de N a aplicar (com perdas):</strong> {calculations.recommendedDose.toFixed(2)} kg N/ha</div>
-              </div>
-              <div className="space-y-1.5">
-                <div>• <strong>Dose aplicada na Base:</strong> {calculations.base1_kg} kg N/ha</div>
-                <div>• <strong>Faixa V4-V6 (50% a 60%):</strong> {calculations.v4v6_50.toFixed(2)} a {calculations.v4v6_60.toFixed(2)} kg N/ha</div>
-                <div>• <strong>Faixa V8-V10 (20% a 30%):</strong> {calculations.v8v10_20.toFixed(2)} a {calculations.v8v10_30.toFixed(2)} kg N/ha</div>
-                <div>• <strong>Diferença de dose (V4-V6 vs V8-V10):</strong> {calculations.splitDifference} kg N/ha</div>
-                <div>• <strong>Soma das parcelas aplicadas:</strong> {calculations.sumOfSplits} kg N/ha (Meta: {calculations.targetSplitTotal} kg N/ha)</div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <DetailedMathPanel
+          calculations={calculations}
+          mosNContribution={mosNContribution}
+          soyNContribution={soyNContribution}
+        />
         </div>
 
         {/* SQLIKE STORAGE & COMPARATOR SECTION */}
