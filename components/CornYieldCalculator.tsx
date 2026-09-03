@@ -19,6 +19,8 @@ import CornAlert3D, { AgronomicValidationIssue } from './CornAlert3D';
 import Input3D from './Input3D';
 import Button3D from './Button3D';
 import Elastic3DSlider from './Elastic3DSlider';
+import CalculationIsland from './CalculationIsland';
+import CalculationMemoryPanel from './CalculationMemoryPanel';
 import { useTheme } from './ThemeProvider';
 
 interface CornYieldCalculatorProps {
@@ -90,6 +92,7 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
   const [activePreset, setActivePreset] = useState<string>('questao_exemplo');
   const [showFormulaDetails, setShowFormulaDetails] = useState<boolean>(true);
   const [appliedToast, setAppliedToast] = useState<string | null>(null);
+  const [showCalcYield, setShowCalcYield] = useState<boolean>(false);
 
   // Calculations
   const estande = useMemo(() => {
@@ -663,9 +666,16 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
           />
 
           {/* RESULTS CARD */}
-          <div className={`p-6 rounded-3xl border shadow-md space-y-5 transition-colors ${
+          <div className={`calc-island-scoop p-6 rounded-3xl border shadow-md space-y-5 transition-colors relative ${
             isDark ? 'bg-[#1F221B] border-[#373C2C]' : 'bg-white border-[#E5E2D9]'
           }`}>
+            <CalculationIsland
+              isVisible={showCalcYield}
+              onToggle={() => setShowCalcYield(!showCalcYield)}
+              accentColor="#5A5A40"
+              darkAccentColor="#9CB386"
+              isDark={isDark}
+            />
             
             <div className="border-b pb-3 border-[#F0EDE5] dark:border-[#2F3329] flex justify-between items-center">
               <span className="text-xs font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#A6A395]">
@@ -751,6 +761,22 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
             >
               Usar esta Produtividade no Cálculo de Nitrogênio
             </Button3D>
+
+            <CalculationMemoryPanel isVisible={showCalcYield} isDark={isDark}>
+              <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
+                isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
+              }`}>
+                <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Passo a Passo — Estimativa de Milho:</div>
+                <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>1. Estande:</span> {plantasPorMetro} × {espacamentoLinhas} × 10.000 = {estande} plantas/ha</div>
+                <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>2. Grãos/espiga:</span> {fileiras} × {graosPorFileira} = {quantidadeGraos} grãos</div>
+                <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>3. PMG unitário:</span> {pmg} ÷ 1000 = {pmgUnitario.toFixed(3)} g/grão</div>
+                <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>4. sc/ha Bruto:</span> ({estande} × {espigas} × {quantidadeGraos} × {pmgUnitario.toFixed(3)}) ÷ 1000 = {scHaBruto} sc/ha</div>
+                <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>5. Quebra ({quebraDecimal * 100}%):</span> {scHaBruto} × {quebraDecimal} = -{quebraValor} sc/ha</div>
+                <div className={`border-t pt-1.5 mt-1.5 font-bold ${isDark ? 'border-[#2C3328] text-[#D4A373]' : 'border-[#F0EDE5] text-[#8D6E63]'}`}>
+                  6. Produtividade Líquida: {scHaBruto} - {quebraValor} = {produtividadeLiquida} sc/ha ({Number((produtividadeLiquida * 60).toFixed(0)).toLocaleString('pt-BR')} kg/ha)
+                </div>
+              </div>
+            </CalculationMemoryPanel>
 
           </div>
 

@@ -28,6 +28,8 @@ import {
 import SaveScenarioModal from '@/components/SaveScenarioModal';
 import ScenarioComparator from '@/components/ScenarioComparator';
 import VoiceAssistantHUD from '@/components/VoiceAssistantHUD';
+import CalculationIsland from '@/components/CalculationIsland';
+import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
 import DarkMode3DToggle from '@/components/DarkMode3DToggle';
 import CornYieldCalculator from '@/components/CornYieldCalculator';
 import CornAlert3D, { AgronomicValidationIssue } from '@/components/CornAlert3D';
@@ -144,6 +146,13 @@ export default function Home() {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'calculadora' | 'estimativa_milho' | 'comparador'>('calculadora');
   const [saveToast, setSaveToast] = useState<string | null>(null);
+
+  // Calculation memory panel toggles (per result container)
+  const [showCalcExtracao, setShowCalcExtracao] = useState(false);
+  const [showCalcLiquida, setShowCalcLiquida] = useState(false);
+  const [showCalcDose, setShowCalcDose] = useState(false);
+  const [showCalcParcelamento, setShowCalcParcelamento] = useState(false);
+  const [showCalcBalanco, setShowCalcBalanco] = useState(false);
 
   const handleReloadRecords = () => {
     notifyStorageChange();
@@ -976,7 +985,14 @@ export default function Home() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               
               {/* Metric 1: Necessidade Total */}
-              <div className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-5 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[120px] transition-colors">
+              <div className="calc-island-scoop bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-5 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[120px] transition-colors">
+                <CalculationIsland
+                  isVisible={showCalcExtracao}
+                  onToggle={() => setShowCalcExtracao(!showCalcExtracao)}
+                  accentColor="#5A5A40"
+                  darkAccentColor="#9CB386"
+                  isDark={isDark}
+                />
                 <div>
                   <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">
                     1. Extração Total (Cultivo)
@@ -988,10 +1004,31 @@ export default function Home() {
                 <div className="mt-2 text-[10px] text-[#8C897E] dark:text-[#9EA399] border-t border-[#F0EDE5] dark:border-[#2C3328] pt-2 font-medium">
                   {yieldGoal} sc/ha × {nRequirementPerBag.toFixed(2)} kg/sc
                 </div>
+                <CalculationMemoryPanel isVisible={showCalcExtracao} isDark={isDark}>
+                  <div className={`p-2.5 rounded-lg border font-mono text-[11px] leading-relaxed ${
+                    isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
+                  }`}>
+                    <div className={`font-semibold mb-1 ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>FÓRMULA:</div>
+                    <div className={`font-bold ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>E = sc/ha × N_saca</div>
+                    <div className={`border-t my-1 pt-1 font-bold ${isDark ? 'border-[#2C3328] text-[#D4A373]' : 'border-[#F0EDE5] text-[#8D6E63]'}`}>
+                      {yieldGoal} × {nRequirementPerBag.toFixed(2)} = {calculations.totalExtraction.toFixed(2)} kg N/ha
+                    </div>
+                    <p className={`mt-1 ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>
+                      N total extraído pela cultura para a produtividade planejada.
+                    </p>
+                  </div>
+                </CalculationMemoryPanel>
               </div>
 
               {/* Metric 2: Necessidade Líquida */}
-              <div className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-5 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[120px] transition-colors">
+              <div className="calc-island-scoop bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-5 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[120px] transition-colors">
+                <CalculationIsland
+                  isVisible={showCalcLiquida}
+                  onToggle={() => setShowCalcLiquida(!showCalcLiquida)}
+                  accentColor="#5A5A40"
+                  darkAccentColor="#9CB386"
+                  isDark={isDark}
+                />
                 <div>
                   <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">
                     2. Necessidade Líquida
@@ -1003,10 +1040,31 @@ export default function Home() {
                 <div className="mt-2 text-[10px] text-[#8C897E] dark:text-[#9EA399] border-t border-[#F0EDE5] dark:border-[#2C3328] pt-2 font-medium">
                   Extração - MOS - Crédito Soja
                 </div>
+                <CalculationMemoryPanel isVisible={showCalcLiquida} isDark={isDark}>
+                  <div className={`p-2.5 rounded-lg border font-mono text-[11px] leading-relaxed ${
+                    isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
+                  }`}>
+                    <div className={`font-semibold mb-1 ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>FÓRMULA:</div>
+                    <div className={`font-bold ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>N_Liq = E - MOS - Soja</div>
+                    <div className={`border-t my-1 pt-1 font-bold ${isDark ? 'border-[#2C3328] text-[#D4A373]' : 'border-[#F0EDE5] text-[#8D6E63]'}`}>
+                      {calculations.totalExtraction.toFixed(2)} - {mosNContribution} - {soyNContribution} = {calculations.liquidNeed.toFixed(2)} kg N/ha
+                    </div>
+                    <p className={`mt-1 ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>
+                      Deduz as contribuições da M.O. e crédito de nitrogênio da soja.
+                    </p>
+                  </div>
+                </CalculationMemoryPanel>
               </div>
 
               {/* Metric 3: Dose Recomendada com Perdas */}
-              <div id="card_dose_total" className="bg-[#5A5A40] dark:bg-[#263122] text-white rounded-3xl p-5 shadow-md flex flex-col justify-between min-h-[120px] col-span-2 sm:col-span-1 border border-transparent dark:border-[#3D4C37] transition-colors">
+              <div id="card_dose_total" className="calc-island-scoop bg-[#5A5A40] dark:bg-[#263122] text-white rounded-3xl p-5 shadow-md flex flex-col justify-between min-h-[120px] col-span-2 sm:col-span-1 border border-transparent dark:border-[#3D4C37] transition-colors relative">
+                <CalculationIsland
+                  isVisible={showCalcDose}
+                  onToggle={() => setShowCalcDose(!showCalcDose)}
+                  accentColor="#8D6E63"
+                  darkAccentColor="#D4A373"
+                  isDark={isDark}
+                />
                 <div>
                   <div className="flex justify-between items-start">
                     <span className="text-[10px] font-bold uppercase tracking-widest opacity-85 block">
@@ -1029,6 +1087,18 @@ export default function Home() {
                 <div className="mt-2 text-[10px] opacity-75 border-t border-white/20 pt-2 font-medium">
                   Eficiência: {efficiency}% (Perdas de {100 - efficiency}%)
                 </div>
+                <CalculationMemoryPanel isVisible={showCalcDose} isDark={isDark}>
+                  <div className="p-2.5 rounded-lg border font-mono text-[11px] leading-relaxed bg-[#232821] border-[#2C3328] text-[#E8E6DF]">
+                    <div className="text-[#9EA399] font-semibold mb-1">FÓRMULA:</div>
+                    <div className="font-bold text-[#9CB386]">Dose = N_Liq ÷ Efic</div>
+                    <div className="border-t border-[#2C3328] my-1 pt-1 text-[#D4A373] font-bold">
+                      {calculations.liquidNeed.toFixed(2)} ÷ {efficiency / 100} = {calculations.recommendedDose.toFixed(2)} kg N/ha
+                    </div>
+                    <p className="mt-1 text-[#9EA399]">
+                      Dose corrigida considerando a eficiência de {efficiency}%. Perdas estimadas: {100 - efficiency}%.
+                    </p>
+                  </div>
+                </CalculationMemoryPanel>
               </div>
 
             </div>
@@ -1056,7 +1126,14 @@ export default function Home() {
             </div>
 
             {/* DYNAMIC PARCELAMENTO DISCLOSURES PANEL */}
-            <div id="parceling_section" className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-6 shadow-sm space-y-6 transition-colors">
+            <div id="parceling_section" className="calc-island-scoop bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-6 shadow-sm space-y-6 transition-colors relative">
+              <CalculationIsland
+                isVisible={showCalcParcelamento}
+                onToggle={() => setShowCalcParcelamento(!showCalcParcelamento)}
+                accentColor="#D4A373"
+                darkAccentColor="#D4A373"
+                isDark={isDark}
+              />
               
               <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-4 flex justify-between items-center">
                 <div>
@@ -1179,10 +1256,31 @@ export default function Home() {
 
               </div>
 
-            </div>
+              <CalculationMemoryPanel isVisible={showCalcParcelamento} isDark={isDark}>
+                <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
+                  isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
+                }`}>
+                  <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Cronograma de Parcelamento:</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Meta (base):</span> {calculations.targetSplitTotal.toFixed(2)} kg N/ha</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>1ª Base:</span> {calculations.base1_kg} kg N/ha (valor absoluto)</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>2ª V4-V6:</span> {calculations.v4v6_1}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v4v6_1_kg} kg N/ha</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>3ª V8-V10:</span> {calculations.v8v10_1_final}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v8v10_1_kg} kg N/ha</div>
+                  <div className={`border-t pt-1.5 mt-1.5 font-bold ${isDark ? 'border-[#2C3328] text-[#D4A373]' : 'border-[#F0EDE5] text-[#8D6E63]'}`}>
+                    Soma: {calculations.base1_kg} + {calculations.v4v6_1_kg} + {calculations.v8v10_1_kg} = {calculations.sumOfSplits} kg N/ha
+                  </div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Diferença V4-V6 vs V8-V10:</span> {calculations.splitDifference.toFixed(2)} kg N/ha</div>
+                </div>
+              </CalculationMemoryPanel>
 
-            {/* INTEGRITY AND VALIDATION CHECK PANEL */}
-            <div className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-6 shadow-sm space-y-4 transition-colors">
+            </div>
+            <div className="calc-island-scoop bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-6 shadow-sm space-y-4 transition-colors relative">
+              <CalculationIsland
+                isVisible={showCalcBalanco}
+                onToggle={() => setShowCalcBalanco(!showCalcBalanco)}
+                accentColor="#2E6F40"
+                darkAccentColor="#86efac"
+                isDark={isDark}
+              />
               
               <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-3 flex justify-between items-center">
                 <div>
@@ -1266,6 +1364,23 @@ export default function Home() {
                 </div>
 
               </div>
+
+              <CalculationMemoryPanel isVisible={showCalcBalanco} isDark={isDark}>
+                <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
+                  isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
+                }`}>
+                  <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Fechamento de Balanço:</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Meta:</span> {calculations.targetSplitTotal.toFixed(2)} kg N/ha</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Soma:</span> {calculations.base1_kg} + {calculations.v4v6_1_kg} + {calculations.v8v10_1_kg} = {calculations.sumOfSplits} kg N/ha</div>
+                  <div className={`border-t pt-1.5 mt-1.5 font-bold ${isDark ? 'border-[#2C3328]' : 'border-[#F0EDE5]'}`}>
+                    {calculations.splitDiscrepancy === 0 ? (
+                      <span className={isDark ? 'text-[#86efac]' : 'text-[#2E6F40]'}>Balanço Fechado! (100% OK) — A soma corresponde exatamente à meta.</span>
+                    ) : (
+                      <span className={isDark ? 'text-[#E0A96D]' : 'text-[#8D6E63]'}>Diferença de {calculations.splitDiscrepancy > 0 ? '+' : ''}{calculations.splitDiscrepancy.toFixed(2)} kg N/ha — Ajuste as frações percentuais para fechamento exato.</span>
+                    )}
+                  </div>
+                </div>
+              </CalculationMemoryPanel>
 
             </div>
 

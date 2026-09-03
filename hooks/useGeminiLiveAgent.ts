@@ -556,7 +556,9 @@ Sempre responda de forma concisa e direta, pois se trata de uma conversa falada 
 
       ws.onmessage = async (event) => {
         try {
-          const msg = JSON.parse(event.data);
+          const rawData = event.data instanceof Blob ? await event.data.text() : event.data;
+          if (typeof rawData !== 'string') return;
+          const msg = JSON.parse(rawData);
 
           // 1. Setup Complete
           if (msg.setupComplete) {

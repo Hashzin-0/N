@@ -1,0 +1,67 @@
+'use client';
+
+import React from 'react';
+import { motion } from 'motion/react';
+
+interface CalculationIslandProps {
+  isVisible: boolean;
+  onToggle: () => void;
+  accentColor?: string;
+  darkAccentColor?: string;
+  isDark?: boolean;
+}
+
+export default function CalculationIsland({
+  isVisible,
+  onToggle,
+  accentColor = '#5A5A40',
+  darkAccentColor = '#9CB386',
+  isDark = false,
+}: CalculationIslandProps) {
+  const activeColor = isDark ? darkAccentColor : accentColor;
+
+  return (
+    <motion.button
+      type="button"
+      onClick={onToggle}
+      className="absolute -top-1 -right-1 z-20 group"
+      whileHover={{ scale: 1.12 }}
+      whileTap={{ scale: 0.92 }}
+      title={isVisible ? 'Fechar memória de cálculo' : 'Ver memória de cálculo (passo a passo)'}
+    >
+      <div
+        className="relative flex items-center justify-center w-8 h-8 rounded-bl-2xl transition-all duration-300"
+        style={{
+          backgroundColor: activeColor,
+          boxShadow: isVisible
+            ? `0 0 12px ${activeColor}88, 0 2px 8px rgba(0,0,0,0.15)`
+            : `0 2px 6px rgba(0,0,0,0.12)`,
+        }}
+      >
+        {/* SVG "C" icon — Cálculo */}
+        <svg
+          viewBox="0 0 24 24"
+          className="w-4 h-4"
+          fill="none"
+          stroke="white"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M18 6C14.5 3 9.5 3 6 6s-3.5 8 0 11 8.5 4 12 1" />
+        </svg>
+
+        {/* Active dot indicator */}
+        {isVisible && (
+          <motion.span
+            layoutId="island-dot"
+            className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#D4A373] border border-white"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+          />
+        )}
+      </div>
+    </motion.button>
+  );
+}

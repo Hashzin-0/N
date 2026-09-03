@@ -50,3 +50,33 @@
   100% { transform: scale(1); }
 }
 
+@utility calc-island-scoop {
+  clip-path: polygon(
+    0% 0%,
+    calc(100% - 16px) 0%,
+    100% 16px,
+    100% 100%,
+    0% 100%
+  );
+}
+
+@utility calc-island-scoop-lg {
+  clip-path: polygon(
+    0% 0%,
+    calc(100% - 22px) 0%,
+    100% 22px,
+    100% 100%,
+    0% 100%
+  );
+}
+
+@keyframes calc-unfold-shadow {
+  0% { box-shadow: 0 -6px 24px rgba(0,0,0,0.18); }
+  100% { box-shadow: 0 0px 0px rgba(0,0,0,0); }
+}
+
+@keyframes calc-island-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212,163,115,0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(212,163,115,0); }
+}
+
