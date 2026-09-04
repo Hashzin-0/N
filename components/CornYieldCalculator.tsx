@@ -19,7 +19,7 @@ import Button3D from './Button3D';
 import { useTheme } from './ThemeProvider';
 import CornYieldResultCard from './metrics/CornYieldResultCard';
 import { useAnimationLock } from '@/lib/useAnimationLock';
-import type { AgronomicValidationIssue } from './CornAlert3D';
+import type { AgronomicValidationIssue } from '@/lib/types';
 
 interface CornYieldCalculatorProps {
   onApplyYieldGoal?: (scHa: number) => void;

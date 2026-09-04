@@ -37,3 +37,13 @@ export interface MetricCardProps {
   saveAction?: { label: string; onClick: () => void };
   children: React.ReactNode;
 }
+
+export interface AgronomicValidationIssue {
+  field: string;
+  label: string;
+  currentValue: number | string;
+  typicalRange: string;
+  severity: 'warning' | 'critical';
+  message: string;
+  recommendedValue: number;
+}

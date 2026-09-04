@@ -3,17 +3,20 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useTheme } from './ThemeProvider';
+import { useWebGLManager } from '@/hooks/useWebGLManager';
 
 export default function DarkMode3DTransition() {
   const { isDark, trigger3DTransition, clear3DTransition } = useTheme();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animRef = useRef<number | null>(null);
 
+  const { webglSupported, acquire, release } = useWebGLManager();
+
   useEffect(() => {
     if (!trigger3DTransition) return;
 
     const canvas = canvasRef.current;
-    if (!canvas) {
+    if (!canvas || !webglSupported) {
       clear3DTransition();
       return;
     }
@@ -36,16 +39,13 @@ export default function DarkMode3DTransition() {
       const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
       camera.position.z = 50;
 
-      renderer = new THREE.WebGLRenderer({
-        canvas,
-        alpha: true,
-        antialias: true,
-        powerPreference: 'high-performance',
-      });
+      renderer = acquire(canvas, { maxDPR: 1.5, powerPreference: 'high-performance' });
+      if (!renderer) {
+        clear3DTransition();
+        return;
+      }
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
-      // Particle field & shockwave ring
       const particleCount = 200;
       const particleGeo = new THREE.BufferGeometry();
       const positions = new Float32Array(particleCount * 3);
@@ -56,7 +56,6 @@ export default function DarkMode3DTransition() {
         positions[i * 3 + 1] = (Math.random() - 0.5) * 10;
         positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
 
-        // Radial blast outward
         const angle = Math.random() * Math.PI * 2;
         const speed = 25 + Math.random() * 45;
         velocities[i * 3] = Math.cos(angle) * speed;
@@ -66,7 +65,6 @@ export default function DarkMode3DTransition() {
 
       particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-      // Colors: Golden/Amber for Day, Silver/Cyan/Moss for Night
       const mainColor = isDark ? 0x93c5fd : 0xf59e0b;
       const secondaryColor = isDark ? 0x86efac : 0xfde047;
 
@@ -80,7 +78,6 @@ export default function DarkMode3DTransition() {
       const particles = new THREE.Points(particleGeo, particleMat);
       scene.add(particles);
 
-      // 3D Expanding Shockwave Torus
       const shockwaveGeo = new THREE.TorusGeometry(2, 0.4, 16, 64);
       const shockwaveMat = new THREE.MeshBasicMaterial({
         color: secondaryColor,
@@ -93,23 +90,20 @@ export default function DarkMode3DTransition() {
       scene.add(shockwave);
 
       const startTime = performance.now();
-      const duration = 850; // ms
+      const duration = 850;
 
       const animate = (currentTime: number) => {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1.0);
 
-        // Ease out cubic
         const ease = 1 - Math.pow(1 - progress, 3);
 
-        // Expand shockwave
         const scale = 1 + ease * 40;
         shockwave.scale.set(scale, scale, scale);
         shockwave.rotation.z += 0.04;
         shockwave.rotation.x = Math.PI / 6;
         shockwaveMat.opacity = (1 - progress) * 0.7;
 
-        // Move particles
         const pos = particleGeo.attributes.position;
         for (let i = 0; i < particleCount; i++) {
           const dt = 0.016;
@@ -126,11 +120,11 @@ export default function DarkMode3DTransition() {
           animRef.current = requestAnimationFrame(animate);
         } else {
           clear3DTransition();
-          renderer?.dispose();
           particleGeo.dispose();
           particleMat.dispose();
           shockwaveGeo.dispose();
           shockwaveMat.dispose();
+          if (renderer) release(renderer);
         }
       };
 
@@ -142,9 +136,9 @@ export default function DarkMode3DTransition() {
     return () => {
       canvas.removeEventListener('webglcontextlost', onContextLost);
       if (animRef.current) cancelAnimationFrame(animRef.current);
-      renderer?.dispose();
+      if (renderer) release(renderer);
     };
-  }, [trigger3DTransition, isDark, clear3DTransition]);
+  }, [trigger3DTransition, isDark, clear3DTransition, webglSupported, acquire, release]);
 
   if (!trigger3DTransition) return null;
 

@@ -6,6 +6,8 @@ import { useTheme } from './ThemeProvider';
 import { useScrollSpy } from '@/hooks/useScrollSpy';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useWebGLManager } from '@/hooks/useWebGLManager';
+import WebGLFallback from './WebGLFallback';
 
 interface SectionConfig {
   id: string;
@@ -51,7 +53,6 @@ function createGeometry(type: SectionConfig['geometry']): THREE.BufferGeometry {
   }
 }
 
-/* Sample random surface points from a geometry (for particle morph targets) */
 function sampleGeometryPoints(type: SectionConfig['geometry'], count: number): Float32Array {
   const geo = createGeometry(type);
   const posAttr = geo.getAttribute('position');
@@ -85,188 +86,20 @@ function sampleGeometryPoints(type: SectionConfig['geometry'], count: number): F
   return out;
 }
 
-/* ─── Single 3D Icon Canvas ─── */
-function NavIcon3D({
-  config,
-  isActive,
-  isHovered,
-  isDark,
-}: {
+interface IconScene {
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
+  mesh: THREE.Mesh;
+  ring: THREE.Mesh;
+  mat: THREE.MeshStandardMaterial;
+  ringMat: THREE.MeshBasicMaterial;
+  element: HTMLElement;
   config: SectionConfig;
-  isActive: boolean;
-  isHovered: boolean;
-  isDark: boolean;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const animFrameId = useRef<number | null>(null);
-  const isActiveRef = useRef(isActive);
-  const isHoveredRef = useRef(isHovered);
-  const targetScale = useRef(1);
-  const currentScale = useRef(1);
-  const [contextLost, setContextLost] = useState(false);
-  const webglSupportedRef = useRef<boolean | null>(null);
-
-  useEffect(() => {
-    isActiveRef.current = isActive;
-  }, [isActive]);
-
-  useEffect(() => {
-    isHoveredRef.current = isHovered;
-  }, [isHovered]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || contextLost) return;
-
-    if (webglSupportedRef.current === null) {
-      try {
-        const testCanvas = document.createElement('canvas');
-        webglSupportedRef.current = !!(testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl'));
-      } catch {
-        webglSupportedRef.current = false;
-      }
-    }
-    if (!webglSupportedRef.current) return;
-
-    let renderer: THREE.WebGLRenderer | null = null;
-    let geo: THREE.BufferGeometry | null = null;
-    let mat: THREE.MeshStandardMaterial | null = null;
-    let ringGeo: THREE.TorusGeometry | null = null;
-    let ringMat: THREE.MeshBasicMaterial | null = null;
-
-    const onContextLost = (e: Event) => {
-      e.preventDefault();
-      setContextLost(true);
-      if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
-    };
-
-    const onContextRestored = () => {
-      setContextLost(false);
-    };
-
-    canvas.addEventListener('webglcontextlost', onContextLost);
-    canvas.addEventListener('webglcontextrestored', onContextRestored);
-
-    try {
-      const size = 56;
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
-      camera.position.z = 3.2;
-
-      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-      renderer.setSize(size, size);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-      const ambient = new THREE.AmbientLight(0xffffff, 0.9);
-      scene.add(ambient);
-      const dir = new THREE.DirectionalLight(0xffffff, 1.8);
-      dir.position.set(2, 3, 4);
-      scene.add(dir);
-      const back = new THREE.DirectionalLight(0xa5c9eb, 0.6);
-      back.position.set(-2, -1, -3);
-      scene.add(back);
-
-      const colorHex = parseInt((isDark ? config.colorDark : config.color).replace('#', ''), 16);
-      geo = createGeometry(config.geometry);
-      mat = new THREE.MeshStandardMaterial({
-        color: colorHex,
-        emissive: colorHex,
-        emissiveIntensity: 0.15,
-        roughness: 0.35,
-        metalness: 0.25,
-        wireframe: config.geometry === 'box',
-      });
-      const mesh = new THREE.Mesh(geo, mat);
-      scene.add(mesh);
-
-      ringGeo = new THREE.TorusGeometry(1.5, 0.06, 8, 32);
-      ringMat = new THREE.MeshBasicMaterial({
-        color: colorHex,
-        transparent: true,
-        opacity: 0,
-        wireframe: true,
-      });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.rotation.x = Math.PI / 2.5;
-      scene.add(ring);
-
-      const clock = new THREE.Clock();
-      const animate = () => {
-        animFrameId.current = requestAnimationFrame(animate);
-        const elapsed = clock.getElapsedTime();
-
-        const speed = isHoveredRef.current ? 0.025 : 0.006;
-        mesh.rotation.y += speed;
-        mesh.rotation.x += speed * 0.4;
-
-        targetScale.current = isActiveRef.current ? 1.25 : isHoveredRef.current ? 1.1 : 1.0;
-        currentScale.current += (targetScale.current - currentScale.current) * 0.1;
-        mesh.scale.setScalar(currentScale.current);
-
-        mat!.emissiveIntensity = isActiveRef.current ? 0.45 + Math.sin(elapsed * 3) * 0.2 : 0.15;
-
-        ringMat!.opacity = isActiveRef.current ? 0.4 + Math.sin(elapsed * 2.5) * 0.15 : 0;
-        ring.rotation.z = elapsed * 0.5;
-
-        renderer!.render(scene, camera);
-      };
-      animate();
-    } catch {
-      // WebGL renderer creation failed
-    }
-
-    return () => {
-      canvas.removeEventListener('webglcontextlost', onContextLost);
-      canvas.removeEventListener('webglcontextrestored', onContextRestored);
-      if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
-      renderer?.dispose();
-      geo?.dispose();
-      mat?.dispose();
-      ringGeo?.dispose();
-      ringMat?.dispose();
-    };
-  }, [config.geometry, config.color, config.colorDark, isDark, contextLost]);
-
-  const colorHex = isDark ? config.colorDark : config.color;
-
-  if (contextLost) {
-    return (
-      <div
-        className="w-[56px] h-[56px] flex items-center justify-center"
-        style={{
-          filter: isActive
-            ? `drop-shadow(0 0 10px ${isDark ? 'rgba(156,187,134,0.6)' : 'rgba(90,90,64,0.5)'})`
-            : 'none',
-          transition: 'filter 0.4s ease',
-        }}
-      >
-        <div
-          className="w-8 h-8 rounded-full"
-          style={{
-            backgroundColor: colorHex,
-            boxShadow: `0 0 12px ${colorHex}60`,
-            opacity: isActive ? 0.9 : 0.5,
-          }}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="w-[56px] h-[56px] pointer-events-none"
-      style={{
-        filter: isActive
-          ? `drop-shadow(0 0 10px ${isDark ? 'rgba(156,187,134,0.6)' : 'rgba(90,90,64,0.5)'})`
-          : 'none',
-        transition: 'filter 0.4s ease',
-      }}
-    />
-  );
+  targetScale: number;
+  currentScale: number;
 }
 
-/* ─── Morphing Particle Transition (per-icon staggered) ─── */
+/* ─── Morphing Particle Transition (raw Three.js, temporary renderer) ─── */
 function MorphTransitionEffect({
   active,
   isDark,
@@ -274,7 +107,8 @@ function MorphTransitionEffect({
   vertical,
   fromSections,
   toSections,
-  iconPositions,
+  fromIconPositions,
+  toIconPositions,
 }: {
   active: boolean;
   isDark: boolean;
@@ -282,10 +116,12 @@ function MorphTransitionEffect({
   vertical: boolean;
   fromSections: SectionConfig[];
   toSections: SectionConfig[];
-  iconPositions: Map<string, number>;
+  fromIconPositions: Map<string, number>;
+  toIconPositions: Map<string, number>;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animRef = useRef<number | null>(null);
+  const { acquire, release } = useWebGLManager();
 
   useEffect(() => {
     if (!active) return;
@@ -304,9 +140,9 @@ function MorphTransitionEffect({
       const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 200);
       camera.position.z = 20;
 
-      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+      renderer = acquire(canvas, { maxDPR: 1.5 });
+      if (!renderer) { onComplete(); return; }
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
       const onContextLost = (e: Event) => {
         e.preventDefault();
@@ -318,12 +154,10 @@ function MorphTransitionEffect({
       canvas.addEventListener('webglcontextlost', onContextLost);
       canvas.addEventListener('webglcontextrestored', onContextRestored);
 
-      /* ── Camera frustum dimensions ── */
       const vFov = (50 * Math.PI) / 180;
       const frustumHeight = 2 * Math.tan(vFov / 2) * camera.position.z;
       const frustumWidth = frustumHeight * aspect;
 
-      /* ── Map icon fractional positions → 3D world coords ── */
       const toWorldPos = (frac: number) => {
         if (vertical) {
           return { x: 0, y: (0.5 - frac) * frustumHeight * 0.85, z: 0 };
@@ -331,7 +165,6 @@ function MorphTransitionEffect({
         return { x: (frac - 0.5) * frustumWidth * 0.85, y: 0, z: 0 };
       };
 
-      /* ── Per-icon stagger delay (100ms between each icon) ── */
       const PARTICLES_PER_ICON = 50;
       const maxIcons = Math.max(fromSections.length, toSections.length, 1);
       const totalParticles = PARTICLES_PER_ICON * maxIcons;
@@ -343,11 +176,10 @@ function MorphTransitionEffect({
       for (let idx = 0; idx < maxIcons; idx++) {
         iconDelays.push(idx * STAGGER_MS);
         const cfg = fromSections[idx] || fromSections[0];
-        const pos = iconPositions.get(cfg.id);
-        iconWorldPositions.push(pos !== undefined ? toWorldPos(pos) : toWorldPos(0.5));
+        const frac = fromIconPositions.get(cfg.id) ?? ((idx + 0.5) / maxIcons);
+        iconWorldPositions.push(toWorldPos(frac));
       }
 
-      /* ── Particle arrays ── */
       const positions = new Float32Array(totalParticles * 3);
       const endPositions = new Float32Array(totalParticles * 3);
       const velocities = new Float32Array(totalParticles * 3);
@@ -359,11 +191,11 @@ function MorphTransitionEffect({
         const fromConfig = fromSections[iconIdx] || fromSections[fromSections.length - 1];
         const toConfig = toSections[iconIdx] || toSections[toSections.length - 1];
 
-        const fromPos = iconPositions.get(fromConfig.id);
-        const toPos = iconPositions.get((toSections[iconIdx] || toSections[0]).id);
+        const fromFrac = fromIconPositions.get(fromConfig.id) ?? ((iconIdx + 0.5) / maxIcons);
+        const toFrac = toIconPositions.get(toConfig.id) ?? ((iconIdx + 0.5) / maxIcons);
 
-        const fromWorld = fromPos !== undefined ? toWorldPos(fromPos) : toWorldPos(0.5);
-        const toWorld = toPos !== undefined ? toWorldPos(toPos) : toWorldPos(0.5);
+        const fromWorld = toWorldPos(fromFrac);
+        const toWorld = toWorldPos(toFrac);
 
         const fromPts = sampleGeometryPoints(fromConfig.geometry, PARTICLES_PER_ICON);
         const toPts = sampleGeometryPoints(toConfig.geometry, PARTICLES_PER_ICON);
@@ -410,7 +242,6 @@ function MorphTransitionEffect({
         }
       }
 
-      /* ── Points geometry ── */
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       geo.setAttribute('color', new THREE.BufferAttribute(baseColors.slice(), 3));
@@ -426,7 +257,6 @@ function MorphTransitionEffect({
       const points = new THREE.Points(geo, mat);
       scene.add(points);
 
-      /* ── Per-icon shockwave rings ── */
       const dissolveRings: THREE.Mesh[] = [];
       const reformRings: THREE.Mesh[] = [];
       const dissolveRingGeo = new THREE.TorusGeometry(2.5, 0.25, 12, 40);
@@ -462,7 +292,6 @@ function MorphTransitionEffect({
         reformRings.push(rRing);
       }
 
-      /* ── Animation timing ── */
       const DURATION = 1200 + totalStagger;
       const DISSOLVE_END = 0.35;
       const HOLD_END = 0.50;
@@ -471,7 +300,6 @@ function MorphTransitionEffect({
       const colorAttr = geo.getAttribute('color') as THREE.BufferAttribute;
       const colorArr = colorAttr.array as Float32Array;
 
-      /* ── Compute per-icon normalized delay offsets (0→1 range within DURATION) ── */
       const iconDelayNorm = iconDelays.map((d) => d / DURATION);
 
       const animate = (now: number) => {
@@ -486,17 +314,14 @@ function MorphTransitionEffect({
           const iconIdx = particleIconIdx[i];
           const delay = iconDelayNorm[iconIdx];
 
-          /* Per-particle local time: shifted by icon delay, stretched to fill remaining duration */
           const tLocal = Math.min(Math.max((tGlobal - delay) / (1 - delay), 0), 1);
 
           if (tLocal <= 0) {
-            /* Not yet this icon's turn — particles invisible */
             posArr[i3 + 2] = -10;
             continue;
           }
 
           if (tLocal <= DISSOLVE_END) {
-            /* ── Phase 1: DISSOLVE — particles fly outward from source ── */
             const phaseT = tLocal / DISSOLVE_END;
             const ease = 1 - Math.pow(1 - phaseT, 3);
 
@@ -505,13 +330,11 @@ function MorphTransitionEffect({
             posArr[i3 + 2] += velocities[i3 + 2] * 0.016;
 
           } else if (tLocal <= HOLD_END) {
-            /* ── Phase 2: HOLD — particles drift gently, almost frozen ── */
             posArr[i3]     += velocities[i3]     * 0.001;
             posArr[i3 + 1] += velocities[i3 + 1] * 0.001;
             posArr[i3 + 2] += Math.sin(now * 0.003 + i) * 0.002;
 
           } else {
-            /* ── Phase 3: REFORM — particles converge to target positions ── */
             const phaseT = (tLocal - HOLD_END) / (1 - HOLD_END);
             const ease = phaseT < 0.5
               ? 4 * phaseT * phaseT * phaseT
@@ -523,7 +346,6 @@ function MorphTransitionEffect({
             posArr[i3 + 2] += (endPositions[i3 + 2] - posArr[i3 + 2]) * lerpFactor;
           }
 
-          /* ── Color interpolation per particle ── */
           const colorMix = tLocal <= DISSOLVE_END ? 0 : Math.min((tLocal - DISSOLVE_END) / 0.4, 1);
           colorArr[i3]     = baseColors[i3]     + (targetColors[i3]     - baseColors[i3])     * colorMix;
           colorArr[i3 + 1] = baseColors[i3 + 1] + (targetColors[i3 + 1] - baseColors[i3 + 1]) * colorMix;
@@ -533,7 +355,6 @@ function MorphTransitionEffect({
         posAttr.needsUpdate = true;
         colorAttr.needsUpdate = true;
 
-        /* ── Per-icon rings: each ring animates on its own staggered timeline ── */
         for (let idx = 0; idx < maxIcons; idx++) {
           const delay = iconDelayNorm[idx];
           const tLocal = Math.min(Math.max((tGlobal - delay) / (1 - delay), 0), 1);
@@ -566,7 +387,6 @@ function MorphTransitionEffect({
           }
         }
 
-        /* ── Overall opacity: fade in at start, fade out at end ── */
         const fadeIn = Math.min(tGlobal / 0.03, 1);
         const fadeOut = tGlobal > 0.92 ? (1 - tGlobal) / 0.08 : 1;
         mat.opacity = fadeIn * fadeOut * 0.9;
@@ -577,13 +397,13 @@ function MorphTransitionEffect({
           animRef.current = requestAnimationFrame(animate);
         } else {
           onComplete();
-          renderer?.dispose();
           geo.dispose();
           mat.dispose();
           dissolveRingGeo.dispose();
           reformRingGeo.dispose();
           for (const r of dissolveRings) { (r.material as THREE.MeshBasicMaterial).dispose(); }
           for (const r of reformRings) { (r.material as THREE.MeshBasicMaterial).dispose(); }
+          if (renderer) release(renderer);
         }
       };
 
@@ -599,9 +419,9 @@ function MorphTransitionEffect({
 
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current);
-      renderer?.dispose();
+      if (renderer) release(renderer);
     };
-  }, [active, isDark, onComplete, vertical, fromSections, toSections, iconPositions]);
+  }, [active, isDark, onComplete, vertical, fromSections, toSections, fromIconPositions, toIconPositions, acquire, release]);
 
   if (!active) return null;
 
@@ -629,10 +449,20 @@ export default function SectionNav3D({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const prevTabRef = useRef(activeTab);
   const containerRef = useRef<HTMLDivElement>(null);
+  const sharedCanvasRef = useRef<HTMLCanvasElement>(null);
   const iconRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const [iconPositions, setIconPositions] = useState<Map<string, number>>(new Map());
   const [transitionFromSections, setTransitionFromSections] = useState<SectionConfig[]>(NITROGEN_SECTIONS);
   const prevSectionsRef = useRef<SectionConfig[]>(NITROGEN_SECTIONS);
+  const prevIconPositionsRef = useRef<Map<string, number>>(new Map());
+  const [transitionFromIconPositions, setTransitionFromIconPositions] = useState<Map<string, number>>(new Map());
+
+  const { webglSupported, acquire, release } = useWebGLManager();
+
+  const hoveredIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    hoveredIdRef.current = hoveredId;
+  }, [hoveredId]);
 
   const sections = useMemo(() => {
     if (activeTab === 'estimativa_milho') return CORN_SECTIONS;
@@ -653,6 +483,206 @@ export default function SectionNav3D({
     return idx >= 0 ? idx : 0;
   }, [currentSection, sections]);
 
+  // Shared canvas renderer for all nav icons (scissor/viewport approach)
+  const iconScenesRef = useRef<Map<string, IconScene>>(new Map());
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const animFrameIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const canvas = sharedCanvasRef.current;
+    if (!canvas || !webglSupported) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const width = rect.width || 200;
+    const height = rect.height || 400;
+
+    const renderer = acquire(canvas, { antialias: true, alpha: true });
+    if (!renderer) return;
+    renderer.setSize(width, height);
+    renderer.setClearColor(0x000000, 0);
+    rendererRef.current = renderer;
+
+    const iconScenes = iconScenesRef.current;
+    const clock = new THREE.Clock();
+
+    const animate = () => {
+      animFrameIdRef.current = requestAnimationFrame(animate);
+      if (!renderer) return;
+
+      const canvasRect = canvas.getBoundingClientRect();
+      const elapsed = clock.getElapsedTime();
+
+      renderer.setScissorTest(true);
+
+      iconScenes.forEach((icon) => {
+        const el = icon.element;
+        if (!el) return;
+
+        const elRect = el.getBoundingClientRect();
+        const x = elRect.left - canvasRect.left;
+        const y = canvasRect.height - (elRect.top - canvasRect.top) - elRect.height;
+        const w = elRect.width;
+        const h = elRect.height;
+
+        if (w <= 0 || h <= 0) return;
+
+        const speed = icon.config.id === hoveredIdRef.current ? 0.025 : 0.006;
+        icon.mesh.rotation.y += speed;
+        icon.mesh.rotation.x += speed * 0.4;
+
+        icon.targetScale = icon.mesh.userData.isActive ? 1.25 : icon.mesh.userData.isHovered ? 1.1 : 1.0;
+        icon.currentScale += (icon.targetScale - icon.currentScale) * 0.1;
+        icon.mesh.scale.setScalar(icon.currentScale);
+
+        icon.mat.emissiveIntensity = icon.mesh.userData.isActive ? 0.45 + Math.sin(elapsed * 3) * 0.2 : 0.15;
+
+        icon.ringMat.opacity = icon.mesh.userData.isActive ? 0.4 + Math.sin(elapsed * 2.5) * 0.15 : 0;
+        icon.ring.rotation.z = elapsed * 0.5;
+
+        renderer.setViewport(x, y, w, h);
+        renderer.setScissor(x, y, w, h);
+        renderer.render(icon.scene, icon.camera);
+      });
+
+      renderer.setScissorTest(false);
+    };
+
+    animate();
+
+    const handleResize = () => {
+      const r = containerRef.current?.getBoundingClientRect();
+      if (r && renderer) {
+        renderer.setSize(r.width, r.height);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
+      iconScenes.forEach((icon) => {
+        icon.scene.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.geometry.dispose();
+            if (child.material instanceof THREE.Material) child.material.dispose();
+          }
+        });
+      });
+      iconScenes.clear();
+      release(renderer);
+      rendererRef.current = null;
+    };
+  }, [webglSupported, acquire, release]);
+
+  // Register/unregister icon scenes when sections or isDark change
+  useEffect(() => {
+    if (!rendererRef.current || !webglSupported) return;
+
+    const existing = iconScenesRef.current;
+    const currentIds = new Set(sections.map((s) => s.id));
+
+    // Remove scenes for sections no longer present
+    existing.forEach((icon, id) => {
+      if (!currentIds.has(id)) {
+        icon.scene.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.geometry.dispose();
+            if (child.material instanceof THREE.Material) child.material.dispose();
+          }
+        });
+        existing.delete(id);
+      }
+    });
+
+    // Create/update scenes for current sections
+    sections.forEach((config) => {
+      if (existing.has(config.id)) {
+        const icon = existing.get(config.id)!;
+        const colorHex = parseInt((isDark ? config.colorDark : config.color).replace('#', ''), 16);
+        icon.mat.color.setHex(colorHex);
+        icon.mat.emissive.setHex(colorHex);
+        icon.ringMat.color.setHex(colorHex);
+        return;
+      }
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+      camera.position.z = 3.2;
+
+      const ambient = new THREE.AmbientLight(0xffffff, 0.9);
+      scene.add(ambient);
+      const dir = new THREE.DirectionalLight(0xffffff, 1.8);
+      dir.position.set(2, 3, 4);
+      scene.add(dir);
+      const back = new THREE.DirectionalLight(0xa5c9eb, 0.6);
+      back.position.set(-2, -1, -3);
+      scene.add(back);
+
+      const colorHex = parseInt((isDark ? config.colorDark : config.color).replace('#', ''), 16);
+      const geo = createGeometry(config.geometry);
+      const mat = new THREE.MeshStandardMaterial({
+        color: colorHex,
+        emissive: colorHex,
+        emissiveIntensity: 0.15,
+        roughness: 0.35,
+        metalness: 0.25,
+        wireframe: config.geometry === 'box',
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      scene.add(mesh);
+
+      const ringGeo = new THREE.TorusGeometry(1.5, 0.06, 8, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        transparent: true,
+        opacity: 0,
+        wireframe: true,
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2.5;
+      scene.add(ring);
+
+      const element = iconRefs.current.get(config.id);
+      if (!element) return;
+
+      existing.set(config.id, {
+        scene,
+        camera,
+        mesh,
+        ring,
+        mat,
+        ringMat,
+        element,
+        config,
+        targetScale: 1,
+        currentScale: 1,
+      });
+    });
+  }, [sections, isDark, webglSupported]);
+
+  // Update active/hovered state on icon scenes
+  useEffect(() => {
+    iconScenesRef.current.forEach((icon) => {
+      const isActive = currentSection === icon.config.id;
+      const isHoveredBtn = hoveredId === icon.config.id;
+      if (icon.mesh) {
+        icon.mesh.userData.isActive = isActive;
+        icon.mesh.userData.isHovered = isHoveredBtn;
+      }
+    });
+  }, [currentSection, hoveredId]);
+
+  // Re-measure element references when sections change
+  useEffect(() => {
+    iconScenesRef.current.forEach((icon) => {
+      const el = iconRefs.current.get(icon.config.id);
+      if (el) icon.element = el;
+    });
+  }, [sections]);
+
   // Measure icon positions along the scroll axis
   useEffect(() => {
     const container = containerRef.current;
@@ -666,11 +696,9 @@ export default function SectionNav3D({
         const containerRect = container.getBoundingClientRect();
         const btnRect = btn.getBoundingClientRect();
         if (isMobile) {
-          // Horizontal: position along X axis as fraction of container width
           const pos = (btnRect.left - containerRect.left + btnRect.width / 2) / containerRect.width;
           positions.set(config.id, pos);
         } else {
-          // Vertical: position along Y axis as fraction of container height
           const pos = (btnRect.top - containerRect.top + btnRect.height / 2) / containerRect.height;
           positions.set(config.id, pos);
         }
@@ -683,14 +711,11 @@ export default function SectionNav3D({
     return () => window.removeEventListener('resize', measure);
   }, [sections, isMobile]);
 
-  // Map scroll progress to indicator position along the icon axis
   const indicatorProgress = useMemo(() => {
     if (iconPositions.size === 0) return 0;
-    // The scroll progress maps linearly to the indicator travel
     return scrollProgress;
   }, [scrollProgress, iconPositions]);
 
-  // Determine which icons the progress bar has "passed" (for activation animation)
   const passedIcons = useMemo(() => {
     const passed = new Set<string>();
     iconPositions.forEach((pos, id) => {
@@ -709,26 +734,20 @@ export default function SectionNav3D({
     }
   }, [onNavigate]);
 
-  // Transition effect when tab changes
   useEffect(() => {
     if (prevTabRef.current !== activeTab) {
+      prevIconPositionsRef.current = new Map(iconPositions);
+      setTransitionFromIconPositions(new Map(iconPositions));
       setTransitionFromSections(prevSectionsRef.current);
       setIsTransitioning(true);
       prevTabRef.current = activeTab;
       prevSectionsRef.current = sections;
     }
-  }, [activeTab, sections]);
+  }, [activeTab, sections, iconPositions]);
 
   const handleTransitionComplete = useCallback(() => {
     setIsTransitioning(false);
   }, []);
-
-  // Compute indicator transform
-  const indicatorTransform = isMobile
-    ? `translateX(${indicatorProgress * 100}%)`
-    : `translateY(${indicatorProgress * 100}%)`;
-
-  const indicatorLength = isMobile ? '24px' : '24px';
 
   return (
     <div
@@ -737,6 +756,15 @@ export default function SectionNav3D({
       role="tablist"
       aria-label="Navegação de seções"
     >
+      {/* Shared WebGL canvas for all nav icons */}
+      {webglSupported && (
+        <canvas
+          ref={sharedCanvasRef}
+          className="absolute inset-0 pointer-events-none"
+          style={{ width: '100%', height: '100%' }}
+        />
+      )}
+
       <MorphTransitionEffect
         active={isTransitioning}
         isDark={isDark}
@@ -744,10 +772,10 @@ export default function SectionNav3D({
         vertical={!isMobile}
         fromSections={transitionFromSections}
         toSections={sections}
-        iconPositions={iconPositions}
+        fromIconPositions={transitionFromIconPositions}
+        toIconPositions={iconPositions}
       />
 
-      {/* Icons + Progress Track */}
       <div
         className={`relative ${
           isMobile
@@ -755,7 +783,6 @@ export default function SectionNav3D({
             : 'flex flex-col items-center justify-between py-2 px-1 h-full'
         }`}
       >
-        {/* Progress Track (background line) */}
         <div
           className={`absolute ${
             isMobile
@@ -763,7 +790,6 @@ export default function SectionNav3D({
               : 'left-[28px] top-2 bottom-2 w-1'
           } bg-[#E5E2D9] dark:bg-[#2C3328] rounded-full overflow-hidden`}
         >
-          {/* Filled portion - continuous with scroll */}
           <div
             className="absolute rounded-full"
             style={{
@@ -787,7 +813,6 @@ export default function SectionNav3D({
                   }),
             }}
           />
-          {/* Glowing dot at the tip */}
           <div
             className="absolute rounded-full bg-white shadow-lg"
             style={{
@@ -811,11 +836,11 @@ export default function SectionNav3D({
           />
         </div>
 
-        {/* Icon Buttons */}
-        {sections.map((config, index) => {
+        {sections.map((config) => {
           const isActive = currentSection === config.id;
           const isPassed = passedIcons.has(config.id);
           const isHoveredBtn = hoveredId === config.id;
+          const colorHex = isDark ? config.colorDark : config.color;
 
           return (
             <button
@@ -834,9 +859,9 @@ export default function SectionNav3D({
                 isMobile ? 'flex-col items-center gap-1' : 'flex-row items-center gap-2'
               } group outline-none z-10`}
             >
-              {/* 3D Icon */}
+              {/* 3D Icon placeholder (shared canvas renders here) */}
               <div
-                className="transition-all duration-300"
+                className="w-[56px] h-[56px] transition-all duration-300"
                 style={{
                   transform: isActive
                     ? isMobile ? 'translateY(-4px)' : 'translateX(-4px)'
@@ -845,17 +870,21 @@ export default function SectionNav3D({
                       : 'translate(0)',
                   transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease',
                   opacity: isTransitioning ? 0 : 1,
+                  filter: isActive
+                    ? `drop-shadow(0 0 10px ${isDark ? 'rgba(156,187,134,0.6)' : 'rgba(90,90,64,0.5)'})`
+                    : 'none',
                 }}
               >
-                <NavIcon3D
-                  config={config}
-                  isActive={isActive || isPassed}
-                  isHovered={isHoveredBtn}
-                  isDark={isDark}
-                />
+                {!webglSupported && (
+                  <WebGLFallback
+                    variant="icon"
+                    color={colorHex}
+                    size={56}
+                    className={isActive ? 'opacity-90' : 'opacity-50'}
+                  />
+                )}
               </div>
 
-              {/* Label */}
               <span
                 className={`${
                   isMobile
@@ -872,7 +901,6 @@ export default function SectionNav3D({
                 {isMobile ? config.shortLabel : config.label}
               </span>
 
-              {/* Active dot */}
               {isActive && (
                 <span
                   className={`absolute ${

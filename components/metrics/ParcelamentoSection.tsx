@@ -549,6 +549,24 @@ export default function ParcelamentoSection({
         </div>
       </div>
 
+      {baseDoseMode === 'single' ? (
+        <div className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-3 mb-3">
+          <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">3ª V8-V10</span>
+          <span className="text-base font-bold text-[#8D6E63] dark:text-[#CBB5A1] block mt-1">
+            {calculations.targetSplitTotal.toFixed(2)} - ({calculations.v4v6_1_kg.toFixed(2)} + {calculations.base1_kg.toFixed(2)}) = {calculations.v8v10_1_kg.toFixed(2)} kg N/ha
+          </span>
+          <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-0.5">Dose Total a Aplicar - (Aplicação: V4-V6 + Aplicação: Base)</p>
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-3 mb-3">
+          <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">3ª V8-V10</span>
+          <span className="text-base font-bold text-[#8D6E63] dark:text-[#CBB5A1] block mt-1">
+            {calculations.v8v10_1_final}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v8v10_1_kg.toFixed(2)} kg N/ha
+          </span>
+          <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-0.5">Percentual da meta</p>
+        </div>
+      )}
+
       <CalculationMemoryPanel isVisible={showCalc} isDark={isDark}>
         <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
           isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'

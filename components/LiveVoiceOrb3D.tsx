@@ -2,18 +2,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-
-let webglAvailable: boolean | null = null;
-function isWebGLAvailable(): boolean {
-  if (webglAvailable !== null) return webglAvailable;
-  try {
-    const canvas = document.createElement('canvas');
-    webglAvailable = !!(canvas.getContext('webgl') || canvas.getContext('experimental-webgl'));
-  } catch {
-    webglAvailable = false;
-  }
-  return webglAvailable;
-}
+import { useWebGLManager } from '@/hooks/useWebGLManager';
+import { getDeviceTier, getParticleCount, getGeometryDetail } from '@/lib/webglManager';
+import WebGLFallback from './WebGLFallback';
 
 interface LiveVoiceOrb3DProps {
   status: 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking' | 'error';
@@ -33,12 +24,10 @@ export default function LiveVoiceOrb3D({
 }: LiveVoiceOrb3DProps) {
   const [contextLost, setContextLost] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const animFrameIdRef = useRef<number | null>(null);
 
-  // Mesh refs for animation
   const coreMeshRef = useRef<THREE.Mesh | null>(null);
   const wireframeMeshRef = useRef<THREE.Mesh | null>(null);
   const particlesRef = useRef<THREE.Points | null>(null);
@@ -46,91 +35,58 @@ export default function LiveVoiceOrb3D({
   const ring2Ref = useRef<THREE.Mesh | null>(null);
   const pointLightRef = useRef<THREE.PointLight | null>(null);
 
-  // Target colors for smooth lerping
   const targetColorCore = useRef<THREE.Color>(new THREE.Color('#5A5A40'));
   const targetColorGlow = useRef<THREE.Color>(new THREE.Color('#C5A880'));
 
-  // Mouse interaction
   const mousePos = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
   const isDragging = useRef(false);
   const lastMousePos = useRef({ x: 0, y: 0 });
 
-  // Keep latest dynamic values accessible to 60fps animation loop without re-triggering Three.js setup
   const dynamicStateRef = useRef({ status, userVolume, agentVolume });
   useEffect(() => {
     dynamicStateRef.current = { status, userVolume, agentVolume };
   }, [status, userVolume, agentVolume]);
 
+  const { webglSupported, acquire, release } = useWebGLManager();
+
   useEffect(() => {
-    // Update target colors based on agent state
     if (status === 'speaking') {
-      // Puck speaking: Radiant emerald and vibrant lime
       targetColorCore.current.set('#2E6F40');
       targetColorGlow.current.set('#68D391');
     } else if (status === 'listening') {
-      // User speaking: Warm amber and golden harvest
       targetColorCore.current.set('#C5832B');
       targetColorGlow.current.set('#F6E05E');
     } else if (status === 'thinking') {
-      // Executing tool / thinking: Bioluminescent cyan/amber
       targetColorCore.current.set('#319795');
       targetColorGlow.current.set('#81E6D9');
     } else if (status === 'error') {
-      // Error: muted terra cotta
       targetColorCore.current.set('#E53E3E');
       targetColorGlow.current.set('#FEB2B2');
     } else {
-      // Idle / Connecting: Calm natural earth and olive tones
       targetColorCore.current.set('#5A5A40');
       targetColorGlow.current.set('#C5A880');
     }
   }, [status]);
 
-  const webglSupported = typeof window !== 'undefined' && isWebGLAvailable();
-
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !webglSupported) return;
+    const canvas = canvasRef.current;
+    if (!canvas || !webglSupported || contextLost) return;
 
     const width = size;
     const height = size;
+    const tier = getDeviceTier();
 
-    // Scene
     const scene = new THREE.Scene();
-    sceneRef.current = scene;
 
-    // Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
     camera.position.z = 4.8;
-    cameraRef.current = camera;
 
-    // Renderer
-    let renderer: THREE.WebGLRenderer;
-    try {
-      renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        alpha: true,
-        powerPreference: 'high-performance',
-      });
-    } catch {
-      return;
-    }
-
-    if (!renderer.getContext()) {
-      renderer.dispose();
-      return;
-    }
+    const renderer = acquire(canvas, { powerPreference: 'high-performance' });
+    if (!renderer) return;
 
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-
-    container.innerHTML = '';
-    container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // WebGL context loss/restore handlers
     const onContextLost = (e: Event) => {
       e.preventDefault();
       setContextLost(true);
@@ -143,7 +99,6 @@ export default function LiveVoiceOrb3D({
     renderer.domElement.addEventListener('webglcontextlost', onContextLost);
     renderer.domElement.addEventListener('webglcontextrestored', onContextRestored);
 
-    // Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
 
@@ -156,9 +111,8 @@ export default function LiveVoiceOrb3D({
     backLight.position.set(-2, -2, -2);
     scene.add(backLight);
 
-    // 1. Organic Core Geometry (Icosahedron with subdivision)
-    const coreGeo = new THREE.IcosahedronGeometry(1.2, 4);
-    // Store original positions for deformation
+    const coreDetail = getGeometryDetail(4, tier);
+    const coreGeo = new THREE.IcosahedronGeometry(1.2, coreDetail);
     const positionAttr = coreGeo.attributes.position;
     const originalPositions = new Float32Array(positionAttr.array.length);
     originalPositions.set(positionAttr.array);
@@ -175,7 +129,6 @@ export default function LiveVoiceOrb3D({
     scene.add(coreMesh);
     coreMeshRef.current = coreMesh;
 
-    // 2. Translucent outer wireframe lattice
     const wireGeo = new THREE.IcosahedronGeometry(1.4, 2);
     const wireMat = new THREE.MeshBasicMaterial({
       color: targetColorGlow.current,
@@ -187,7 +140,6 @@ export default function LiveVoiceOrb3D({
     scene.add(wireMesh);
     wireframeMeshRef.current = wireMesh;
 
-    // 3. Orbital Ring 1
     const ring1Geo = new THREE.TorusGeometry(1.65, 0.02, 16, 64);
     const ring1Mat = new THREE.MeshBasicMaterial({
       color: targetColorGlow.current,
@@ -199,7 +151,6 @@ export default function LiveVoiceOrb3D({
     scene.add(ring1);
     ring1Ref.current = ring1;
 
-    // 4. Orbital Ring 2
     const ring2Geo = new THREE.TorusGeometry(1.85, 0.015, 16, 64);
     const ring2Mat = new THREE.MeshBasicMaterial({
       color: targetColorCore.current,
@@ -211,8 +162,7 @@ export default function LiveVoiceOrb3D({
     scene.add(ring2);
     ring2Ref.current = ring2;
 
-    // 5. Floating Orbital Particles
-    const particleCount = 70;
+    const particleCount = getParticleCount(70, tier);
     const particleGeo = new THREE.BufferGeometry();
     const particlePositions = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount; i++) {
@@ -234,40 +184,6 @@ export default function LiveVoiceOrb3D({
     scene.add(particles);
     particlesRef.current = particles;
 
-    // Drag interaction handlers
-    const onMouseDown = (e: MouseEvent) => {
-      isDragging.current = true;
-      lastMousePos.current = { x: e.clientX, y: e.clientY };
-    };
-
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isDragging.current) {
-        // Soft tilt on hover
-        const rect = container.getBoundingClientRect();
-        const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 0.8;
-        const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 0.8;
-        mousePos.current.targetX = nx;
-        mousePos.current.targetY = ny;
-        return;
-      }
-      const dx = e.clientX - lastMousePos.current.x;
-      const dy = e.clientY - lastMousePos.current.y;
-      lastMousePos.current = { x: e.clientX, y: e.clientY };
-      coreMesh.rotation.y += dx * 0.01;
-      coreMesh.rotation.x += dy * 0.01;
-      wireMesh.rotation.y += dx * 0.01;
-      wireMesh.rotation.x += dy * 0.01;
-    };
-
-    const onMouseUp = () => {
-      isDragging.current = false;
-    };
-
-    container.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-
-    // Animation Loop
     let clock = new THREE.Clock();
 
     const animate = () => {
@@ -275,16 +191,13 @@ export default function LiveVoiceOrb3D({
 
       const elapsedTime = clock.getElapsedTime();
 
-      // Smooth mouse tilt
       mousePos.current.x += (mousePos.current.targetX - mousePos.current.x) * 0.05;
       mousePos.current.y += (mousePos.current.targetY - mousePos.current.y) * 0.05;
 
-      // Audio influence factor
       const { status: curStatus, userVolume: curUserVol, agentVolume: curAgentVol } = dynamicStateRef.current;
       const effectiveVol = curStatus === 'speaking' ? curAgentVol : curUserVol;
       const audioPulse = Math.min(1.5, 1.0 + effectiveVol * 1.8);
 
-      // Interpolate material colors
       if (coreMat.color) {
         coreMat.color.lerp(targetColorCore.current, 0.06);
       }
@@ -296,7 +209,6 @@ export default function LiveVoiceOrb3D({
         pointLightRef.current.intensity = 2.0 + effectiveVol * 4.0;
       }
 
-      // Deform core vertices organically with time and audio volume
       if (coreMeshRef.current) {
         const geo = coreMeshRef.current.geometry as THREE.BufferGeometry;
         const pos = geo.attributes.position;
@@ -310,13 +222,11 @@ export default function LiveVoiceOrb3D({
           const oy = orig[i * 3 + 1];
           const oz = orig[i * 3 + 2];
 
-          // Compute distance from origin
           const len = Math.sqrt(ox * ox + oy * oy + oz * oz);
           const nx = ox / len;
           const ny = oy / len;
           const nz = oz / len;
 
-          // Trigonometric wave displacement
           const displacement =
             Math.sin(nx * 4.0 + elapsedTime * waveSpeed) *
             Math.cos(ny * 4.0 + elapsedTime * waveSpeed) *
@@ -329,20 +239,17 @@ export default function LiveVoiceOrb3D({
         pos.needsUpdate = true;
         geo.computeVertexNormals();
 
-        // Rotations
         coreMeshRef.current.rotation.y += 0.008 + (curStatus === 'thinking' ? 0.03 : 0);
         coreMeshRef.current.rotation.x = mousePos.current.y * 0.4;
         coreMeshRef.current.rotation.z = mousePos.current.x * 0.4;
       }
 
-      // Outer wireframe
       if (wireframeMeshRef.current) {
         wireframeMeshRef.current.rotation.y -= 0.005;
         wireframeMeshRef.current.rotation.z += 0.003;
         wireframeMeshRef.current.scale.setScalar(1.0 + (audioPulse - 1.0) * 0.5);
       }
 
-      // Orbital Rings
       if (ring1Ref.current) {
         ring1Ref.current.rotation.z += curStatus === 'thinking' ? 0.04 : 0.01;
         ring1Ref.current.rotation.x = Math.PI / 3 + Math.sin(elapsedTime * 1.5) * 0.1;
@@ -352,7 +259,6 @@ export default function LiveVoiceOrb3D({
         ring2Ref.current.rotation.y = Math.PI / 4 + Math.cos(elapsedTime * 1.2) * 0.1;
       }
 
-      // Floating particles
       if (particlesRef.current) {
         particlesRef.current.rotation.y += 0.003;
         particlesRef.current.rotation.x = Math.sin(elapsedTime * 0.5) * 0.1;
@@ -363,22 +269,49 @@ export default function LiveVoiceOrb3D({
 
     animate();
 
-    // Cleanup
     return () => {
       if (animFrameIdRef.current) {
         cancelAnimationFrame(animFrameIdRef.current);
       }
-      container.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
       renderer.domElement.removeEventListener('webglcontextrestored', onContextRestored);
-      renderer.dispose();
-      if (container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
-      }
+      release(renderer);
+      rendererRef.current = null;
     };
-  }, [size, webglSupported]);
+  }, [size, webglSupported, contextLost, acquire, release]);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    isDragging.current = true;
+    lastMousePos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging.current) {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      if (!rect) return;
+      const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 0.8;
+      const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 0.8;
+      mousePos.current.targetX = nx;
+      mousePos.current.targetY = ny;
+      return;
+    }
+    const dx = e.clientX - lastMousePos.current.x;
+    const dy = e.clientY - lastMousePos.current.y;
+    lastMousePos.current = { x: e.clientX, y: e.clientY };
+
+    if (coreMeshRef.current) {
+      coreMeshRef.current.rotation.y += dx * 0.01;
+      coreMeshRef.current.rotation.x += dy * 0.01;
+    }
+    if (wireframeMeshRef.current) {
+      wireframeMeshRef.current.rotation.y += dx * 0.01;
+      wireframeMeshRef.current.rotation.x += dy * 0.01;
+    }
+  };
+
+  const handlePointerUp = () => {
+    isDragging.current = false;
+  };
 
   if (!webglSupported || contextLost) {
     const glowColor =
@@ -393,15 +326,7 @@ export default function LiveVoiceOrb3D({
         className={`relative select-none flex items-center justify-center ${className}`}
         style={{ width: size, height: size }}
       >
-        <div
-          className="rounded-full animate-pulse"
-          style={{
-            width: size * 0.5,
-            height: size * 0.5,
-            backgroundColor: glowColor,
-            boxShadow: `0 0 ${size * 0.25}px ${size * 0.12}px ${glowColor}60`,
-          }}
-        />
+        <WebGLFallback variant="orb" color={glowColor} size={size} />
       </div>
     );
   }
@@ -410,8 +335,18 @@ export default function LiveVoiceOrb3D({
     <div
       ref={containerRef}
       className={`relative select-none cursor-grab active:cursor-grabbing overflow-hidden flex items-center justify-center ${className}`}
-      style={{ width: size, height: size }}
+      style={{ width: size, height: size, touchAction: 'none' }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
       title="Assistente de Voz Puck (Arraste para girar)"
-    />
+    >
+      <canvas
+        ref={canvasRef}
+        className="pointer-events-none"
+        style={{ width: size, height: size }}
+      />
+    </div>
   );
 }

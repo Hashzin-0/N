@@ -26,7 +26,7 @@ export default function MetricCard({
     <div
       className={`calc-island-scoop rounded-3xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[120px] transition-colors ${
         isHero
-          ? 'bg-[#5A5A40] dark:bg-[#263122] text-white col-span-2 sm:col-span-1 border border-transparent dark:border-[#3D4C37] shadow-md'
+          ? 'bg-[#5A5A40] dark:bg-[#263122] text-white border border-transparent dark:border-[#3D4C37] shadow-md'
           : 'bg-white dark:bg-[#1C201A] border border-[#E5E2D9] dark:border-[#2C3328]'
       }`}
     >

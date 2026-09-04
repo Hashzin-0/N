@@ -3,10 +3,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useTheme } from './ThemeProvider';
+import { useWebGLManager } from '@/hooks/useWebGLManager';
+import WebGLFallback from './WebGLFallback';
 
 interface CornEar3DVisualizerProps {
-  rows: number; // e.g. 16
-  kernelsPerRow: number; // e.g. 35
+  rows: number;
+  kernelsPerRow: number;
   totalKernels: number;
   isAlarmActive?: boolean;
 }
@@ -19,15 +21,14 @@ export default function CornEar3DVisualizer({
 }: CornEar3DVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { isDark } = useTheme();
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const earGroupRef = useRef<THREE.Group | null>(null);
   const animFrameId = useRef<number | null>(null);
-  const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const isDragging = useRef(false);
   const previousMousePos = useRef({ x: 0, y: 0 });
+  const isDragging = useRef(false);
   const isAlarmRef = useRef(isAlarmActive);
   const [contextLost, setContextLost] = useState(false);
+
+  const { webglSupported, acquire, release } = useWebGLManager();
 
   useEffect(() => {
     isAlarmRef.current = isAlarmActive;
@@ -35,7 +36,7 @@ export default function CornEar3DVisualizer({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || contextLost) return;
+    if (!canvas || contextLost || !webglSupported) return;
 
     const width = canvas.parentElement?.clientWidth || 320;
     const height = 240;
@@ -57,22 +58,15 @@ export default function CornEar3DVisualizer({
 
     try {
       const scene = new THREE.Scene();
-      sceneRef.current = scene;
 
       const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
       camera.position.set(0, 0, 8.5);
 
-      renderer = new THREE.WebGLRenderer({
-        canvas,
-        alpha: true,
-        antialias: true,
-        powerPreference: 'high-performance',
-      });
+      renderer = acquire(canvas, { powerPreference: 'high-performance' });
+      if (!renderer) return;
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      rendererRef.current = renderer;
 
-      // Lights
+
       const ambientLight = new THREE.AmbientLight(0xffffff, isDark ? 0.9 : 1.1);
       scene.add(ambientLight);
 
@@ -84,32 +78,29 @@ export default function CornEar3DVisualizer({
       dirLight2.position.set(-5, -4, -4);
       scene.add(dirLight2);
 
-      // Group for the 3D corn ear
       const earGroup = new THREE.Group();
       earGroupRef.current = earGroup;
       scene.add(earGroup);
 
-      // Cob Core (Sabugo)
       const cobLength = 4.8;
       const cobRadius = 0.55;
       const cobGeo = new THREE.CylinderGeometry(cobRadius * 0.7, cobRadius, cobLength, 24);
       const cobMat = new THREE.MeshStandardMaterial({
-        color: isDark ? 0x991b1b : 0xdc2626, // Reddish sabugo
+        color: isDark ? 0x991b1b : 0xdc2626,
         roughness: 0.9,
       });
       const cobMesh = new THREE.Mesh(cobGeo, cobMat);
       earGroup.add(cobMesh);
 
-      // Kernels (Instanced mesh for 60fps performance)
       const clampedRows = Math.max(10, Math.min(24, rows || 16));
       const clampedKernels = Math.max(15, Math.min(50, kernelsPerRow || 35));
       const instanceCount = clampedRows * clampedKernels;
 
       const kernelGeo = new THREE.SphereGeometry(0.09, 8, 6);
-      kernelGeo.scale(1.0, 0.8, 1.4); // Flat corn kernel shape
+      kernelGeo.scale(1.0, 0.8, 1.4);
 
       const kernelMat = new THREE.MeshStandardMaterial({
-        color: 0xf59e0b, // Golden yellow corn
+        color: 0xf59e0b,
         emissive: 0xd97706,
         emissiveIntensity: 0.18,
         roughness: 0.35,
@@ -123,9 +114,8 @@ export default function CornEar3DVisualizer({
       let idx = 0;
 
       for (let k = 0; k < clampedKernels; k++) {
-        const yNorm = (k / (clampedKernels - 1)) - 0.5; // -0.5 to 0.5
+        const yNorm = (k / (clampedKernels - 1)) - 0.5;
         const yPos = yNorm * (cobLength * 0.92);
-        // Taper radius towards tip
         const taper = 1.0 - Math.pow(Math.max(0, yNorm), 2) * 0.45;
         const currentRadius = (cobRadius + 0.08) * taper;
 
@@ -143,10 +133,9 @@ export default function CornEar3DVisualizer({
       }
       kernelInstancedMesh.instanceMatrix.needsUpdate = true;
 
-      // Husk (Palha do milho na base)
       const huskGeo = new THREE.ConeGeometry(0.9, 1.8, 12, 1, true);
       const huskMat = new THREE.MeshStandardMaterial({
-        color: isDark ? 0x3f6212 : 0x65a30d, // Green husk
+        color: isDark ? 0x3f6212 : 0x65a30d,
         roughness: 0.8,
         side: THREE.DoubleSide,
       });
@@ -155,18 +144,16 @@ export default function CornEar3DVisualizer({
       huskMesh.rotation.x = Math.PI;
       earGroup.add(huskMesh);
 
-      // Initial slight tilt
       earGroup.rotation.z = 0.2;
       earGroup.rotation.x = 0.3;
 
-      // Animation Loop
       let clock = new THREE.Clock();
       const animate = () => {
         animFrameId.current = requestAnimationFrame(animate);
         const delta = clock.getDelta();
 
         if (!isDragging.current) {
-          earGroup.rotation.y += delta * 0.7; // Slow auto rotation
+          earGroup.rotation.y += delta * 0.7;
         }
 
         renderer!.render(scene, camera);
@@ -187,33 +174,29 @@ export default function CornEar3DVisualizer({
         canvas.removeEventListener('webglcontextrestored', onContextRestored);
         window.removeEventListener('resize', handleResize);
         if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
-        renderer?.dispose();
         cobGeo.dispose();
         cobMat.dispose();
         kernelGeo.dispose();
         kernelMat.dispose();
         huskGeo.dispose();
         huskMat.dispose();
+        if (renderer) release(renderer);
       };
     } catch {
-      // WebGL renderer creation failed
+      return () => {
+        canvas.removeEventListener('webglcontextlost', onContextLost);
+        canvas.removeEventListener('webglcontextrestored', onContextRestored);
+        if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
+      };
     }
+  }, [rows, kernelsPerRow, isDark, contextLost, webglSupported, acquire, release]);
 
-    return () => {
-      canvas.removeEventListener('webglcontextlost', onContextLost);
-      canvas.removeEventListener('webglcontextrestored', onContextRestored);
-      if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
-      renderer?.dispose();
-    };
-  }, [rows, kernelsPerRow, isDark, contextLost]);
-
-  // Pointer drag interactions
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     isDragging.current = true;
     previousMousePos.current = { x: e.clientX, y: e.clientY };
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDragging.current || !earGroupRef.current) return;
     const deltaX = e.clientX - previousMousePos.current.x;
     const deltaY = e.clientY - previousMousePos.current.y;
@@ -224,7 +207,7 @@ export default function CornEar3DVisualizer({
     previousMousePos.current = { x: e.clientX, y: e.clientY };
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = () => {
     isDragging.current = false;
   };
 
@@ -235,10 +218,10 @@ export default function CornEar3DVisualizer({
           ? 'bg-[#181A15] border-[#2E3326]'
           : 'bg-[#FAF8F3] border-[#E5E2D9]'
       }`}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
     >
       <div className="absolute top-2.5 left-3 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#D4A373]">
         <span className="h-2 w-2 rounded-full bg-[#D4A373] animate-ping" />
@@ -249,15 +232,18 @@ export default function CornEar3DVisualizer({
         Arraste para girar
       </div>
 
-      <canvas ref={canvasRef} className={`w-full h-[220px] ${contextLost ? 'hidden' : 'cursor-grab active:cursor-grabbing'}`} />
+      <canvas
+        ref={canvasRef}
+        className={`w-full h-[220px] ${
+          contextLost || !webglSupported ? 'hidden' : 'cursor-grab active:cursor-grabbing'
+        }`}
+        style={{ touchAction: 'none' }}
+      />
 
-      {contextLost && (
-        <div className="w-full h-[220px] flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#D4A373]/40">
+      {(contextLost || !webglSupported) && (
+        <WebGLFallback variant="full" color="#D4A373" label="Visualização indisponível">
           <span className="text-4xl" role="img" aria-label="Espiga de milho">🌽</span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#9CA38C]">
-            Visualização indisponível
-          </span>
-        </div>
+        </WebGLFallback>
       )}
 
       <div className="w-full grid grid-cols-3 gap-2 text-center text-xs mt-1 pt-2 border-t border-[#E5E2D9] dark:border-[#2F3329]">

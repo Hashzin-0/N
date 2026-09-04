@@ -3,14 +3,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useTheme } from './ThemeProvider';
+import { useWebGLManager } from '@/hooks/useWebGLManager';
+import WebGLFallback from './WebGLFallback';
 import { Sun, Moon } from 'lucide-react';
 
 export default function DarkMode3DToggle() {
   const { isDark, toggleTheme, mounted } = useTheme();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const sphereGroupRef = useRef<THREE.Group | null>(null);
   const targetRotationY = useRef<number>(0);
   const currentRotationY = useRef<number>(0);
@@ -19,19 +19,19 @@ export default function DarkMode3DToggle() {
   const animFrameId = useRef<number | null>(null);
   const [contextLost, setContextLost] = useState(false);
 
+  const { webglSupported, acquire, release } = useWebGLManager();
+
   const isDarkActive = mounted ? isDark : false;
   const isDarkRef = useRef<boolean>(isDarkActive);
 
-  // Update target rotation and isDark ref when theme changes
   useEffect(() => {
     isDarkRef.current = isDarkActive;
-    // Light = 0, Dark = Math.PI (180 degrees)
     targetRotationY.current = isDarkActive ? Math.PI : 0;
   }, [isDarkActive]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || contextLost) return;
+    if (!canvas || contextLost || !webglSupported) return;
 
     let renderer: THREE.WebGLRenderer | null = null;
     let clock: THREE.Clock | null = null;
@@ -54,23 +54,15 @@ export default function DarkMode3DToggle() {
       const height = 48;
 
       const scene = new THREE.Scene();
-      sceneRef.current = scene;
 
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
       camera.position.z = 2.8;
-      cameraRef.current = camera;
 
-      renderer = new THREE.WebGLRenderer({
-        canvas,
-        alpha: true,
-        antialias: true,
-        powerPreference: 'high-performance',
-      });
+      renderer = acquire(canvas, { powerPreference: 'high-performance' });
+      if (!renderer) return;
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       rendererRef.current = renderer;
 
-      // Ambient and directional lighting
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
       scene.add(ambientLight);
 
@@ -82,15 +74,13 @@ export default function DarkMode3DToggle() {
       dirLightBack.position.set(-2, -1, -3);
       scene.add(dirLightBack);
 
-      // Group for the 3D celestial body
       const celestialGroup = new THREE.Group();
       sphereGroupRef.current = celestialGroup;
       scene.add(celestialGroup);
 
-      // SUN HEMISPHERE (Front facing in light mode, z > 0)
       const sunGeo = new THREE.SphereGeometry(1, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
       const sunMat = new THREE.MeshStandardMaterial({
-        color: 0xf59e0b, // Amber Sun
+        color: 0xf59e0b,
         emissive: 0xd97706,
         emissiveIntensity: 0.5,
         roughness: 0.3,
@@ -100,10 +90,9 @@ export default function DarkMode3DToggle() {
       sunMesh.rotation.x = Math.PI / 2;
       celestialGroup.add(sunMesh);
 
-      // MOON HEMISPHERE (Back facing in light mode, z < 0)
       const moonGeo = new THREE.SphereGeometry(1, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
       const moonMat = new THREE.MeshStandardMaterial({
-        color: 0xd1d5db, // Silver Moon
+        color: 0xd1d5db,
         emissive: 0x475569,
         emissiveIntensity: 0.4,
         roughness: 0.8,
@@ -113,7 +102,6 @@ export default function DarkMode3DToggle() {
       moonMesh.rotation.x = -Math.PI / 2;
       celestialGroup.add(moonMesh);
 
-      // 3D Orbital Corona Ring
       const ringGeo = new THREE.TorusGeometry(1.3, 0.05, 8, 36);
       const ringMat = new THREE.MeshBasicMaterial({
         color: isDarkRef.current ? 0x93c5fd : 0xfbbf24,
@@ -125,28 +113,23 @@ export default function DarkMode3DToggle() {
       ringMesh.rotation.x = Math.PI / 3;
       celestialGroup.add(ringMesh);
 
-      // Initial position
       currentRotationY.current = isDarkRef.current ? Math.PI : 0;
       celestialGroup.rotation.y = currentRotationY.current;
 
-      // Animation Loop
       clock = new THREE.Clock();
       const animate = () => {
         animFrameId.current = requestAnimationFrame(animate);
         const delta = clock!.getDelta();
 
-        // Smooth interpolation to target Y rotation (day vs night flip)
         const diff = targetRotationY.current - currentRotationY.current;
         currentRotationY.current += diff * 0.12;
         celestialGroup.rotation.y = currentRotationY.current;
 
-        // Mouse tilt interaction
         const targetTiltX = mouseRef.current.y * 0.4;
         const targetTiltZ = -mouseRef.current.x * 0.4;
         celestialGroup.rotation.x += (targetTiltX - celestialGroup.rotation.x) * 0.1;
         celestialGroup.rotation.z += (targetTiltZ - celestialGroup.rotation.z) * 0.1;
 
-        // Gentle wobble & ring rotation
         ringMesh.rotation.z += isHovered.current ? delta * 3 : delta * 0.8;
         ringMat.color.setHex(isDarkRef.current ? 0x93c5fd : 0xfbbf24);
 
@@ -161,22 +144,22 @@ export default function DarkMode3DToggle() {
       canvas.removeEventListener('webglcontextlost', onContextLost);
       canvas.removeEventListener('webglcontextrestored', onContextRestored);
       if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
-      renderer?.dispose();
+      if (renderer) release(renderer);
     };
-  }, [contextLost]);
+  }, [contextLost, webglSupported, acquire, release]);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
     mouseRef.current = { x, y };
   };
 
-  const handleMouseEnter = () => {
+  const handlePointerEnter = () => {
     isHovered.current = true;
   };
 
-  const handleMouseLeave = () => {
+  const handlePointerLeave = () => {
     isHovered.current = false;
     mouseRef.current = { x: 0, y: 0 };
   };
@@ -185,9 +168,9 @@ export default function DarkMode3DToggle() {
     <button
       id="btn_dark_mode_3d_toggle"
       onClick={toggleTheme}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onPointerMove={handlePointerMove}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
       suppressHydrationWarning
       className={`relative group flex items-center gap-2 px-3 py-1.5 rounded-2xl border transition-all duration-300 select-none shadow-sm active:scale-95 ${
         isDarkActive
@@ -197,24 +180,19 @@ export default function DarkMode3DToggle() {
       title={isDarkActive ? 'Mudar para Modo Claro (Diurno)' : 'Mudar para Modo Escuro (Noturno Agronômico)'}
       aria-label="Alternar tema claro e escuro"
     >
-      {/* 3D WebGL Canvas Sphere */}
       <div className="relative w-8 h-8 flex items-center justify-center overflow-visible">
-        {contextLost ? (
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{
-              backgroundColor: isDarkActive ? '#1e293b' : '#fef3c7',
-              boxShadow: isDarkActive
-                ? '0 0 12px rgba(147,197,253,0.4)'
-                : '0 0 12px rgba(245,158,11,0.4)',
-            }}
+        {!webglSupported || contextLost ? (
+          <WebGLFallback
+            variant="icon"
+            color={isDarkActive ? '#1e293b' : '#fef3c7'}
+            size={32}
           >
             {isDarkActive ? (
               <Moon className="w-4 h-4 text-[#93c5fd]" />
             ) : (
               <Sun className="w-4 h-4 text-[#f59e0b]" />
             )}
-          </div>
+          </WebGLFallback>
         ) : (
           <canvas
             ref={canvasRef}
@@ -223,7 +201,6 @@ export default function DarkMode3DToggle() {
         )}
       </div>
 
-      {/* Mode Label & Quick Icon */}
       <div className="flex flex-col text-left">
         <div className="flex items-center gap-1.5 text-xs font-bold leading-none">
           {isDarkActive ? (
@@ -243,7 +220,6 @@ export default function DarkMode3DToggle() {
         </span>
       </div>
 
-      {/* Indicator Pill */}
       <div
         className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md border ${
           isDarkActive

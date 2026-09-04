@@ -16,6 +16,8 @@ export class AudioStreamer {
 
   private nextPlayTime: number = 0;
   private activeSources: AudioBufferSourceNode[] = [];
+  private playbackWorkletNode: AudioWorkletNode | null = null;
+  private useWorkletPlayback: boolean = false;
   private isRecording: boolean = false;
 
   private onAudioChunkCallback: ((base64Pcm: string) => void) | null = null;
@@ -33,6 +35,19 @@ export class AudioStreamer {
       this.outputAnalyser.fftSize = 256;
       this.outputAnalyser.smoothingTimeConstant = 0.8;
       this.outputAnalyser.connect(this.outputCtx.destination);
+
+      // Try loading the ring-buffer playback worklet for gapless audio
+      if (this.outputCtx.audioWorklet && 'addModule' in this.outputCtx.audioWorklet) {
+        try {
+          await this.outputCtx.audioWorklet.addModule('/audio-processors/playback.worklet.js');
+          this.playbackWorkletNode = new AudioWorkletNode(this.outputCtx, 'pcm-processor');
+          this.playbackWorkletNode.connect(this.outputAnalyser);
+          this.useWorkletPlayback = true;
+        } catch {
+          console.warn('[AudioStreamer] playback worklet load failed; using fallback');
+          this.useWorkletPlayback = false;
+        }
+      }
     }
     if (this.outputCtx.state === 'suspended') {
       await this.outputCtx.resume();
@@ -210,6 +225,13 @@ export class AudioStreamer {
       float32[i] = pcm16[i] / (pcm16[i] < 0 ? 0x8000 : 0x7fff);
     }
 
+    // Primary path: ring buffer worklet (gapless playback)
+    if (this.useWorkletPlayback && this.playbackWorkletNode) {
+      this.playbackWorkletNode.port.postMessage(float32);
+      return;
+    }
+
+    // Fallback: per-chunk AudioBufferSourceNode scheduling
     const audioBuffer = ctx.createBuffer(1, float32.length, 24000);
     audioBuffer.copyToChannel(float32, 0);
 
@@ -219,7 +241,7 @@ export class AudioStreamer {
 
     const currentTime = ctx.currentTime;
     if (this.nextPlayTime < currentTime) {
-      this.nextPlayTime = currentTime + 0.05; // 50ms buffer to smooth out jitter
+      this.nextPlayTime = currentTime + 0.02; // 20ms buffer (reduced from 50ms)
     }
 
     source.start(this.nextPlayTime);
@@ -238,6 +260,12 @@ export class AudioStreamer {
 
   // Stop all playing audio instantly (e.g. on interruption)
   public stopPlayback(): void {
+    // Interrupt ring buffer worklet
+    if (this.useWorkletPlayback && this.playbackWorkletNode) {
+      this.playbackWorkletNode.port.postMessage('interrupt');
+    }
+
+    // Stop any legacy fallback sources
     for (const src of this.activeSources) {
       try {
         src.stop();
@@ -288,12 +316,20 @@ export class AudioStreamer {
   }
 
   public getIsPlaying(): boolean {
+    if (this.useWorkletPlayback && this.playbackWorkletNode) {
+      // Worklet is always "playing" — silence when queue empty
+      return true;
+    }
     return this.activeSources.length > 0;
   }
 
   public dispose(): void {
     this.stopRecording();
     this.stopPlayback();
+    if (this.playbackWorkletNode) {
+      this.playbackWorkletNode.disconnect();
+      this.playbackWorkletNode = null;
+    }
     if (this.outputCtx && this.outputCtx.state !== 'closed') {
       this.outputCtx.close().catch(() => {});
       this.outputCtx = null;

@@ -1076,7 +1076,7 @@ export default function Home() {
                 mosNContribution={mosNContribution}
                 soyNContribution={soyNContribution}
               />
-              <div id="card_dose_total">
+              <div id="card_dose_total" className="col-span-2 sm:col-span-3">
                 <DoseRecomendadaCard
                   recommendedDose={calculations.recommendedDose}
                   liquidNeed={calculations.liquidNeed}
@@ -1088,6 +1088,7 @@ export default function Home() {
 
             {/* SECONDARY METRICS: MOS AND SOY CREDITS */}
             <SecondaryCreditsCard
+              totalExtraction={calculations.totalExtraction}
               mosNContribution={mosNContribution}
               soyNContribution={soyNContribution}
             />
