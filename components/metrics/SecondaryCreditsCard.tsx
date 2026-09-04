@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { useTheme } from '@/components/ThemeProvider';
+import CalculationIsland from '@/components/CalculationIsland';
+import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
 
 interface Props {
   totalExtraction: number;
@@ -11,6 +13,8 @@ interface Props {
 
 export default function SecondaryCreditsCard({ totalExtraction, mosNContribution, soyNContribution }: Props) {
   const { isDark } = useTheme();
+  const [showMosCalc, setShowMosCalc] = React.useState(false);
+  const [showSoyCalc, setShowSoyCalc] = React.useState(false);
 
   const mosResult = Number((totalExtraction - mosNContribution).toFixed(2));
   const soyResult = Number((totalExtraction - soyNContribution).toFixed(2));
@@ -21,25 +25,35 @@ export default function SecondaryCreditsCard({ totalExtraction, mosNContribution
         <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">
           N Proveniente da MOS
         </span>
-        <span className={`text-[10px] font-mono mt-1 block ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>
-          E = Extração Total (Cultivo) − N fornecido pela M.O. (MOS)
-        </span>
-        <span className={`text-xs font-bold mt-0.5 block ${isDark ? 'text-[#D4A373]' : 'text-[#8D6E63]'}`}>
-          {totalExtraction.toFixed(2)} − {mosNContribution.toFixed(2)} = {mosResult.toFixed(2)} kg N/ha
-        </span>
-        <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-0.5">Reduz a necessidade química</p>
+        <CalculationIsland
+          isVisible={showMosCalc}
+          onToggle={() => setShowMosCalc(!showMosCalc)}
+          accentColor="#5A5A40"
+          darkAccentColor="#9CB386"
+          isDark={isDark}
+        />
+        <CalculationMemoryPanel isVisible={showMosCalc} isDark={isDark}>
+          <div>E = Extração Total (Cultivo) − N fornecido pela M.O. (MOS)</div>
+          <div>{totalExtraction.toFixed(2)} − {mosNContribution.toFixed(2)} = {mosResult.toFixed(2)} kg N/ha</div>
+          <p>Reduz a necessidade química</p>
+        </CalculationMemoryPanel>
       </div>
       <div className="pl-2">
         <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">
           Crédito da Soja
         </span>
-        <span className={`text-[10px] font-mono mt-1 block ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>
-          E = Extração Total (Cultivo) − Crédito de N pela Soja (cultura anterior)
-        </span>
-        <span className={`text-xs font-bold mt-0.5 block ${isDark ? 'text-[#D4A373]' : 'text-[#8D6E63]'}`}>
-          {totalExtraction.toFixed(2)} − {soyNContribution.toFixed(2)} = {soyResult.toFixed(2)} kg N/ha
-        </span>
-        <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-0.5">Leguminosa anterior</p>
+        <CalculationIsland
+          isVisible={showSoyCalc}
+          onToggle={() => setShowSoyCalc(!showSoyCalc)}
+          accentColor="#5A5A40"
+          darkAccentColor="#9CB386"
+          isDark={isDark}
+        />
+        <CalculationMemoryPanel isVisible={showSoyCalc} isDark={isDark}>
+          <div>Crédito da Soja = N Proveniente da MOS - Crédito de N pela Soja (cultura anterior)</div>
+          <div>{totalExtraction.toFixed(2)} − {soyNContribution.toFixed(2)} = {soyResult.toFixed(2)} kg N/ha</div>
+          <p>Leguminosa anterior</p>
+        </CalculationMemoryPanel>
       </div>
     </div>
   );
