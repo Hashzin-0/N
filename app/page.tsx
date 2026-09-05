@@ -45,6 +45,7 @@ import BalancoSection from '@/components/metrics/BalancoSection';
 import DetailedMathPanel from '@/components/metrics/DetailedMathPanel';
 import ITRCalculator from '@/components/ITRCalculator';
 import AbntReferenceFormatter from '@/components/AbntReferenceFormatter';
+import GooeyNav, { GooeyNavItem } from '@/components/GooeyNav';
 
 // Interfaces for structured data
 interface Preset {
@@ -136,6 +137,8 @@ export default function Home() {
   
   // Toggle for 1 vs 2 values per application
   const [baseDoseMode, setBaseDoseMode] = useState<'single' | 'range'>('single');
+  const [v4v6Mode, setV4v6Mode] = useState<'single' | 'range'>('single');
+  const [v8v10Mode, setV8v10Mode] = useState<'single' | 'range'>('single');
   
   // Split base configuration: dose with losses (Dose de N a aplicar) or net requirement (Necessidade Líquida)
   const [splitBase, setSplitBase] = useState<'dose_perdas' | 'necessidade_liquida'>('dose_perdas');
@@ -156,7 +159,30 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'calculadora' | 'estimativa_milho' | 'comparador' | 'itr' | 'abnt'>('calculadora');
   const [saveToast, setSaveToast] = useState<string | null>(null);
 
+  // GooeyNav items and tab mapping
+  const gooeyNavItems: GooeyNavItem[] = [
+    { label: 'Adubação Nitrogenada', href: '#' },
+    { label: 'Estimativa de Produtividade', href: '#' },
+    { label: 'Comparador', href: '#' },
+    { label: 'ITR', href: '#' },
+    { label: 'Referências ABNT', href: '#' },
+  ];
 
+  const tabToIndex: Record<string, number> = {
+    calculadora: 0,
+    estimativa_milho: 1,
+    comparador: 2,
+    itr: 3,
+    abnt: 4,
+  };
+
+  const indexToTab: Record<number, string> = {
+    0: 'calculadora',
+    1: 'estimativa_milho',
+    2: 'comparador',
+    3: 'itr',
+    4: 'abnt',
+  };
 
   const handleReloadRecords = () => {
     notifyStorageChange();
@@ -477,73 +503,23 @@ export default function Home() {
       {/* Main content area - offset for desktop sidebar */}
       <div className="lg:ml-[180px] px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        {/* TOP NAVIGATION / MODE SWITCHER — TABS */}
-        <nav id="app_mode_nav" className="flex items-end gap-0 overflow-x-auto flex-nowrap no-scrollbar border-b border-[#E5E2D9] dark:border-[#2C3328]">
-          <button
-            id="tab_btn_nitrogen"
-            onClick={() => setActiveTab('calculadora')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${
-              activeTab === 'calculadora'
-                ? 'border-[#5A5A40] text-[#5A5A40] dark:border-[#9CB386] dark:text-[#9CB386]'
-                : 'border-transparent text-[#8C897E] hover:text-[#5A5A40] dark:text-[#9EA399] dark:hover:text-[#E8E6DF]'
-            }`}
-          >
-            <Sprout className="h-4 w-4" />
-            <span>Adubação Nitrogenada</span>
-          </button>
-          <button
-            id="tab_btn_corn_yield"
-            onClick={() => setActiveTab('estimativa_milho')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${
-              activeTab === 'estimativa_milho'
-                ? 'border-[#D4A373] text-[#D4A373] dark:border-[#D4A373] dark:text-[#D4A373]'
-                : 'border-transparent text-[#8C897E] hover:text-[#D4A373] dark:text-[#9EA399] dark:hover:text-[#E8E6DF]'
-            }`}
-          >
-            <Calculator className="h-4 w-4" />
-            <span>Estimativa de Produtividade (Milho)</span>
-          </button>
-          <button
-            id="tab_btn_comparator"
-            onClick={() => setActiveTab('comparador')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${
-              activeTab === 'comparador'
-                ? 'border-[#5A5A40] text-[#5A5A40] dark:border-[#9CB386] dark:text-[#9CB386]'
-                : 'border-transparent text-[#8C897E] hover:text-[#5A5A40] dark:text-[#9EA399] dark:hover:text-[#E8E6DF]'
-            }`}
-          >
-            <Columns className="h-4 w-4" />
-            <span>Comparador de Cenários ({savedRecords.length})</span>
-          </button>
-          <button
-            id="tab_btn_itr"
-            onClick={() => setActiveTab('itr')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${
-              activeTab === 'itr'
-                ? 'border-[#5A5A40] text-[#5A5A40] dark:border-[#9CB386] dark:text-[#9CB386]'
-                : 'border-transparent text-[#8C897E] hover:text-[#5A5A40] dark:text-[#9EA399] dark:hover:text-[#E8E6DF]'
-            }`}
-          >
-            <Percent className="h-4 w-4" />
-            <span>ITR</span>
-          </button>
-          <button
-            id="tab_btn_abnt"
-            onClick={() => setActiveTab('abnt')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${
-              activeTab === 'abnt'
-                ? 'border-[#5A5A40] text-[#5A5A40] dark:border-[#9CB386] dark:text-[#9CB386]'
-                : 'border-transparent text-[#8C897E] hover:text-[#5A5A40] dark:text-[#9EA399] dark:hover:text-[#E8E6DF]'
-            }`}
-          >
-            <BookOpen className="h-4 w-4" />
-            <span>Referências ABNT</span>
-          </button>
-          <div className="ml-auto flex items-center gap-2 px-3 py-2.5 text-xs text-[#8C897E] dark:text-[#9EA399]">
-            <span className="inline-block w-2 h-2 rounded-full bg-[#2E6F40] animate-pulse" />
-            <span>Puck Live Assistant Ativo</span>
-          </div>
-        </nav>
+        {/* TOP NAVIGATION / MODE SWITCHER — GOOEY NAV */}
+        <div id="app_mode_nav" className="py-2">
+          <GooeyNav
+            items={gooeyNavItems}
+            initialActiveIndex={tabToIndex[activeTab] ?? 0}
+            onNavigate={(_index, _item) => {
+              const tab = indexToTab[_index];
+              if (tab) setActiveTab(tab as typeof activeTab);
+            }}
+            particleCount={12}
+            particleDistances={[80, 10]}
+            particleR={80}
+            animationTime={500}
+            timeVariance={200}
+            colors={[1, 2, 3, 1, 2, 3, 1, 4]}
+          />
+        </div>
 
         {/* TOAST NOTIFICATION FOR SAVE/LOAD ACTIONS */}
         <AnimatePresence>
@@ -1008,9 +984,8 @@ export default function Home() {
                     </>
                   ) : (
                     <CellDivisionContainer
-                      mode={baseDoseMode === 'single' ? 'single' : baseDoseMode}
+                      mode={baseDoseMode}
                       onModeChange={(m) => handleCustomInputChange(() => {
-                        if (baseDoseMode === 'single') return;
                         if (m === 'single') setV8v10Percent2(0);
                       })}
                       accentColor="#8D6E63"

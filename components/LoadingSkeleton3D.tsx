@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import * as THREE from 'three';
 import { useTheme } from './ThemeProvider';
 import { useWebGLManager } from '@/hooks/useWebGLManager';
+import SideRays from './SideRays';
 
 interface LoadingSkeleton3DProps {
   onComplete: () => void;
@@ -251,37 +252,6 @@ export default function LoadingSkeleton3D({
         tasselThreads.push(line);
       }
 
-      const earGroup = new THREE.Group();
-      earGroup.position.set(0.15, stalkHeight * 0.5, 0);
-      earGroup.rotation.z = -0.3;
-      const earGeo = new THREE.CylinderGeometry(0.12, 0.15, 0.8, 12, 1);
-      const earMat = new THREE.MeshPhongMaterial({
-        color: isDark ? 0xd4a373 : 0xc8a060,
-        emissive: isDark ? 0x3a2a10 : 0x4a3a18,
-        emissiveIntensity: 0.15,
-        shininess: 40,
-      });
-      const ear = new THREE.Mesh(earGeo, earMat.clone());
-      ear.userData = { type: 'ear', label: 'Espiga — Grãos (Necessidade de N)' };
-      earGroup.add(ear);
-
-      const huskMat = new THREE.MeshPhongMaterial({
-        color: isDark ? 0x7a9a60 : 0x8aaa65,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0,
-      });
-      for (let i = 0; i < 4; i++) {
-        const huskGeo = new THREE.PlaneGeometry(0.25, 0.9);
-        const husk = new THREE.Mesh(huskGeo, huskMat.clone());
-        const a = (i / 4) * Math.PI * 2;
-        husk.position.set(Math.cos(a) * 0.14, 0, Math.sin(a) * 0.14);
-        husk.rotation.y = a;
-        husk.rotation.x = 0.2;
-        earGroup.add(husk);
-      }
-      plantGroup.add(earGroup);
-
       const leafMeshes: THREE.Mesh[] = [];
       leaves.forEach((leafDef) => {
         const geo = buildLeafGeometry(leafDef.length, leafDef.width, leafDef.curl);
@@ -400,16 +370,6 @@ export default function LoadingSkeleton3D({
 
           tasselThreads.forEach((thread) => {
             (thread.material as THREE.LineBasicMaterial).opacity = Math.max(0, (eased - 0.5) * 2) * 0.6;
-          });
-
-          const earProgress = Math.max(0, (eased - 0.3) / 0.7);
-          earGroup.scale.set(earProgress, earProgress, earProgress);
-          (ear.material as THREE.MeshPhongMaterial).opacity = earProgress;
-          earGroup.children.forEach((child) => {
-            const mesh = child as THREE.Mesh;
-            if (mesh.material && 'opacity' in mesh.material) {
-              (mesh.material as THREE.MeshPhongMaterial).opacity = earProgress * 0.7;
-            }
           });
 
           leafMeshes.forEach((mesh) => {
@@ -551,7 +511,6 @@ export default function LoadingSkeleton3D({
     stalk: 'Caule — Transporte de N',
     leaf: 'Folha — Fotossíntese e N',
     root: 'Raiz — Absorção de N e água',
-    ear: 'Espiga — Grãos (Necessidade de N)',
     tassel: 'Panicula — Flores masculinas',
   };
 
@@ -601,6 +560,22 @@ export default function LoadingSkeleton3D({
               </div>
             </div>
           )}
+
+          <div className="absolute inset-0 pointer-events-none">
+            <SideRays
+              speed={1.5}
+              rayColor1={isDark ? '#4a6a3a' : '#D4A373'}
+              rayColor2={isDark ? '#9cb386' : '#96c8ff'}
+              intensity={1.2}
+              spread={1.5}
+              origin="top-right"
+              tilt={0}
+              saturation={1.0}
+              blend={0.6}
+              falloff={1.8}
+              opacity={0.4}
+            />
+          </div>
 
           <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-6 pb-12 px-4 z-10">
             <div className="w-full max-w-xs flex flex-col items-center gap-3">
