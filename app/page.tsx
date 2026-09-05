@@ -46,6 +46,8 @@ import BalancoSection from '@/components/metrics/BalancoSection';
 import DetailedMathPanel from '@/components/metrics/DetailedMathPanel';
 import ITRCalculator from '@/components/ITRCalculator';
 import AbntReferenceFormatter from '@/components/AbntReferenceFormatter';
+import { ABNTReference } from '@/lib/abnt/types';
+import BibliografiaAutoDetectCard from '@/components/metrics/BibliografiaAutoDetectCard';
 import GooeyNav, { GooeyNavItem } from '@/components/GooeyNav';
 
 // Interfaces for structured data
@@ -159,6 +161,7 @@ export default function Home() {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'calculadora' | 'estimativa_milho' | 'comparador' | 'itr' | 'abnt'>('calculadora');
   const [saveToast, setSaveToast] = useState<string | null>(null);
+  const [bibliographyRef, setBibliographyRef] = useState<ABNTReference | null>(null);
 
   // GooeyNav items and tab mapping
   const gooeyNavItems: GooeyNavItem[] = [
@@ -368,6 +371,50 @@ export default function Home() {
     onSaveScenario: (name, notes) => {
       handleSaveScenario(name, notes || 'Salvo via assistente Puck');
     },
+
+
+
+    onSetITRParameters: (params) => {
+      const { vtn, areaTotal, areaTributavel, areaAproveitavel, areaUtilizada } = params;
+      // Update ITR calculator state via refs or state management
+      // For now, we'll update the active preset and scroll to ITR section
+      setActivePreset('personalizado');
+      setActiveTab('itr');
+      const el = document.getElementById('itr_section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      // TODO: Integrate with ITRCalculator component state when available
+      console.log('ITR parameters received:', params);
+    },
+    onSetBibliographyReference: (ref) => {
+      setBibliographyRef(ref);
+      setActivePreset('personalizado');
+      setActiveTab('abnt');
+      const el = document.getElementById('abnt_section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      console.log('Bibliography reference received:', ref);
+    },
+
+    onSetABNTReference: (ref) => {
+      const { type, author, title, year, editor, url } = ref;
+      // Update ABNT reference formatter state
+      setActivePreset('personalizado');
+      setActiveTab('abnt');
+      const el = document.getElementById('abnt_section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      // TODO: Integrate with ABNT reference formatter when available
+      console.log('ABNT reference received:', ref);
+    },
+
+    onSetBibliographyReference: (ref) => {
+      setBibliographyRef(ref);
+      setActivePreset('personalizado');
+      setActiveTab('abnt');
+      const el = document.getElementById('abnt_section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      console.log('Bibliography reference received:', ref);
+    },
+
+
   });
 
   return (
@@ -1069,6 +1116,14 @@ export default function Home() {
               totalExtraction={calculations.totalExtraction}
               mosNContribution={mosNContribution}
               soyNContribution={soyNContribution}
+            />
+
+            <BibliografiaAutoDetectCard
+              onReferenceSelected={(ref) => {
+                setBibliographyRef(ref);
+                setActiveTab('abnt');
+              }}
+              initialUrl=""
             />
 
             {/* DYNAMIC PARCELAMENTO DISCLOSURES PANEL */}

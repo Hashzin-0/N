@@ -38,6 +38,9 @@ export interface SimulatorContext {
   onSetParceling: (params: { baseDose?: number; v4v6Percent?: number; v8v10Percent?: number }) => void;
   onLoadPreset: (presetId: string) => void;
   onSaveScenario: (name: string, notes?: string) => void;
+  onSetITRParameters: (params: { vtn: number; areaTotal: number; areaTributavel?: number; areaAproveitavel?: number; areaUtilizada?: number }) => void;
+  onSetABNTReference: (ref: { type: string; author: string; title: string; year: number; editor?: string; url?: string }) => void;
+  onSetBibliographyReference: (ref: ABNTReference) => void;
 }
 
 export function useGeminiLiveAgent(simContext: SimulatorContext) {
@@ -210,6 +213,58 @@ export function useGeminiLiveAgent(simContext: SimulatorContext) {
         };
       }
 
+
+
+      case 'setITRParameters': {
+        const vtn = args.vtn !== undefined ? Number(args.vtn) : 0;
+        const areaTotal = args.areaTotal !== undefined ? Number(args.areaTotal) : 0;
+        const areaTributavel = args.areaTributavel !== undefined ? Number(args.areaTributavel) : undefined;
+        const areaAproveitavel = args.areaAproveitavel !== undefined ? Number(args.areaAproveitavel) : undefined;
+        const areaUtilizada = args.areaUtilizada !== undefined ? Number(args.areaUtilizada) : undefined;
+
+        setActionLabel('Preenchendo parâmetros do ITR...');
+        smoothScrollToSection('itr', 'Ajustando Cálculo ITR');
+        ctx.onSetITRParameters({ vtn, areaTotal, areaTributavel, areaAproveitavel, areaUtilizada });
+
+        return {
+          success: true,
+          updated: { vtn, areaTotal, areaTributavel, areaAproveitavel, areaUtilizada },
+          message: 'Parâmetros do ITR atualizados e exibidos na tela.',
+        };
+      }
+
+      case 'setABNTReference': {
+        const type = args.type !== undefined ? String(args.type) : 'livro';
+        const author = args.author !== undefined ? String(args.author) : '';
+        const title = args.title !== undefined ? String(args.title) : '';
+        const year = args.year !== undefined ? Number(args.year) : new Date().getFullYear();
+        const editor = args.editor !== undefined ? String(args.editor) : undefined;
+        const url = args.url !== undefined ? String(args.url) : undefined;
+
+        setActionLabel('Preenchendo referência ABNT...');
+        smoothScrollToSection('abnt', 'Ajustando Referência ABNT');
+        ctx.onSetABNTReference({ type, author, title, year, editor, url });
+
+        return {
+          success: true,
+          updated: { type, author, title, year, editor, url },
+          message: 'Referência ABNT atualizada e exibida na tela.',
+        };
+      }
+
+      case 'setBibliographyReference': {
+        const ref = args.ref;
+        setActionLabel('Preenchendo referência da bibliografia...');
+        smoothScrollToSection('abnt', 'Ajustando Referência Bibliográfica');
+        ctx.onSetBibliographyReference(ref);
+
+        return {
+          success: true,
+          updated: { type: ref.type, author: ref.authors?.[0]?.surname || '', title: ref.title, year: ref.year },
+          message: 'Referência bibliográfica atualizada e exibida na tela.',
+        };
+      }
+
       case 'loadAgronomicPreset': {
         const presetId = String(args.presetId);
         setActionLabel(`Carregando preset: ${presetId}`);
@@ -360,7 +415,9 @@ Suas capacidades:
 1. Você tem acesso em tempo real à DATA e HORA local do usuário através da ferramenta 'getUserLocalDateTime'. Quando o usuário perguntar sobre data, que dia é hoje, época de plantio ou safra, use essa ferramenta.
 2. Você tem acesso completo a TODAS as variáveis e cálculos agronômicos da tela pela ferramenta 'getCurrentSimulatorState'.
 3. Você pode preencher e alterar parâmetros no simulador como se fosse o usuário (produtividade alvo, matéria orgânica do solo, crédito de N da soja, eficiência e parcelamento em base, V4-V6 e V8-V10).
-4. IMPORTANTE: Sempre que você alterar um valor no simulador (usando 'setYieldGoal', 'setSoilParameters', 'setFertilizerParceling' ou 'loadAgronomicPreset'), o site rolará automaticamente para mostrar a alteração. Logo em seguida, quando você falar sobre os resultados da dose total e parcelamento, a tela rolará para a seção de resultados.
+4. Você também pode acessar a Calculadora ITR (Imposto Territorial Rural) com parâmetros de VTN, área total, área tributável, área aproveitável e área utilizada.
+5. Você também pode acessar o Formatter de Referências ABNT com dados de tipo, autor, título, ano, editor e URL.
+6. IMPORTANTE: Sempre que você alterar um valor no simulador (usando 'setYieldGoal', 'setSoilParameters', 'setFertilizerParceling', 'setITRParameters' ou 'setABNTReference'), o site rolará automaticamente para mostrar a alteração. Logo em seguida, quando você falar sobre os resultados da dose total e parcelamento, a tela rolará para a seção de resultados.
 5. Você pode salvar cenários no banco local usando 'saveCurrentScenario'.
 6. Você pode rolar a tela manualmente com 'scrollToSection' ('parametros', 'resultados', 'parcelamento', 'adubos', 'comparador').
 

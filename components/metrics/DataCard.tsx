@@ -23,7 +23,20 @@ export default function DataCard({ isDark }: DataCardProps) {
     baseDose: 0,
     v4v6Percent: 50,
     v8v10Percent: 20,
-    splitBase: 'dose_perdas',
+    splitBase: 'dose_perdas' as const,
+    totalExtraction: 0,
+    liquidNeed: 0,
+    recommendedDose: 0,
+    selectedV4V6Val: 0,
+    selectedV8V10Val: 0,
+    sumOfSplits: 0,
+    onSetYieldGoal: () => {},
+    onSetSoilParameters: () => {},
+    onSetParceling: () => {},
+    onLoadPreset: () => {},
+    onSaveScenario: () => {},
+    onSetITRParameters: () => {},
+    onSetABNTReference: () => {},
   });
 
   useEffect(() => {
@@ -39,7 +52,6 @@ export default function DataCard({ isDark }: DataCardProps) {
   const handlePopulateDate = async () => {
     setIsLoadingDate(true);
     try {
-      const result = await (connect ? undefined : null);
       const now = new Date();
       setLocalDate(now.toLocaleDateString('pt-BR', { dateStyle: 'full' }));
     } catch (e) {

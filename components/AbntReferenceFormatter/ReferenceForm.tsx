@@ -65,37 +65,37 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
   const inputBg = isDark ? 'bg-[#1A1E18]' : 'bg-[#FDFBF7]';
   const borderColor = isDark ? 'border-[#2C3328]' : 'border-[#E5E2D9]';
 
-  const needsAuthors = config?.requiredFields.includes('authors');
-  const needsTitle = config?.requiredFields.includes('title');
-  const needsLocation = config?.requiredFields.includes('location');
-  const needsPublisher = config?.requiredFields.includes('publisher');
-  const needsYear = config?.requiredFields.includes('year');
-  const needsJournalTitle = config?.requiredFields.includes('journalTitle');
-  const needsVolume = config?.requiredFields.includes('volume');
-  const needsNumber = config?.requiredFields.includes('number');
-  const needsPages = config?.requiredFields.includes('pages');
-  const needsUrl = config?.requiredFields.includes('url');
-  const needsAccessDate = config?.requiredFields.includes('accessDate');
-  const needsDegree = config?.requiredFields.includes('degree');
-  const needsInstitution = config?.requiredFields.includes('institution');
-  const needsOrganization = config?.requiredFields.includes('organization');
-  const needsEventName = config?.requiredFields.includes('eventName');
-  const needsEventLocation = config?.requiredFields.includes('eventLocation');
-  const needsEventYear = config?.requiredFields.includes('eventYear');
-  const needsBookTitle = config?.requiredFields.includes('bookTitle');
-  const needsStandardNumber = config?.requiredFields.includes('standardNumber');
-  const needsStandardOrganization = config?.requiredFields.includes('standardOrganization');
-  const needsLegislationType = config?.requiredFields.includes('legislationType');
-  const needsLegislationNumber = config?.requiredFields.includes('legislationNumber');
-  const needsLegislationSource = config?.requiredFields.includes('legislationSource');
-  const needsLegislationDate = config?.requiredFields.includes('legislationDate');
-  const needsPatentNumber = config?.requiredFields.includes('patentNumber');
-  const needsInventor = config?.requiredFields.includes('inventor');
-  const needsFilingDate = config?.requiredFields.includes('filingDate');
-  const needsGrantDate = config?.requiredFields.includes('grantDate');
-  const needsAiVersion = config?.requiredFields.includes('aiVersion');
-  const needsAiLocation = config?.requiredFields.includes('aiLocation');
-  const needsAudiovisualType = config?.requiredFields.includes('audiovisualType');
+const showsAuthors = config?.requiredFields.includes('authors') || config?.optionalFields.includes('authors');
+  const showsTitle = config?.requiredFields.includes('title') || config?.optionalFields.includes('title');
+  const showsLocation = config?.requiredFields.includes('location') || config?.optionalFields.includes('location');
+  const showsPublisher = config?.requiredFields.includes('publisher') || config?.optionalFields.includes('publisher');
+  const showsYear = config?.requiredFields.includes('year') || config?.optionalFields.includes('year');
+  const showsJournalTitle = config?.requiredFields.includes('journalTitle') || config?.optionalFields.includes('journalTitle');
+  const showsVolume = config?.requiredFields.includes('volume') || config?.optionalFields.includes('volume');
+  const showsNumber = config?.requiredFields.includes('number') || config?.optionalFields.includes('number');
+  const showsPages = config?.requiredFields.includes('pages') || config?.optionalFields.includes('pages');
+  const showsUrl = config?.requiredFields.includes('url') || config?.optionalFields.includes('url');
+  const showsAccessDate = config?.requiredFields.includes('accessDate') || config?.optionalFields.includes('accessDate');
+  const showsDegree = config?.requiredFields.includes('degree') || config?.optionalFields.includes('degree');
+  const showsInstitution = config?.requiredFields.includes('institution') || config?.optionalFields.includes('institution');
+  const showsOrganization = config?.requiredFields.includes('organization') || config?.optionalFields.includes('organization');
+  const showsEventName = config?.requiredFields.includes('eventName') || config?.optionalFields.includes('eventName');
+  const showsEventLocation = config?.requiredFields.includes('eventLocation') || config?.optionalFields.includes('eventLocation');
+  const showsEventYear = config?.requiredFields.includes('eventYear') || config?.optionalFields.includes('eventYear');
+  const showsBookTitle = config?.requiredFields.includes('bookTitle') || config?.optionalFields.includes('bookTitle');
+  const showsStandardNumber = config?.requiredFields.includes('standardNumber') || config?.optionalFields.includes('standardNumber');
+  const showsStandardOrganization = config?.requiredFields.includes('standardOrganization') || config?.optionalFields.includes('standardOrganization');
+  const showsLegislationType = config?.requiredFields.includes('legislationType') || config?.optionalFields.includes('legislationType');
+  const showsLegislationNumber = config?.requiredFields.includes('legislationNumber') || config?.optionalFields.includes('legislationNumber');
+  const showsLegislationSource = config?.requiredFields.includes('legislationSource') || config?.optionalFields.includes('legislationSource');
+  const showsLegislationDate = config?.requiredFields.includes('legislationDate') || config?.optionalFields.includes('legislationDate');
+  const showsPatentNumber = config?.requiredFields.includes('patentNumber') || config?.optionalFields.includes('patentNumber');
+  const showsInventor = config?.requiredFields.includes('inventor') || config?.optionalFields.includes('inventor');
+  const showsFilingDate = config?.requiredFields.includes('filingDate') || config?.optionalFields.includes('filingDate');
+  const showsGrantDate = config?.requiredFields.includes('grantDate') || config?.optionalFields.includes('grantDate');
+  const showsAiVersion = config?.requiredFields.includes('aiVersion') || config?.optionalFields.includes('aiVersion');
+  const showsAiLocation = config?.requiredFields.includes('aiLocation') || config?.optionalFields.includes('aiLocation');
+  const showsAudiovisualType = config?.requiredFields.includes('audiovisualType') || config?.optionalFields.includes('audiovisualType');
 
   return (
     <form onSubmit={handleSubmit} className={cn(
@@ -122,7 +122,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
       </div>
 
       {/* Authors */}
-      {needsAuthors && (
+      {showsAuthors && (
         <div className="space-y-2">
           <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
             Autores *
@@ -171,7 +171,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
       )}
 
       {/* Title */}
-      {needsTitle && (
+      {showsTitle && (
         <div className="space-y-1">
           <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
             Título *
@@ -213,7 +213,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
       )}
 
       {/* Journal Title */}
-      {needsJournalTitle && (
+      {showsJournalTitle && (
         <div className="space-y-1">
           <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
             Título do Periódico *
@@ -234,9 +234,9 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
       )}
 
       {/* Location / Publisher / Year row */}
-      {(needsLocation || needsPublisher || needsYear) && (
+      {(showsLocation || showsPublisher || showsYear) && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {needsLocation && (
+          {showsLocation && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Local *
@@ -256,7 +256,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsPublisher && (
+          {showsPublisher && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Editora *
@@ -275,7 +275,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsYear && (
+          {showsYear && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Ano *
@@ -299,9 +299,9 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
       )}
 
       {/* Volume / Number / Pages / Tomo */}
-      {(needsVolume || needsNumber || needsPages || config?.optionalFields.includes('tomo')) && (
+      {(showsVolume || showsNumber || showsPages || config?.optionalFields.includes('tomo')) && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {needsVolume && (
+          {showsVolume && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Volume *
@@ -320,7 +320,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsNumber && (
+          {showsNumber && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Número *
@@ -339,7 +339,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsPages && (
+          {showsPages && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Páginas *
@@ -438,7 +438,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
       )}
 
       {/* DOI / URL / Access Date */}
-      {(config?.optionalFields.includes('doi') || needsUrl || needsAccessDate) && (
+      {(config?.optionalFields.includes('doi') || showsUrl || showsAccessDate) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {config?.optionalFields.includes('doi') && (
             <div className="space-y-1">
@@ -460,7 +460,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsUrl && (
+          {showsUrl && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 URL *
@@ -479,7 +479,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsAccessDate && (
+          {showsAccessDate && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Data de Acesso *
@@ -503,9 +503,9 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
       )}
 
       {/* Thesis fields */}
-      {(needsDegree || needsInstitution) && (
+      {(showsDegree || showsInstitution) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {needsDegree && (
+          {showsDegree && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Tipo / Grau *
@@ -525,7 +525,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsInstitution && (
+          {showsInstitution && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Instituição *
@@ -570,9 +570,9 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
       )}
 
       {/* Conference fields */}
-      {(needsEventName || needsEventLocation || needsEventYear || needsBookTitle) && (
+      {(showsEventName || showsEventLocation || showsEventYear || showsBookTitle) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {needsEventName && (
+          {showsEventName && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Nome do Evento *
@@ -591,7 +591,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsEventLocation && (
+          {showsEventLocation && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Local do Evento *
@@ -653,9 +653,9 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
       )}
 
       {/* Legislation fields */}
-      {(needsLegislationType || needsLegislationNumber || needsLegislationSource || needsLegislationDate) && (
+      {(showsLegislationType || showsLegislationNumber || showsLegislationSource || showsLegislationDate) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {needsLegislationType && (
+          {showsLegislationType && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Tipo *
@@ -681,7 +681,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               </select>
             </div>
           )}
-          {needsLegislationNumber && (
+          {showsLegislationNumber && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Número *
@@ -701,7 +701,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsLegislationSource && (
+          {showsLegislationSource && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Fonte *
@@ -721,7 +721,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsLegislationDate && (
+          {showsLegislationDate && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Data *
@@ -745,7 +745,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
       )}
 
       {/* Standard fields */}
-      {(needsStandardNumber || needsStandardOrganization) && (
+      {(showsStandardNumber || showsStandardOrganization) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {needsStandardOrganization && (
             <div className="space-y-1">
@@ -791,9 +791,9 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
       )}
 
       {/* Patent fields */}
-      {(needsInventor || needsPatentNumber || needsFilingDate || needsGrantDate) && (
+      {(showsInventor || showsPatentNumber || showsFilingDate || showsGrantDate) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {needsInventor && (
+          {showsInventor && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Inventor *
@@ -812,7 +812,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsPatentNumber && (
+          {showsPatentNumber && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Número *
@@ -831,7 +831,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsFilingDate && (
+          {showsFilingDate && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Data de Depósito *
@@ -850,7 +850,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsGrantDate && (
+          {showsGrantDate && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Data de Concessão *
@@ -942,9 +942,9 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
       )}
 
       {/* AI Tool fields */}
-      {(needsOrganization || needsAiVersion || needsAiLocation) && (
+      {(showsOrganization || showsAiVersion || showsAiLocation) && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {needsOrganization && (
+          {showsOrganization && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Organização *
@@ -964,7 +964,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsAiVersion && (
+          {showsAiVersion && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Versão *
@@ -984,7 +984,7 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               />
             </div>
           )}
-          {needsAiLocation && (
+          {showsAiLocation && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Local *

@@ -5,6 +5,7 @@
 
 export type PageSection = 
   | 'topo'
+  | 'abnt'
   | 'presets'
   | 'parametros'
   | 'produtividade'
@@ -20,6 +21,7 @@ export type PageSection =
 
 const SECTION_ELEMENT_MAP: Record<PageSection, string> = {
   topo: 'app_header',
+  abnt: 'abnt_section',
   presets: 'preset_selector',
   parametros: 'form_section',
   produtividade: 'input_group_yield_goal',
