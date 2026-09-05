@@ -197,6 +197,7 @@ export default function DarkMode3DToggle() {
           <canvas
             ref={canvasRef}
             className="w-8 h-8 rounded-full pointer-events-none filter drop-shadow-md"
+            suppressHydrationWarning
           />
         )}
       </div>

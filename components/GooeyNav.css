@@ -29,6 +29,7 @@
 
 .gooey-nav-container {
   position: relative;
+  overflow-x: auto;
 }
 
 .gooey-nav-container nav {

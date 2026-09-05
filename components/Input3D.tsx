@@ -175,7 +175,7 @@ export default function Input3D({
                 onChange(0);
               }
             }}
-            className={`w-full p-2.5 rounded-xl border text-sm font-medium focus:outline-none transition-all duration-200 ${
+            className={`w-full p-2.5 rounded-xl border text-sm font-medium focus:outline-none neonFocusClasses transition-all duration-200 ${
               readOnly
                 ? 'cursor-default opacity-80'
                 : ''

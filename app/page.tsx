@@ -40,6 +40,7 @@ import ExtracaoTotalCard from '@/components/metrics/ExtracaoTotalCard';
 import NecessidadeLiquidaCard from '@/components/metrics/NecessidadeLiquidaCard';
 import DoseRecomendadaCard from '@/components/metrics/DoseRecomendadaCard';
 import SecondaryCreditsCard from '@/components/metrics/SecondaryCreditsCard';
+import DataCard from '@/components/metrics/DataCard';
 import ParcelamentoSection from '@/components/metrics/ParcelamentoSection';
 import BalancoSection from '@/components/metrics/BalancoSection';
 import DetailedMathPanel from '@/components/metrics/DetailedMathPanel';
@@ -1051,7 +1052,7 @@ export default function Home() {
                 mosNContribution={mosNContribution}
                 soyNContribution={soyNContribution}
               />
-              <div id="card_dose_total" className="col-span-2 sm:col-span-3">
+<div id="card_dose_total" className="col-span-2 sm:col-span-3">
                 <DoseRecomendadaCard
                   recommendedDose={calculations.recommendedDose}
                   liquidNeed={calculations.liquidNeed}
@@ -1059,10 +1060,12 @@ export default function Home() {
                   onSaveClick={() => setIsSaveModalOpen(true)}
                 />
               </div>
-            </div>
 
-            {/* SECONDARY METRICS: MOS AND SOY CREDITS */}
-            <SecondaryCreditsCard
+              <DataCard isDark={isDark} />
+
+              </div>
+
+              <SecondaryCreditsCard
               totalExtraction={calculations.totalExtraction}
               mosNContribution={mosNContribution}
               soyNContribution={soyNContribution}

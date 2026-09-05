@@ -9,7 +9,7 @@ import { REFERENCE_TYPES } from '@/lib/abnt/constants';
 import { parseAuthorString, formatAuthorsABNT } from '@/lib/abnt/parsers/author';
 import { normalizeMonth } from '@/lib/abnt/parsers/date';
 import { formatReference, generateId } from '@/lib/abnt/utils';
-import { cn, neonFocusClasses } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface ReferenceFormProps {
   type: ReferenceType;
@@ -137,7 +137,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               className={cn(
                 'flex-1 px-3 py-2 text-sm rounded-xl border transition-colors',
                 inputBg, borderColor,
-                neonFocusClasses,
                 'text-[#5A5A40] dark:text-[#E8E6DF] placeholder:text-[#8C897E] dark:placeholder:text-[#9EA399]'
               )}
             />
@@ -183,8 +182,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
             className={cn(
               'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
               inputBg, borderColor,
-  neonFocusClasses,
-
               'text-[#5A5A40] dark:text-[#E8E6DF]'
             )}
           />
@@ -204,8 +201,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
             className={cn(
               'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
               inputBg, borderColor,
-  neonFocusClasses,
-
               'text-[#5A5A40] dark:text-[#E8E6DF]'
             )}
           />
@@ -225,8 +220,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
             className={cn(
               'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
               inputBg, borderColor,
-  neonFocusClasses,
-
               'text-[#5A5A40] dark:text-[#E8E6DF]'
             )}
           />
@@ -249,8 +242,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -268,8 +259,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -288,8 +277,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -313,8 +300,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -332,8 +317,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -352,8 +335,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -371,8 +352,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -393,8 +372,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
             className={cn(
               'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
               inputBg, borderColor,
-  neonFocusClasses,
-
               'text-[#5A5A40] dark:text-[#E8E6DF]'
             )}
           >
@@ -429,8 +406,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
             className={cn(
               'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
               inputBg, borderColor,
-  neonFocusClasses,
-
               'text-[#5A5A40] dark:text-[#E8E6DF]'
             )}
           />
@@ -453,8 +428,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -472,8 +445,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -492,8 +463,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -518,8 +487,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -537,8 +504,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -561,8 +526,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
             className={cn(
               'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
               inputBg, borderColor,
-  neonFocusClasses,
-
               'text-[#5A5A40] dark:text-[#E8E6DF]'
             )}
           />
@@ -584,8 +547,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -604,8 +565,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -623,8 +582,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -642,8 +599,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -666,8 +621,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               >
@@ -694,8 +647,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -714,8 +665,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -734,8 +683,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -760,8 +707,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -780,8 +725,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -805,8 +748,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -824,8 +765,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -843,8 +782,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -862,8 +799,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -884,8 +819,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
             className={cn(
               'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
               inputBg, borderColor,
-  neonFocusClasses,
-
               'text-[#5A5A40] dark:text-[#E8E6DF]'
             )}
           >
@@ -913,7 +846,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
               className={cn(
                 'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                 inputBg, borderColor,
-                neonFocusClasses,
                 'text-[#5A5A40] dark:text-[#E8E6DF]'
               )}
             />
@@ -931,8 +863,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -957,8 +887,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -977,8 +905,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -997,8 +923,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
                 className={cn(
                   'w-full px-3 py-2 text-sm rounded-xl border transition-colors',
                   inputBg, borderColor,
-  neonFocusClasses,
-
                   'text-[#5A5A40] dark:text-[#E8E6DF]'
                 )}
               />
@@ -1028,8 +952,6 @@ export default function ReferenceForm({ type, initialData, onSave, onCancel }: R
           className={cn(
             'px-4 py-2 text-sm font-bold rounded-xl border transition-colors',
             inputBg, borderColor,
-  neonFocusClasses,
-
             'text-[#8C897E] dark:text-[#9EA399] hover:text-[#5A5A40] dark:hover:text-[#E8E6DF]'
           )}
         >

@@ -132,7 +132,7 @@ function SaveScenarioModalContent({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ex: Milho Safrinha 160 sc/ha - Talhão 02"
-                className="w-full text-sm bg-white dark:bg-[#20231C] border border-[#E5E2D9] dark:border-[#333829] rounded-xl px-4 py-2.5 font-semibold text-[#3D3D3D] dark:text-[#F4F3EE] focus:outline-none focus:ring-2 focus:ring-[#5A5A40]/30 dark:focus:ring-[#8C976D]/40"
+                className="w-full text-sm bg-white dark:bg-[#20231C] border border-[#E5E2D9] dark:border-[#333829] rounded-xl px-4 py-2.5 font-semibold text-[#3D3D3D] dark:text-[#F4F3EE] focus:outline-none neonFocusClasses focus:ring-2 focus:ring-[#5A5A40]/30 dark:focus:ring-[#8C976D]/40"
               />
             </div>
 
@@ -147,7 +147,7 @@ function SaveScenarioModalContent({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Ex: Híbrido responsivo, solo argiloso após soja precoce..."
-                className="w-full text-xs bg-white dark:bg-[#20231C] border border-[#E5E2D9] dark:border-[#333829] rounded-xl p-3 text-[#3D3D3D] dark:text-[#F4F3EE] focus:outline-none focus:ring-2 focus:ring-[#5A5A40]/30 dark:focus:ring-[#8C976D]/40 resize-none"
+                className="w-full text-xs bg-white dark:bg-[#20231C] border border-[#E5E2D9] dark:border-[#333829] rounded-xl p-3 text-[#3D3D3D] dark:text-[#F4F3EE] focus:outline-none neonFocusClasses focus:ring-2 focus:ring-[#5A5A40]/30 dark:focus:ring-[#8C976D]/40 resize-none"
               />
             </div>
 

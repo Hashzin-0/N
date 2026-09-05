@@ -88,12 +88,13 @@ export default function CornYieldResultCard({
         <div className="flex items-baseline gap-2">
           <motion.span
             className="text-4xl sm:text-5xl font-mono font-extrabold text-white tracking-tight"
-            key={produtividadeLiquida}
+            key={String(produtividadeLiquida)}
+            style={{ display: 'inline-block' }}
             initial={{ scale: 1.1, opacity: 0.7 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 400, damping: 20 }}
           >
-            {produtividadeLiquida}
+            {Number.isNaN(produtividadeLiquida) ? '0' : produtividadeLiquida}
           </motion.span>
           <span className="text-lg font-medium text-white/90">sc/ha</span>
         </div>

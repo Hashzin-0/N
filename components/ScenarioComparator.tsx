@@ -346,7 +346,7 @@ export default function ScenarioComparator({
             placeholder="Buscar por nome, sacas/ha ou notas..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full text-xs pl-9 pr-3 py-2 bg-white dark:bg-[#282B22] border border-[#E5E2D9] dark:border-[#3C4232] rounded-xl text-[#3D3D3D] dark:text-[#F4F3EE] focus:outline-none focus:ring-2 focus:ring-[#5A5A40]/30 dark:focus:ring-[#8C976D]/40"
+            className="w-full text-xs pl-9 pr-3 py-2 bg-white dark:bg-[#282B22] border border-[#E5E2D9] dark:border-[#3C4232] rounded-xl text-[#3D3D3D] dark:text-[#F4F3EE] focus:outline-none neonFocusClasses focus:ring-2 focus:ring-[#5A5A40]/30 dark:focus:ring-[#8C976D]/40"
           />
         </div>
 
@@ -356,7 +356,7 @@ export default function ScenarioComparator({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="w-full text-xs bg-white dark:bg-[#282B22] border border-[#E5E2D9] dark:border-[#3C4232] rounded-xl px-2.5 py-2 font-medium text-[#3D3D3D] dark:text-[#F4F3EE] focus:outline-none"
+            className="w-full text-xs bg-white dark:bg-[#282B22] border border-[#E5E2D9] dark:border-[#3C4232] rounded-xl px-2.5 py-2 font-medium text-[#3D3D3D] dark:text-[#F4F3EE] focus:outline-none neonFocusClasses"
           >
             <option value="created_at">Data de Registro</option>
             <option value="yield_goal">Produtividade Alvo (sc/ha)</option>
