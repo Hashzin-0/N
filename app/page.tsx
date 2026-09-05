@@ -932,15 +932,6 @@ export default function Home() {
                     )}
                   </CellDivisionContainer>
 
-                  <div className={`p-3 rounded-xl border text-xs font-semibold ${
-                    isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
-                  }`}>
-                    <span className="text-[#8C897E] dark:text-[#9EA399]">Resultado: </span>
-                    <span className="text-[#5A5A40] dark:text-[#9CB386]">
-                      {calculations.v4v6_1_kg} kg N/ha
-                      {calculations.v4v6_2_kg > 0 && ` a ${calculations.v4v6_2_kg} kg N/ha`}
-                    </span>
-                  </div>
                   <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] leading-relaxed">
                     * Faixa agronômica padrão: 50% a 60% do total.
                   </p>
@@ -1037,20 +1028,6 @@ export default function Home() {
                     </CellDivisionContainer>
                   )}
 
-                  <div className={`p-3 rounded-xl border text-xs font-semibold ${
-                    isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
-                  }`}>
-                    <span className="text-[#8C897E] dark:text-[#9EA399]">Resultado: </span>
-                    <span className="text-[#8D6E63] dark:text-[#D4A373]">
-                      {calculations.v8v10_1_kg} kg N/ha
-                      {calculations.v8v10_2_kg > 0 && ` a ${calculations.v8v10_2_kg} kg N/ha`}
-                    </span>
-                    {v8v10Percent === 0 && (
-                      <span className="ml-2 text-[10px] text-[#8C897E] dark:text-[#9EA399]">
-                        (Calculado automaticamente para fechar o balanço)
-                      </span>
-                    )}
-                  </div>
                   <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] leading-relaxed">
                     * Se deixar em 0%, o sistema calcula automaticamente para fechar o balanço. Faixa padrão: 20% a 30%.
                   </p>

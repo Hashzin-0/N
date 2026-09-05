@@ -330,6 +330,7 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
             <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#A6A395] uppercase tracking-wider">
               Cenários:
             </span>
+            {/* eslint-disable-next-line react-hooks/refs -- false positive: YIELD_PRESETS is a plain const, not a ref */}
             {YIELD_PRESETS.map((p) => (
               <Button3D
                 key={p.id}

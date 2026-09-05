@@ -186,7 +186,12 @@ export default function ParcelamentoSection({
   baseDoseMode,
 }: Props) {
   const { isDark } = useTheme();
-  const [showCalc, setShowCalc] = useState(false);
+  const [showCalcMeta, setShowCalcMeta] = useState(false);
+  const [showCalcBase, setShowCalcBase] = useState(false);
+  const [showCalcV4V6, setShowCalcV4V6] = useState(false);
+  const [showCalcV8V10, setShowCalcV8V10] = useState(false);
+  const [showCalcSoma, setShowCalcSoma] = useState(false);
+  const [showCalcDif, setShowCalcDif] = useState(false);
   const [showAgronomicV4V6, setShowAgronomicV4V6] = useState(false);
   const [showAgronomicV8V10, setShowAgronomicV8V10] = useState(false);
   const { withLock } = useAnimationLock(400);
@@ -206,14 +211,6 @@ export default function ParcelamentoSection({
       id="parceling_section"
       className="calc-island-scoop bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-6 shadow-sm space-y-6 transition-colors relative"
     >
-      <CalculationIsland
-        isVisible={showCalc}
-        onToggle={() => setShowCalc(!showCalc)}
-        accentColor="#D4A373"
-        darkAccentColor="#D4A373"
-        isDark={isDark}
-      />
-
       <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-4 flex justify-between items-center">
         <div>
           <h3 className="text-sm font-bold text-[#5A5A40] dark:text-[#E8E6DF] uppercase tracking-wider flex items-center gap-2">
@@ -226,29 +223,89 @@ export default function ParcelamentoSection({
       </div>
 
       <div className="space-y-5">
-        {/* 1st Application Display */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#D4A373] dark:border-[#A27B5C]">
-          <div>
-            <span className="bg-[#D4A373] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
-              1ª Aplicação: Base
-            </span>
-            <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
-              Padrão agronômico inicial: <strong>30 a 40 kg N/ha</strong>
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
-              {calculations.base1_kg.toFixed(2)} <span className="text-xs font-semibold text-[#8C897E] dark:text-[#9EA399]">kg N/ha</span>
+        {/* META (base) */}
+        <div className="relative">
+          <CalculationIsland
+            isVisible={showCalcMeta}
+            onToggle={() => setShowCalcMeta(!showCalcMeta)}
+            accentColor="#D4A373"
+            darkAccentColor="#D4A373"
+            isDark={isDark}
+          />
+          <div className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#D4A373] dark:border-[#A27B5C] flex justify-between items-center">
+            <div>
+              <span className="bg-[#D4A373] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
+                Meta (base)
+              </span>
+              <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
+                {splitBase === 'dose_perdas' ? 'Dose com Perdas' : 'Necessidade Líquida'}
+              </p>
             </div>
-            <span className="text-[10px] text-[#D4A373] dark:text-[#E0A96D] font-serif italic font-bold">Aplicado na base</span>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
+                {calculations.targetSplitTotal.toFixed(2)} <span className="text-xs font-semibold text-[#8C897E] dark:text-[#9EA399]">kg N/ha</span>
+              </div>
+            </div>
           </div>
+          <CalculationMemoryPanel isVisible={showCalcMeta} isDark={isDark}>
+            <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
+              isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
+            }`}>
+              <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Meta (base):</div>
+              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Fórmula:</span> {splitBase === 'dose_perdas' ? 'Dose com Perdas (recommendedDose)' : 'Necessidade Líquida (liquidNeed)'}</div>
+              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Valor:</span> {calculations.targetSplitTotal.toFixed(2)} kg N/ha</div>
+            </div>
+          </CalculationMemoryPanel>
+        </div>
+
+        {/* 1st Application Display */}
+        <div className="relative">
+          <CalculationIsland
+            isVisible={showCalcBase}
+            onToggle={() => setShowCalcBase(!showCalcBase)}
+            accentColor="#D4A373"
+            darkAccentColor="#D4A373"
+            isDark={isDark}
+          />
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#D4A373] dark:border-[#A27B5C]">
+            <div>
+              <span className="bg-[#D4A373] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
+                1ª Aplicação: Base
+              </span>
+              <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
+                Padrão agronômico inicial: <strong>30 a 40 kg N/ha</strong>
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
+                {calculations.base1_kg.toFixed(2)} <span className="text-xs font-semibold text-[#8C897E] dark:text-[#9EA399]">kg N/ha</span>
+              </div>
+              <span className="text-[10px] text-[#D4A373] dark:text-[#E0A96D] font-serif italic font-bold">Aplicado na base</span>
+            </div>
+          </div>
+          <CalculationMemoryPanel isVisible={showCalcBase} isDark={isDark}>
+            <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
+              isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
+            }`}>
+              <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>1ª Base:</div>
+              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Valor absoluto:</span> {calculations.base1_kg.toFixed(2)} kg N/ha</div>
+            </div>
+          </CalculationMemoryPanel>
         </div>
 
         {/* 2nd Application — V4-V6 */}
-        <div
-          className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#5A5A40] dark:border-[#4B5E40] space-y-3 relative"
-          style={{ perspective: '800px' }}
-        >
+        <div className="relative">
+          <CalculationIsland
+            isVisible={showCalcV4V6}
+            onToggle={() => setShowCalcV4V6(!showCalcV4V6)}
+            accentColor="#5A5A40"
+            darkAccentColor="#3D4D35"
+            isDark={isDark}
+          />
+          <div
+            className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#5A5A40] dark:border-[#4B5E40] space-y-3 relative"
+            style={{ perspective: '800px' }}
+          >
           {/* Toggle button for agronomic default — hidden when baseDoseMode is single */}
           {baseDoseMode !== 'single' && v4v6UserDiffersFromDefault && (
             <SwapToggle3D
@@ -385,13 +442,48 @@ export default function ParcelamentoSection({
               </motion.div>
             )}
           </AnimatePresence>
+          </div>
+          <CalculationMemoryPanel isVisible={showCalcV4V6} isDark={isDark}>
+            <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
+              isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
+            }`}>
+              <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>2ª V4-V6:</div>
+              {baseDoseMode === 'single' ? (
+                <>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Percentual:</span> {v4v6Percent}%</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Fórmula:</span> {v4v6Percent}% × {calculations.targetSplitTotal.toFixed(2)}</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Resultado:</span> {calculations.v4v6_1_kg.toFixed(2)} kg N/ha</div>
+                </>
+              ) : isV4V6Range ? (
+                <>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Faixa:</span> {v4v6Percent}% a {v4v6Percent2}%</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Min:</span> {v4v6Percent}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v4v6_1_kg.toFixed(2)} kg N/ha</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Max:</span> {v4v6Percent2}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v4v6_2_kg.toFixed(2)} kg N/ha</div>
+                </>
+              ) : (
+                <>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Percentual:</span> {v4v6Percent}%</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Fórmula:</span> {v4v6Percent}% × {calculations.targetSplitTotal.toFixed(2)}</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Resultado:</span> {calculations.v4v6_1_kg.toFixed(2)} kg N/ha</div>
+                </>
+              )}
+            </div>
+          </CalculationMemoryPanel>
         </div>
 
         {/* 3rd Application — V8-V10 */}
-        <div
-          className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#8D6E63] dark:border-[#6D544C] space-y-3 relative"
-          style={{ perspective: '800px' }}
-        >
+        <div className="relative">
+          <CalculationIsland
+            isVisible={showCalcV8V10}
+            onToggle={() => setShowCalcV8V10(!showCalcV8V10)}
+            accentColor="#8D6E63"
+            darkAccentColor="#6D544C"
+            isDark={isDark}
+          />
+          <div
+            className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#8D6E63] dark:border-[#6D544C] space-y-3 relative"
+            style={{ perspective: '800px' }}
+          >
           {/* Toggle button for agronomic default — hidden when baseDoseMode is single */}
           {baseDoseMode !== 'single' && v8v10UserDiffersFromDefault && (
             <SwapToggle3D
@@ -528,60 +620,114 @@ export default function ParcelamentoSection({
               </motion.div>
             )}
           </AnimatePresence>
+          </div>
+          <CalculationMemoryPanel isVisible={showCalcV8V10} isDark={isDark}>
+            <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
+              isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
+            }`}>
+              <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>3ª V8-V10:</div>
+              {baseDoseMode === 'single' ? (
+                <>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Auto-calculado:</span> {calculations.v8v10_1_auto}%</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Fórmula:</span> {calculations.targetSplitTotal.toFixed(2)} - ({calculations.v4v6_1_kg.toFixed(2)} + {calculations.base1_kg.toFixed(2)})</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Resultado:</span> {calculations.v8v10_1_kg.toFixed(2)} kg N/ha</div>
+                </>
+              ) : isV8V10Range ? (
+                <>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Faixa:</span> {calculations.v8v10_1_final}% a {calculations.v8v10_2_final}%</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Min:</span> {calculations.v8v10_1_final}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v8v10_1_kg.toFixed(2)} kg N/ha</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Max:</span> {calculations.v8v10_2_final}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v8v10_2_kg.toFixed(2)} kg N/ha</div>
+                </>
+              ) : (
+                <>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Percentual:</span> {calculations.v8v10_1_final}%</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Fórmula:</span> {calculations.v8v10_1_final}% × {calculations.targetSplitTotal.toFixed(2)}</div>
+                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Resultado:</span> {calculations.v8v10_1_kg.toFixed(2)} kg N/ha</div>
+                </>
+              )}
+            </div>
+          </CalculationMemoryPanel>
         </div>
 
         {/* DIFFERENCE BETWEEN BOTH SELECTED MAIN APPLICATIONS — always uses user values */}
-        <div className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-[#E5E2D9] dark:border-[#2C3328] flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <ArrowRightLeft className="h-4 w-4 text-[#8C897E] dark:text-[#9EA399]" />
-            <div>
-              <span className="text-xs font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
-                Diferença entre as duas doses principais
+        <div className="relative">
+          <CalculationIsland
+            isVisible={showCalcDif}
+            onToggle={() => setShowCalcDif(!showCalcDif)}
+            accentColor="#5A5A40"
+            darkAccentColor="#9CB386"
+            isDark={isDark}
+          />
+          <div className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-[#E5E2D9] dark:border-[#2C3328] flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <ArrowRightLeft className="h-4 w-4 text-[#8C897E] dark:text-[#9EA399]" />
+              <div>
+                <span className="text-xs font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
+                  Diferença entre as duas doses principais
+                </span>
+                <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399]">Módulo da diferença: | V4-V6 - V8-V10 |</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-sm font-bold text-[#5A5A40] dark:text-[#9CB386]">
+                {calculations.splitDifference.toFixed(2)} kg N/ha
               </span>
-              <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399]">Módulo da diferença: | V4-V6 - V8-V10 |</p>
             </div>
           </div>
-          <div className="text-right">
-            <span className="text-sm font-bold text-[#5A5A40] dark:text-[#9CB386]">
-              {calculations.splitDifference.toFixed(2)} kg N/ha
-            </span>
-          </div>
+          <CalculationMemoryPanel isVisible={showCalcDif} isDark={isDark}>
+            <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
+              isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
+            }`}>
+              <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Diferença V4-V6 vs V8-V10:</div>
+              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Fórmula:</span> | V4-V6 - V8-V10 |</div>
+              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>V4-V6:</span> {calculations.v4v6_1_kg.toFixed(2)} kg N/ha</div>
+              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>V8-V10:</span> {calculations.v8v10_1_kg.toFixed(2)} kg N/ha</div>
+              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Resultado:</span> {calculations.splitDifference.toFixed(2)} kg N/ha</div>
+            </div>
+          </CalculationMemoryPanel>
         </div>
       </div>
 
-      {baseDoseMode === 'single' ? (
-        <div className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-3 mb-3">
-          <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">3ª V8-V10</span>
-          <span className="text-base font-bold text-[#8D6E63] dark:text-[#CBB5A1] block mt-1">
-            {calculations.targetSplitTotal.toFixed(2)} - ({calculations.v4v6_1_kg.toFixed(2)} + {calculations.base1_kg.toFixed(2)}) = {calculations.v8v10_1_kg.toFixed(2)} kg N/ha
-          </span>
-          <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-0.5">Dose Total a Aplicar - (Aplicação: V4-V6 + Aplicação: Base)</p>
-        </div>
-      ) : (
-        <div className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-3 mb-3">
-          <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">3ª V8-V10</span>
-          <span className="text-base font-bold text-[#8D6E63] dark:text-[#CBB5A1] block mt-1">
-            {calculations.v8v10_1_final}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v8v10_1_kg.toFixed(2)} kg N/ha
-          </span>
-          <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-0.5">Percentual da meta</p>
-        </div>
-      )}
-
-      <CalculationMemoryPanel isVisible={showCalc} isDark={isDark}>
-        <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
-          isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
-        }`}>
-          <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Cronograma de Parcelamento:</div>
-          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Meta (base):</span> {calculations.targetSplitTotal.toFixed(2)} kg N/ha</div>
-          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>1ª Base:</span> {calculations.base1_kg} kg N/ha (valor absoluto)</div>
-          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>2ª V4-V6:</span> {calculations.v4v6_1}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v4v6_1_kg} kg N/ha</div>
-          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>3ª V8-V10:</span> {calculations.v8v10_1_final}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v8v10_1_kg} kg N/ha</div>
-          <div className={`border-t pt-1.5 mt-1.5 font-bold ${isDark ? 'border-[#2C3328] text-[#D4A373]' : 'border-[#F0EDE5] text-[#8D6E63]'}`}>
-            Soma: {calculations.base1_kg} + {calculations.v4v6_1_kg} + {calculations.v8v10_1_kg} = {calculations.sumOfSplits} kg N/ha
+      {/* Soma / Verification */}
+      <div className="relative">
+        <CalculationIsland
+          isVisible={showCalcSoma}
+          onToggle={() => setShowCalcSoma(!showCalcSoma)}
+          accentColor="#D4A373"
+          darkAccentColor="#D4A373"
+          isDark={isDark}
+        />
+        {baseDoseMode === 'single' ? (
+          <div className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-3 mb-3">
+            <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">3ª V8-V10</span>
+            <span className="text-base font-bold text-[#8D6E63] dark:text-[#CBB5A1] block mt-1">
+              {calculations.targetSplitTotal.toFixed(2)} - ({calculations.v4v6_1_kg.toFixed(2)} + {calculations.base1_kg.toFixed(2)}) = {calculations.v8v10_1_kg.toFixed(2)} kg N/ha
+            </span>
+            <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-0.5">Dose Total a Aplicar - (Aplicação: V4-V6 + Aplicação: Base)</p>
           </div>
-          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Diferença V4-V6 vs V8-V10:</span> {calculations.splitDifference.toFixed(2)} kg N/ha</div>
-        </div>
-      </CalculationMemoryPanel>
+        ) : (
+          <div className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-3 mb-3">
+            <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">3ª V8-V10</span>
+            <span className="text-base font-bold text-[#8D6E63] dark:text-[#CBB5A1] block mt-1">
+              {calculations.v8v10_1_final}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v8v10_1_kg.toFixed(2)} kg N/ha
+            </span>
+            <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-0.5">Percentual da meta</p>
+          </div>
+        )}
+        <CalculationMemoryPanel isVisible={showCalcSoma} isDark={isDark}>
+          <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
+            isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
+          }`}>
+            <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Soma / Verificação:</div>
+            <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>1ª Base:</span> {calculations.base1_kg.toFixed(2)} kg N/ha (valor absoluto)</div>
+            <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>2ª V4-V6:</span> {calculations.v4v6_1}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v4v6_1_kg.toFixed(2)} kg N/ha</div>
+            <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>3ª V8-V10:</span> {calculations.v8v10_1_final}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v8v10_1_kg.toFixed(2)} kg N/ha</div>
+            <div className={`border-t pt-1.5 mt-1.5 font-bold ${isDark ? 'border-[#2C3328] text-[#D4A373]' : 'border-[#F0EDE5] text-[#8D6E63]'}`}>
+              Soma: {calculations.base1_kg.toFixed(2)} + {calculations.v4v6_1_kg.toFixed(2)} + {calculations.v8v10_1_kg.toFixed(2)} = {calculations.sumOfSplits.toFixed(2)} kg N/ha
+            </div>
+          </div>
+        </CalculationMemoryPanel>
+      </div>
     </div>
   );
 }
