@@ -263,7 +263,7 @@ export function useGeminiLiveAgent(simContext: SimulatorContext) {
           quebraDecimal = quebraDecimal / 100;
         }
 
-        const estande = Number((plantasPorMetro * espacamentoLinhas * 10000).toFixed(2));
+        const estande = Number((plantasPorMetro / espacamentoLinhas * 10000).toFixed(2));
         const quantidadeGraos = Number((fileiras * graosPorFileira).toFixed(0));
         const pmgCorrigido = Number((pmg / 1000).toFixed(4));
         const scHaBruta = Number(((estande * espigas * quantidadeGraos * pmgCorrigido) / 1000).toFixed(2));
@@ -372,7 +372,7 @@ Fórmulas do simulador de Adubação Nitrogenada:
 - 1 saca de Ureia (50 kg) contém 22.5 kg de N elementar (45% N).
 
 Fórmulas da Calculadora de Estimativa de Produtividade de Milho:
-- Estande (população) = contagem de plantas por metro × espaçamento entre linhas (em metros) × 10.000
+- Estande (população) = contagem de plantas por metro ÷ espaçamento entre linhas (em metros) × 10.000
 - Quantidade de grãos = fileiras × grãos/fileira
 - PMG (em gramas por 1000 grãos) = valor da questão ÷ 1000 (para obter peso unitário em gramas)
 - Produtividade Bruta (sc/ha) = estande × espigas (por fileira/planta) × Quantidade de grãos × PMG ÷ 1000

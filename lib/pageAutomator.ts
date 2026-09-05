@@ -15,7 +15,8 @@ export type PageSection =
   | 'parcelamento'
   | 'comparador'
   | 'adubos'
-  | 'estimativa_milho';
+  | 'estimativa_milho'
+  | 'itr';
 
 const SECTION_ELEMENT_MAP: Record<PageSection, string> = {
   topo: 'app_header',
@@ -30,6 +31,7 @@ const SECTION_ELEMENT_MAP: Record<PageSection, string> = {
   comparador: 'scenario_comparator_section',
   adubos: 'fertilizer_equivalent_section',
   estimativa_milho: 'corn_yield_calculator_section',
+  itr: 'itr_section',
 };
 
 // Global active highlight tracker
@@ -54,6 +56,8 @@ export function smoothScrollToSection(section: PageSection | string, label?: str
       targetEl = document.getElementById('scenario_comparator_section');
     } else if (section === 'estimativa_milho') {
       targetEl = document.getElementById('corn_yield_calculator_section');
+    } else if (section === 'itr') {
+      targetEl = document.getElementById('itr_section');
     }
   }
 

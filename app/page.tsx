@@ -18,13 +18,15 @@ import {
   Columns,
   Mic,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  BookOpen
 } from 'lucide-react';
 import SaveScenarioModal from '@/components/SaveScenarioModal';
 import ScenarioComparator from '@/components/ScenarioComparator';
 import VoiceAssistantHUD from '@/components/VoiceAssistantHUD';
 import DarkMode3DToggle from '@/components/DarkMode3DToggle';
 import SectionNav3D from '@/components/SectionNav3D';
+import LoadingSkeleton3D from '@/components/LoadingSkeleton3D';
 import CornYieldCalculator from '@/components/CornYieldCalculator';
 import Input3D from '@/components/Input3D';
 import Button3D from '@/components/Button3D';
@@ -41,6 +43,8 @@ import SecondaryCreditsCard from '@/components/metrics/SecondaryCreditsCard';
 import ParcelamentoSection from '@/components/metrics/ParcelamentoSection';
 import BalancoSection from '@/components/metrics/BalancoSection';
 import DetailedMathPanel from '@/components/metrics/DetailedMathPanel';
+import ITRCalculator from '@/components/ITRCalculator';
+import AbntReferenceFormatter from '@/components/AbntReferenceFormatter';
 
 // Interfaces for structured data
 interface Preset {
@@ -113,6 +117,7 @@ const PRESETS: Preset[] = [
 
 export default function Home() {
   const { isDark } = useTheme();
+  const [isLoading, setIsLoading] = useState(true);
 
   // Input states
   const [yieldGoal, setYieldGoal] = useState<number>(0);
@@ -150,7 +155,7 @@ export default function Home() {
   // SQLike Local Storage states
   const savedRecords = useCalculationRecords();
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'calculadora' | 'estimativa_milho' | 'comparador'>('calculadora');
+  const [activeTab, setActiveTab] = useState<'calculadora' | 'estimativa_milho' | 'comparador' | 'itr' | 'abnt'>('calculadora');
   const [saveToast, setSaveToast] = useState<string | null>(null);
 
 
@@ -343,7 +348,17 @@ export default function Home() {
   });
 
   return (
-    <main id="main_container" className="min-h-screen bg-[#FDFBF7] dark:bg-[#121511] text-[#3D3D3D] dark:text-[#E8E6DF] antialiased pb-8 font-sans transition-colors duration-300">
+    <>
+      <LoadingSkeleton3D
+        onComplete={() => setIsLoading(false)}
+        duration={4500}
+      />
+
+      <main
+        id="main_container"
+        className="min-h-screen bg-[#FDFBF7] dark:bg-[#121511] text-[#3D3D3D] dark:text-[#E8E6DF] antialiased pb-8 font-sans transition-colors duration-300"
+        style={{ opacity: isLoading ? 0 : 1, transition: 'opacity 0.5s ease-in-out' }}
+      >
       {/* HERO SECTION - rolls with page */}
       <section className="bg-[#5A5A40] dark:bg-[#1E241B] text-white px-4 sm:px-6 lg:px-8 pt-6 pb-4 shadow-lg">
         <div className="max-w-7xl mx-auto">
@@ -466,48 +481,69 @@ export default function Home() {
       {/* Main content area - offset for desktop sidebar */}
       <div className="lg:ml-[180px] px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        {/* TOP NAVIGATION / MODE SWITCHER BAR */}
-        <nav id="app_mode_nav" className="bg-white dark:bg-[#1C201A] p-2 rounded-2xl border border-[#E5E2D9] dark:border-[#2C3328] shadow-sm flex flex-wrap gap-2 items-center justify-between">
-          <div className="flex flex-wrap gap-2 items-center">
-            <button
-              id="tab_btn_nitrogen"
-              onClick={() => setActiveTab('calculadora')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
-                activeTab === 'calculadora'
-                  ? 'bg-[#5A5A40] text-white shadow-sm dark:bg-[#2F372A]'
-                  : 'text-[#8C897E] hover:text-[#5A5A40] dark:text-[#9EA399] dark:hover:text-[#E8E6DF] hover:bg-[#F9F8F6] dark:hover:bg-[#232821]'
-              }`}
-            >
-              <Sprout className="h-4 w-4" />
-              <span>Adubação Nitrogenada</span>
-            </button>
-            <button
-              id="tab_btn_corn_yield"
-              onClick={() => setActiveTab('estimativa_milho')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
-                activeTab === 'estimativa_milho'
-                  ? 'bg-[#D4A373] text-white shadow-sm dark:bg-[#B08053]'
-                  : 'text-[#8C897E] hover:text-[#D4A373] dark:text-[#9EA399] dark:hover:text-[#E8E6DF] hover:bg-[#F9F8F6] dark:hover:bg-[#232821]'
-              }`}
-            >
-              <Calculator className="h-4 w-4" />
-              <span>Estimativa de Produtividade (Milho)</span>
-
-            </button>
-            <button
-              id="tab_btn_comparator"
-              onClick={() => setActiveTab('comparador')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
-                activeTab === 'comparador'
-                  ? 'bg-[#5A5A40] text-white shadow-sm dark:bg-[#2F372A]'
-                  : 'text-[#8C897E] hover:text-[#5A5A40] dark:text-[#9EA399] dark:hover:text-[#E8E6DF] hover:bg-[#F9F8F6] dark:hover:bg-[#232821]'
-              }`}
-            >
-              <Columns className="h-4 w-4" />
-              <span>Comparador de Cenários ({savedRecords.length})</span>
-            </button>
-          </div>
-          <div className="flex items-center gap-2 px-3 text-xs text-[#8C897E] dark:text-[#9EA399]">
+        {/* TOP NAVIGATION / MODE SWITCHER — TABS */}
+        <nav id="app_mode_nav" className="flex items-end gap-0 border-b border-[#E5E2D9] dark:border-[#2C3328]">
+          <button
+            id="tab_btn_nitrogen"
+            onClick={() => setActiveTab('calculadora')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${
+              activeTab === 'calculadora'
+                ? 'border-[#5A5A40] text-[#5A5A40] dark:border-[#9CB386] dark:text-[#9CB386]'
+                : 'border-transparent text-[#8C897E] hover:text-[#5A5A40] dark:text-[#9EA399] dark:hover:text-[#E8E6DF]'
+            }`}
+          >
+            <Sprout className="h-4 w-4" />
+            <span>Adubação Nitrogenada</span>
+          </button>
+          <button
+            id="tab_btn_corn_yield"
+            onClick={() => setActiveTab('estimativa_milho')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${
+              activeTab === 'estimativa_milho'
+                ? 'border-[#D4A373] text-[#D4A373] dark:border-[#D4A373] dark:text-[#D4A373]'
+                : 'border-transparent text-[#8C897E] hover:text-[#D4A373] dark:text-[#9EA399] dark:hover:text-[#E8E6DF]'
+            }`}
+          >
+            <Calculator className="h-4 w-4" />
+            <span>Estimativa de Produtividade (Milho)</span>
+          </button>
+          <button
+            id="tab_btn_comparator"
+            onClick={() => setActiveTab('comparador')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${
+              activeTab === 'comparador'
+                ? 'border-[#5A5A40] text-[#5A5A40] dark:border-[#9CB386] dark:text-[#9CB386]'
+                : 'border-transparent text-[#8C897E] hover:text-[#5A5A40] dark:text-[#9EA399] dark:hover:text-[#E8E6DF]'
+            }`}
+          >
+            <Columns className="h-4 w-4" />
+            <span>Comparador de Cenários ({savedRecords.length})</span>
+          </button>
+          <button
+            id="tab_btn_itr"
+            onClick={() => setActiveTab('itr')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${
+              activeTab === 'itr'
+                ? 'border-[#5A5A40] text-[#5A5A40] dark:border-[#9CB386] dark:text-[#9CB386]'
+                : 'border-transparent text-[#8C897E] hover:text-[#5A5A40] dark:text-[#9EA399] dark:hover:text-[#E8E6DF]'
+            }`}
+          >
+            <Percent className="h-4 w-4" />
+            <span>ITR</span>
+          </button>
+          <button
+            id="tab_btn_abnt"
+            onClick={() => setActiveTab('abnt')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${
+              activeTab === 'abnt'
+                ? 'border-[#5A5A40] text-[#5A5A40] dark:border-[#9CB386] dark:text-[#9CB386]'
+                : 'border-transparent text-[#8C897E] hover:text-[#5A5A40] dark:text-[#9EA399] dark:hover:text-[#E8E6DF]'
+            }`}
+          >
+            <BookOpen className="h-4 w-4" />
+            <span>Referências ABNT</span>
+          </button>
+          <div className="ml-auto flex items-center gap-2 px-3 py-2.5 text-xs text-[#8C897E] dark:text-[#9EA399]">
             <span className="inline-block w-2 h-2 rounded-full bg-[#2E6F40] animate-pulse" />
             <span>Puck Live Assistant Ativo</span>
           </div>
@@ -567,6 +603,16 @@ export default function Home() {
               Voltar para Calculadora →
             </button>
           </div>
+        </div>
+
+        {/* ITR CALCULATOR TAB */}
+        <div id="itr_section" className={activeTab === 'itr' ? 'block' : 'hidden'}>
+          <ITRCalculator />
+        </div>
+
+        {/* ABNT REFERENCE FORMATTER TAB */}
+        <div id="abnt_section" className={activeTab === 'abnt' ? 'block' : 'hidden'}>
+          <AbntReferenceFormatter />
         </div>
 
         {/* MAIN NITROGEN CALCULATOR VIEW */}
@@ -1173,5 +1219,6 @@ export default function Home() {
 
       </div>
     </main>
+    </>
   );
 }

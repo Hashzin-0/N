@@ -186,12 +186,10 @@ export default function ParcelamentoSection({
   baseDoseMode,
 }: Props) {
   const { isDark } = useTheme();
-  const [showCalcMeta, setShowCalcMeta] = useState(false);
   const [showCalcBase, setShowCalcBase] = useState(false);
   const [showCalcV4V6, setShowCalcV4V6] = useState(false);
   const [showCalcV8V10, setShowCalcV8V10] = useState(false);
   const [showCalcSoma, setShowCalcSoma] = useState(false);
-  const [showCalcDif, setShowCalcDif] = useState(false);
   const [showAgronomicV4V6, setShowAgronomicV4V6] = useState(false);
   const [showAgronomicV8V10, setShowAgronomicV8V10] = useState(false);
   const { withLock } = useAnimationLock(400);
@@ -223,41 +221,6 @@ export default function ParcelamentoSection({
       </div>
 
       <div className="space-y-5">
-        {/* META (base) */}
-        <div className="relative">
-          <CalculationIsland
-            isVisible={showCalcMeta}
-            onToggle={() => setShowCalcMeta(!showCalcMeta)}
-            accentColor="#D4A373"
-            darkAccentColor="#D4A373"
-            isDark={isDark}
-          />
-          <div className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#D4A373] dark:border-[#A27B5C] flex justify-between items-center">
-            <div>
-              <span className="bg-[#D4A373] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
-                Meta (base)
-              </span>
-              <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
-                {splitBase === 'dose_perdas' ? 'Dose com Perdas' : 'Necessidade Líquida'}
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
-                {calculations.targetSplitTotal.toFixed(2)} <span className="text-xs font-semibold text-[#8C897E] dark:text-[#9EA399]">kg N/ha</span>
-              </div>
-            </div>
-          </div>
-          <CalculationMemoryPanel isVisible={showCalcMeta} isDark={isDark}>
-            <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
-              isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
-            }`}>
-              <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Meta (base):</div>
-              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Fórmula:</span> {splitBase === 'dose_perdas' ? 'Dose com Perdas (recommendedDose)' : 'Necessidade Líquida (liquidNeed)'}</div>
-              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Valor:</span> {calculations.targetSplitTotal.toFixed(2)} kg N/ha</div>
-            </div>
-          </CalculationMemoryPanel>
-        </div>
-
         {/* 1st Application Display */}
         <div className="relative">
           <CalculationIsland
@@ -651,13 +614,6 @@ export default function ParcelamentoSection({
 
         {/* DIFFERENCE BETWEEN BOTH SELECTED MAIN APPLICATIONS — always uses user values */}
         <div className="relative">
-          <CalculationIsland
-            isVisible={showCalcDif}
-            onToggle={() => setShowCalcDif(!showCalcDif)}
-            accentColor="#5A5A40"
-            darkAccentColor="#9CB386"
-            isDark={isDark}
-          />
           <div className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-[#E5E2D9] dark:border-[#2C3328] flex justify-between items-center">
             <div className="flex items-center gap-2">
               <ArrowRightLeft className="h-4 w-4 text-[#8C897E] dark:text-[#9EA399]" />
@@ -674,17 +630,6 @@ export default function ParcelamentoSection({
               </span>
             </div>
           </div>
-          <CalculationMemoryPanel isVisible={showCalcDif} isDark={isDark}>
-            <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
-              isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
-            }`}>
-              <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Diferença V4-V6 vs V8-V10:</div>
-              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Fórmula:</span> | V4-V6 - V8-V10 |</div>
-              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>V4-V6:</span> {calculations.v4v6_1_kg.toFixed(2)} kg N/ha</div>
-              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>V8-V10:</span> {calculations.v8v10_1_kg.toFixed(2)} kg N/ha</div>
-              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Resultado:</span> {calculations.splitDifference.toFixed(2)} kg N/ha</div>
-            </div>
-          </CalculationMemoryPanel>
         </div>
       </div>
 
@@ -697,23 +642,6 @@ export default function ParcelamentoSection({
           darkAccentColor="#D4A373"
           isDark={isDark}
         />
-        {baseDoseMode === 'single' ? (
-          <div className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-3 mb-3">
-            <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">3ª V8-V10</span>
-            <span className="text-base font-bold text-[#8D6E63] dark:text-[#CBB5A1] block mt-1">
-              {calculations.targetSplitTotal.toFixed(2)} - ({calculations.v4v6_1_kg.toFixed(2)} + {calculations.base1_kg.toFixed(2)}) = {calculations.v8v10_1_kg.toFixed(2)} kg N/ha
-            </span>
-            <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-0.5">Dose Total a Aplicar - (Aplicação: V4-V6 + Aplicação: Base)</p>
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-3 mb-3">
-            <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">3ª V8-V10</span>
-            <span className="text-base font-bold text-[#8D6E63] dark:text-[#CBB5A1] block mt-1">
-              {calculations.v8v10_1_final}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v8v10_1_kg.toFixed(2)} kg N/ha
-            </span>
-            <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-0.5">Percentual da meta</p>
-          </div>
-        )}
         <CalculationMemoryPanel isVisible={showCalcSoma} isDark={isDark}>
           <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
             isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'

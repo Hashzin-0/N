@@ -38,6 +38,10 @@ const COMPARATOR_SECTIONS: SectionConfig[] = [
   { id: 'scenario_comparator_section', label: 'Comparador', shortLabel: 'Comparador', geometry: 'box', color: '#5A5A40', colorDark: '#9CB386' },
 ];
 
+const ABNT_SECTIONS: SectionConfig[] = [
+  { id: 'abnt_section', label: 'Referências ABNT', shortLabel: 'ABNT', geometry: 'cylinder', color: '#5A5A40', colorDark: '#9CB386' },
+];
+
 function createGeometry(type: SectionConfig['geometry']): THREE.BufferGeometry {
   switch (type) {
     case 'dodecahedron': return new THREE.DodecahedronGeometry(1, 0);
@@ -467,6 +471,7 @@ export default function SectionNav3D({
   const sections = useMemo(() => {
     if (activeTab === 'estimativa_milho') return CORN_SECTIONS;
     if (activeTab === 'comparador') return COMPARATOR_SECTIONS;
+    if (activeTab === 'abnt') return ABNT_SECTIONS;
     return NITROGEN_SECTIONS;
   }, [activeTab]);
 

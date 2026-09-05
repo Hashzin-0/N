@@ -1,9 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
-import CalculationIsland from '@/components/CalculationIsland';
-import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
 import { useTheme } from '@/components/ThemeProvider';
 import { Calculations } from '@/lib/types';
 
@@ -13,17 +11,9 @@ interface Props {
 
 export default function BalancoSection({ calculations }: Props) {
   const { isDark } = useTheme();
-  const [showCalc, setShowCalc] = useState(false);
 
   return (
     <div className="calc-island-scoop bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-6 shadow-sm space-y-4 transition-colors relative">
-      <CalculationIsland
-        isVisible={showCalc}
-        onToggle={() => setShowCalc(!showCalc)}
-        accentColor="#2E6F40"
-        darkAccentColor="#86efac"
-        isDark={isDark}
-      />
 
       <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-3 flex justify-between items-center">
         <div>
@@ -104,23 +94,6 @@ export default function BalancoSection({ calculations }: Props) {
           </div>
         </div>
       </div>
-
-      <CalculationMemoryPanel isVisible={showCalc} isDark={isDark}>
-        <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
-          isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
-        }`}>
-          <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Fechamento de Balanço:</div>
-          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Meta:</span> {calculations.targetSplitTotal.toFixed(2)} kg N/ha</div>
-          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Soma:</span> {calculations.base1_kg} + {calculations.v4v6_1_kg} + {calculations.v8v10_1_kg} = {calculations.sumOfSplits} kg N/ha</div>
-          <div className={`border-t pt-1.5 mt-1.5 font-bold ${isDark ? 'border-[#2C3328]' : 'border-[#F0EDE5]'}`}>
-            {calculations.splitDiscrepancy === 0 ? (
-              <span className={isDark ? 'text-[#86efac]' : 'text-[#2E6F40]'}>Balanço Fechado! (100% OK) — A soma corresponde exatamente à meta.</span>
-            ) : (
-              <span className={isDark ? 'text-[#E0A96D]' : 'text-[#8D6E63]'}>Diferença de {calculations.splitDiscrepancy > 0 ? '+' : ''}{calculations.splitDiscrepancy.toFixed(2)} kg N/ha — Ajuste as frações percentuais para fechamento exato.</span>
-            )}
-          </div>
-        </div>
-      </CalculationMemoryPanel>
     </div>
   );
 }

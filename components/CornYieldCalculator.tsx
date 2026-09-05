@@ -98,7 +98,7 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
 
   // Calculations
   const estande = useMemo(() => {
-    return Number((plantasPorMetro * espacamentoLinhas * 10000).toFixed(0));
+    return Number((plantasPorMetro / espacamentoLinhas * 10000).toFixed(0));
   }, [plantasPorMetro, espacamentoLinhas]);
 
   const quantidadeGraos = useMemo(() => {
@@ -599,7 +599,7 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                 <div className="p-2 rounded-lg bg-black/5 dark:bg-white/5">
                   <span className="text-[#8C897E] dark:text-[#9CA38C]">1. Estande (População):</span>
                   <div className="text-[#5A5A40] dark:text-[#A3B18A] font-bold">
-                    {plantasPorMetro} pl/m × {espacamentoLinhas} m × 10.000 = <strong>{estande.toLocaleString('pt-BR')} plantas/ha</strong>
+                    {plantasPorMetro} pl/m ÷ {espacamentoLinhas} m × 10.000 = <strong>{estande.toLocaleString('pt-BR')} plantas/ha</strong>
                   </div>
                 </div>
 

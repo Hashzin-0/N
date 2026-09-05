@@ -148,7 +148,7 @@ export default function CornYieldResultCard({
           isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
         }`}>
           <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Passo a Passo — Estimativa de Milho:</div>
-          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>1. Estande:</span> {plantasPorMetro} × {espacamentoLinhas} × 10.000 = {estande} plantas/ha</div>
+          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>1. Estande:</span> {plantasPorMetro} ÷ {espacamentoLinhas} × 10.000 = {estande} plantas/ha</div>
           <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>2. Grãos/espiga:</span> {fileiras} × {graosPorFileira} = {quantidadeGraos} grãos</div>
           <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>3. PMG unitário:</span> {pmg} ÷ 1000 = {pmgUnitario.toFixed(3)} g/grão</div>
           <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>4. sc/ha Bruto:</span> ({estande} × {espigas} × {quantidadeGraos} × {pmgUnitario.toFixed(3)}) ÷ 1000 = {scHaBruto} sc/ha</div>
