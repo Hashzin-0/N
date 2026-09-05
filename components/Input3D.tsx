@@ -234,7 +234,7 @@ export default function Input3D({
                 } ${
                   isDark ? 'bg-[#242720] text-[#F4F3EE]' : 'bg-white text-[#3D3D3D]'
                 }`}
-                style={{ borderColor }}
+                style={{ borderColor, pointerEvents: 'none' }}
               >
                 <span className="tabular-nums tracking-wider">
                   {value === 0 ? (
@@ -298,8 +298,6 @@ export default function Input3D({
                   ? `0 0 0 3px ${accentColor}44, 0 4px 12px -2px ${accentColor}33`
                   : 'none',
                 opacity: isFocused ? 1 : 0,
-                position: isFocused ? 'relative' : 'absolute',
-                inset: isFocused ? undefined : 0,
               }}
             />
 

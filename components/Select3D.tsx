@@ -44,30 +44,30 @@ export default function Select3D({
       )}
 
       <div className="relative">
-        {/* SHADOW LAYER — MagicButton inspired */}
+        {/* SHADOW LAYER — inset: inner shadow at top */}
         <div
-          className="absolute inset-0 rounded-xl translate-y-[2px]"
+          className="absolute inset-0 rounded-xl -translate-y-[1px]"
           style={{
             background: isDark
-              ? 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.25) 100%)'
-              : 'linear-gradient(135deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.12) 100%)',
-            filter: 'blur(6px)',
+              ? 'linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.18) 100%)'
+              : 'linear-gradient(135deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.08) 100%)',
+            filter: 'blur(4px)',
           }}
           aria-hidden="true"
         />
 
-        {/* EDGE LAYER — MagicButton inspired */}
+        {/* EDGE LAYER — inset: subtle top edge */}
         <div
-          className="absolute inset-0 rounded-xl translate-y-[1px]"
+          className="absolute inset-0 rounded-xl -translate-y-[0.5px]"
           style={{
-            background: `linear-gradient(135deg, ${accentColor}dd 0%, ${accentColor}99 50%, ${accentColor}bb 100%)`,
+            background: `linear-gradient(135deg, ${accentColor}88 0%, ${accentColor}55 50%, ${accentColor}77 100%)`,
           }}
           aria-hidden="true"
         />
 
-        {/* FRONT FACE — the actual select grid */}
+        {/* FRONT FACE — the actual select grid, pressed into surface */}
         <motion.div
-          className="relative rounded-xl -translate-y-[4px]"
+          className="relative rounded-xl translate-y-[1px]"
           style={{ transformStyle: 'preserve-3d' }}
         >
           <div
