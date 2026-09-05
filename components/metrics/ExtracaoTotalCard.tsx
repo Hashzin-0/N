@@ -9,9 +9,10 @@ interface Props {
   totalExtraction: number;
   yieldGoal: number;
   nRequirementPerBag: number;
+  animKey?: string | number;
 }
 
-export default function ExtracaoTotalCard({ totalExtraction, yieldGoal, nRequirementPerBag }: Props) {
+export default function ExtracaoTotalCard({ totalExtraction, yieldGoal, nRequirementPerBag, animKey }: Props) {
   const { isDark } = useTheme();
 
   return (
@@ -21,6 +22,7 @@ export default function ExtracaoTotalCard({ totalExtraction, yieldGoal, nRequire
       unit="kg N/ha"
       formulaSummary={`${yieldGoal} sc/ha × ${nRequirementPerBag.toFixed(2)} kg/sc`}
       isDark={isDark}
+      animKey={animKey}
     >
       <div className={`p-2.5 rounded-lg border font-mono text-[11px] leading-relaxed ${
         isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'

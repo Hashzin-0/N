@@ -10,9 +10,10 @@ interface Props {
   liquidNeed: number;
   efficiency: number;
   onSaveClick: () => void;
+  animKey?: string | number;
 }
 
-export default function DoseRecomendadaCard({ recommendedDose, liquidNeed, efficiency, onSaveClick }: Props) {
+export default function DoseRecomendadaCard({ recommendedDose, liquidNeed, efficiency, onSaveClick, animKey }: Props) {
   const { isDark } = useTheme();
 
   return (
@@ -24,6 +25,7 @@ export default function DoseRecomendadaCard({ recommendedDose, liquidNeed, effic
       isDark={isDark}
       variant="hero"
       saveAction={{ label: 'Salvar', onClick: onSaveClick }}
+      animKey={animKey}
     >
       <div className="p-2.5 rounded-lg border font-mono text-[11px] leading-relaxed bg-[#232821] border-[#2C3328] text-[#E8E6DF]">
         <div className="text-[#9EA399] font-semibold mb-1">FÓRMULA:</div>

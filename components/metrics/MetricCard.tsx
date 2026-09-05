@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { BookmarkPlus } from 'lucide-react';
 import CalculationIsland from '@/components/CalculationIsland';
 import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
+import { NumberTicker } from '@/components/godui/number-ticker';
 import { MetricCardProps } from '@/lib/types';
 
 export default function MetricCard({
@@ -16,6 +17,7 @@ export default function MetricCard({
   darkAccentColor = '#9CB386',
   variant = 'default',
   saveAction,
+  animKey,
   children,
 }: MetricCardProps) {
   const [showCalc, setShowCalc] = useState(false);
@@ -68,7 +70,12 @@ export default function MetricCard({
               : 'text-2xl font-bold text-[#5A5A40] dark:text-[#9CB386]'
           }`}
         >
-          {value.toFixed(2)}{' '}
+          <NumberTicker
+            key={animKey}
+            value={value}
+            decimalPlaces={2}
+            className={isHero ? 'text-3xl font-bold font-serif' : 'text-2xl font-bold text-[#5A5A40] dark:text-[#9CB386]'}
+          />{' '}
           <span
             className={`text-xs font-semibold ${
               isHero

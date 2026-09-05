@@ -8,6 +8,8 @@ import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
 import { useTheme } from '@/components/ThemeProvider';
 import { Calculations } from '@/lib/types';
 import { useAnimationLock } from '@/lib/useAnimationLock';
+import { ElasticText } from '@/components/godui/elastic-text';
+import { NumberTicker } from '@/components/godui/number-ticker';
 
 interface SwapToggle3DProps {
   isActive: boolean;
@@ -170,9 +172,10 @@ interface Props {
   v8v10Percent: number;
   v8v10Percent2: number;
   baseDoseMode: 'single' | 'range';
+  animKey?: string | number;
 }
 
-export default function ParcelamentoSection({
+export default function ParcelamentoSection({ animKey,
   calculations,
   splitBase,
   v4v6Percent,
@@ -207,7 +210,9 @@ export default function ParcelamentoSection({
       <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-4 flex justify-between items-center">
         <div>
           <h3 className="text-sm font-bold text-[#5A5A40] dark:text-[#E8E6DF] uppercase tracking-wider flex items-center gap-2">
-            <Scale className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> Cronograma de Parcelamento
+            <ElasticText className="text-[10px] font-bold tracking-widest" mode="auto">
+              <Scale className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> Cronograma de Parcelamento
+            </ElasticText>
           </h3>
           <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
             Comparação de dosagens em cada estádio fenológico (Foco da Questão)
@@ -236,7 +241,7 @@ export default function ParcelamentoSection({
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
-                {calculations.base1_kg.toFixed(2)} <span className="text-xs font-semibold text-[#8C897E] dark:text-[#9EA399]">kg N/ha</span>
+                <NumberTicker key={animKey} value={calculations.base1_kg} decimalPlaces={2} className="text-2xl font-bold text-[#3D3D3D] dark:text-[#E8E6DF]" /> <span className="text-xs font-semibold text-[#8C897E] dark:text-[#9EA399]">kg N/ha</span>
               </div>
               <span className="text-[10px] text-[#D4A373] dark:text-[#E0A96D] font-serif italic font-bold">Aplicado na base</span>
             </div>
@@ -246,7 +251,7 @@ export default function ParcelamentoSection({
               isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
             }`}>
               <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>1ª Base:</div>
-              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Valor absoluto:</span> {calculations.base1_kg.toFixed(2)} kg N/ha</div>
+              <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Valor absoluto:</span> <NumberTicker key={animKey} value={calculations.base1_kg} decimalPlaces={2} className="font-semibold" /> kg N/ha</div>
             </div>
           </CalculationMemoryPanel>
         </div>
@@ -336,13 +341,13 @@ export default function ParcelamentoSection({
                 <div className="bg-white dark:bg-[#232821] p-2.5 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328]">
                   <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] block">Com 50%</span>
                   <span className="text-base font-bold text-[#3D3D3D] dark:text-[#E8E6DF] mt-0.5 block">
-                    {calculations.v4v6_50.toFixed(2)} <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
+                    <NumberTicker key={animKey} value={calculations.v4v6_50} decimalPlaces={2} className="text-base font-bold text-[#3D3D3D] dark:text-[#E8E6DF]" /> <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
                   </span>
                 </div>
                 <div className="bg-white dark:bg-[#232821] p-2.5 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328]">
                   <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] block">Com 60%</span>
                   <span className="text-base font-bold text-[#3D3D3D] dark:text-[#E8E6DF] mt-0.5 block">
-                    {calculations.v4v6_60.toFixed(2)} <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
+                    <NumberTicker key={animKey} value={calculations.v4v6_60} decimalPlaces={2} className="text-base font-bold text-[#3D3D3D] dark:text-[#E8E6DF]" /> <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
                   </span>
                 </div>
               </motion.div>
@@ -491,7 +496,7 @@ export default function ParcelamentoSection({
                 <div className="bg-white dark:bg-[#232821] p-3 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328]">
                   <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] block">Auto-calculado: {calculations.v8v10_1_auto}%</span>
                   <span className="text-xl font-bold text-[#8D6E63] dark:text-[#D4A373] mt-0.5 block">
-                    {calculations.v8v10_1_kg.toFixed(2)} <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
+                    <NumberTicker key={animKey} value={calculations.v8v10_1_kg} decimalPlaces={2} className="text-xl font-bold text-[#8D6E63] dark:text-[#D4A373]" /> <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
                   </span>
                 </div>
               </motion.div>
@@ -514,13 +519,13 @@ export default function ParcelamentoSection({
                 <div className="bg-white dark:bg-[#232821] p-2.5 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328]">
                   <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] block">Com 20%</span>
                   <span className="text-base font-bold text-[#3D3D3D] dark:text-[#E8E6DF] mt-0.5 block">
-                    {calculations.v8v10_20.toFixed(2)} <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
+                    <NumberTicker key={animKey} value={calculations.v8v10_20} decimalPlaces={2} className="text-base font-bold text-[#3D3D3D] dark:text-[#E8E6DF]" /> <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
                   </span>
                 </div>
                 <div className="bg-white dark:bg-[#232821] p-2.5 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328]">
                   <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] block">Com 30%</span>
                   <span className="text-base font-bold text-[#3D3D3D] dark:text-[#E8E6DF] mt-0.5 block">
-                    {calculations.v8v10_30.toFixed(2)} <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
+                    <NumberTicker key={animKey} value={calculations.v8v10_30} decimalPlaces={2} className="text-base font-bold text-[#3D3D3D] dark:text-[#E8E6DF]" /> <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
                   </span>
                 </div>
               </motion.div>
@@ -569,10 +574,10 @@ export default function ParcelamentoSection({
                 style={{ transformOrigin: 'top center' }}
                 className="pt-2 border-t border-[#F0EDE5] dark:border-[#2C3328] text-center"
               >
-                <div className="bg-white dark:bg-[#232821] p-3 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328]">
-                  <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] block">Com {calculations.v8v10_1_final}%</span>
+<div className="bg-white dark:bg-[#232821] p-3 rounded-lg border border-[#E5E2D9] dark:border-[#2C3328]">
+                  <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] block">Com {v4v6Percent}%</span>
                   <span className="text-xl font-bold text-[#3D3D3D] dark:text-[#E8E6DF] mt-0.5 block">
-                    {calculations.v8v10_1_kg.toFixed(2)} <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
+                    <NumberTicker key={animKey} value={calculations.v4v6_1_kg} decimalPlaces={2} className="text-xl font-bold text-[#3D3D3D] dark:text-[#E8E6DF]" /> <span className="text-xs font-normal text-[#8C897E] dark:text-[#9EA399]">kg/ha</span>
                   </span>
                 </div>
               </motion.div>

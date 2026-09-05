@@ -40,7 +40,7 @@ import ExtracaoTotalCard from '@/components/metrics/ExtracaoTotalCard';
 import NecessidadeLiquidaCard from '@/components/metrics/NecessidadeLiquidaCard';
 import DoseRecomendadaCard from '@/components/metrics/DoseRecomendadaCard';
 import SecondaryCreditsCard from '@/components/metrics/SecondaryCreditsCard';
-import DataCard from '@/components/metrics/DataCard';
+
 import ParcelamentoSection from '@/components/metrics/ParcelamentoSection';
 import BalancoSection from '@/components/metrics/BalancoSection';
 import DetailedMathPanel from '@/components/metrics/DetailedMathPanel';
@@ -625,6 +625,13 @@ export default function Home() {
         {/* ABNT REFERENCE FORMATTER TAB */}
         <div id="abnt_section" className={activeTab === 'abnt' ? 'block' : 'hidden'}>
           <AbntReferenceFormatter />
+            <BibliografiaAutoDetectCard
+              onReferenceSelected={(ref) => {
+                setBibliographyRef(ref);
+                setActiveTab("abnt");
+              }}
+              initialUrl=""
+            />
         </div>
 
         {/* MAIN NITROGEN CALCULATOR VIEW */}
@@ -1100,7 +1107,7 @@ export default function Home() {
                 />
               </div>
 
-              <DataCard isDark={isDark} />
+              
 
               </div>
 
@@ -1108,14 +1115,6 @@ export default function Home() {
               totalExtraction={calculations.totalExtraction}
               mosNContribution={mosNContribution}
               soyNContribution={soyNContribution}
-            />
-
-            <BibliografiaAutoDetectCard
-              onReferenceSelected={(ref) => {
-                setBibliographyRef(ref);
-                setActiveTab('abnt');
-              }}
-              initialUrl=""
             />
 
             {/* DYNAMIC PARCELAMENTO DISCLOSURES PANEL */}

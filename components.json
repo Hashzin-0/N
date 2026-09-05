@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/components.json",
+  "name": "ai-studio-applet",
+  "title": "AI Studio Applet",
+  "description": "Brazilian corn nitrogen calculator",
+  "keywords": ["agriculture", "nitrogen", "calculator"],
+  "dependencies": [],
+  "ui": {
+    "multi-button": {
+      "component": "components/godui/multi-button.tsx",
+      "icon": "🟦",
+      "name": "Multi Button",
+      "description": "A responsive action rail with gooey metaball treatment",
+      "usage": "import { MultiButton } from '@/components/godui/multi-button'"
+    },
+    "jelly-button": {
+      "component": "components/godui/jelly-button.tsx",
+      "icon": "🟪",
+      "name": "Jelly Button",
+      "description": "A squishy button that deforms on press and springs back with a jelly wobble",
+      "usage": "import { JellyButton } from '@/components/godui/jelly-button'"
+    }
+  }
+}

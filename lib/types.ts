@@ -35,6 +35,7 @@ export interface MetricCardProps {
   darkAccentColor?: string;
   variant?: 'default' | 'hero';
   saveAction?: { label: string; onClick: () => void };
+  animKey?: string | number;
   children: React.ReactNode;
 }
 

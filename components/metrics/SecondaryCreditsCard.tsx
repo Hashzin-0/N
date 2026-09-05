@@ -4,14 +4,16 @@ import React from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 import CalculationIsland from '@/components/CalculationIsland';
 import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
+import { NumberTicker } from '@/components/godui/number-ticker';
 
 interface Props {
   totalExtraction: number;
   mosNContribution: number;
   soyNContribution: number;
+  animKey?: string | number;
 }
 
-export default function SecondaryCreditsCard({ totalExtraction, mosNContribution, soyNContribution }: Props) {
+export default function SecondaryCreditsCard({ totalExtraction, mosNContribution, soyNContribution, animKey }: Props) {
   const { isDark } = useTheme();
   const [showCreditsCalc, setShowCreditsCalc] = React.useState(false);
 
@@ -32,7 +34,7 @@ export default function SecondaryCreditsCard({ totalExtraction, mosNContribution
           N Proveniente da MOS
         </span>
         <div className="mt-1.5 text-2xl font-bold text-[#5A5A40] dark:text-[#9CB386]">
-          {mosResult.toFixed(2)}{' '}
+          <NumberTicker key={animKey} value={mosResult} decimalPlaces={2} className="text-2xl font-bold text-[#5A5A40] dark:text-[#9CB386]" />{' '}
           <span className="text-xs font-semibold text-[#8C897E] dark:text-[#9EA399]">kg N/ha</span>
         </div>
         <div className="mt-2 text-[10px] text-[#8C897E] dark:text-[#9EA399] border-t border-[#F0EDE5] dark:border-[#2C3328] pt-2 font-medium">
@@ -58,7 +60,7 @@ export default function SecondaryCreditsCard({ totalExtraction, mosNContribution
           Crédito da Soja
         </span>
         <div className="mt-1.5 text-2xl font-bold text-[#5A5A40] dark:text-[#9CB386]">
-          {soyResult.toFixed(2)}{' '}
+          <NumberTicker key={animKey} value={soyResult} decimalPlaces={2} className="text-2xl font-bold text-[#5A5A40] dark:text-[#9CB386]" />{' '}
           <span className="text-xs font-semibold text-[#8C897E] dark:text-[#9EA399]">kg N/ha</span>
         </div>
         <div className="mt-2 text-[10px] text-[#8C897E] dark:text-[#9EA399] border-t border-[#F0EDE5] dark:border-[#2C3328] pt-2 font-medium">
