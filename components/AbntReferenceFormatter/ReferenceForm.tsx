@@ -611,7 +611,7 @@ const showsAuthors = config?.requiredFields.includes('authors') || config?.optio
               />
             </div>
           )}
-          {needsEventYear && (
+          {showsEventYear && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Ano do Evento *
@@ -630,7 +630,7 @@ const showsAuthors = config?.requiredFields.includes('authors') || config?.optio
               />
             </div>
           )}
-          {needsBookTitle && (
+          {showsBookTitle && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Título da Publicação *
@@ -747,7 +747,7 @@ const showsAuthors = config?.requiredFields.includes('authors') || config?.optio
       {/* Standard fields */}
       {(showsStandardNumber || showsStandardOrganization) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {needsStandardOrganization && (
+          {showsStandardOrganization && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Organização *
@@ -767,7 +767,7 @@ const showsAuthors = config?.requiredFields.includes('authors') || config?.optio
               />
             </div>
           )}
-          {needsStandardNumber && (
+          {showsStandardNumber && (
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
                 Número *
@@ -873,7 +873,7 @@ const showsAuthors = config?.requiredFields.includes('authors') || config?.optio
       )}
 
       {/* Audiovisual type */}
-      {needsAudiovisualType && (
+      {showsAudiovisualType && (
         <div className="space-y-1">
           <label className="text-xs font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
             Tipo *

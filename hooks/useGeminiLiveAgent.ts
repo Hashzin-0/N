@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { AudioStreamer } from '@/lib/audioStreamer';
 import { smoothScrollToSection, PageSection } from '@/lib/pageAutomator';
+import { ABNTReference } from '@/lib/abnt/types';
 
 export interface LiveAgentState {
   isConnected: boolean;
@@ -253,14 +254,14 @@ export function useGeminiLiveAgent(simContext: SimulatorContext) {
       }
 
       case 'setBibliographyReference': {
-        const ref = args.ref;
+        const ref = args.ref as ABNTReference;
         setActionLabel('Preenchendo referência da bibliografia...');
         smoothScrollToSection('abnt', 'Ajustando Referência Bibliográfica');
         ctx.onSetBibliographyReference(ref);
 
         return {
           success: true,
-          updated: { type: ref.type, author: ref.authors?.[0]?.surname || '', title: ref.title, year: ref.year },
+          updated: { type: ref.type, title: ref.title, year: ref.year },
           message: 'Referência bibliográfica atualizada e exibida na tela.',
         };
       }

@@ -37,6 +37,7 @@ export default function DataCard({ isDark }: DataCardProps) {
     onSaveScenario: () => {},
     onSetITRParameters: () => {},
     onSetABNTReference: () => {},
+    onSetBibliographyReference: () => {},
   });
 
   useEffect(() => {

@@ -385,14 +385,6 @@ export default function Home() {
       // TODO: Integrate with ITRCalculator component state when available
       console.log('ITR parameters received:', params);
     },
-    onSetBibliographyReference: (ref) => {
-      setBibliographyRef(ref);
-      setActivePreset('personalizado');
-      setActiveTab('abnt');
-      const el = document.getElementById('abnt_section');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-      console.log('Bibliography reference received:', ref);
-    },
 
     onSetABNTReference: (ref) => {
       const { type, author, title, year, editor, url } = ref;
