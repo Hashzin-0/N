@@ -136,8 +136,6 @@ export default function Home() {
   
   // Toggle for 1 vs 2 values per application
   const [baseDoseMode, setBaseDoseMode] = useState<'single' | 'range'>('single');
-  const [v4v6Mode, setV4v6Mode] = useState<'single' | 'range'>('single');
-  const [v8v10Mode, setV8v10Mode] = useState<'single' | 'range'>('single');
   
   // Split base configuration: dose with losses (Dose de N a aplicar) or net requirement (Necessidade Líquida)
   const [splitBase, setSplitBase] = useState<'dose_perdas' | 'necessidade_liquida'>('dose_perdas');
@@ -249,10 +247,8 @@ export default function Home() {
     baseDoseMode,
     v4v6Percent,
     v4v6Percent2,
-    v4v6Mode,
     v8v10Percent,
     v8v10Percent2,
-    v8v10Mode,
     splitBase,
   });
 
@@ -482,7 +478,7 @@ export default function Home() {
       <div className="lg:ml-[180px] px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
         {/* TOP NAVIGATION / MODE SWITCHER — TABS */}
-        <nav id="app_mode_nav" className="flex items-end gap-0 border-b border-[#E5E2D9] dark:border-[#2C3328]">
+        <nav id="app_mode_nav" className="flex items-end gap-0 overflow-x-auto flex-nowrap no-scrollbar border-b border-[#E5E2D9] dark:border-[#2C3328]">
           <button
             id="tab_btn_nitrogen"
             onClick={() => setActiveTab('calculadora')}
@@ -919,35 +915,25 @@ export default function Home() {
                         1 valor %
                       </span>
                     ) : (
-                      <Select3D
-                        value={v4v6Mode}
-                        onChange={(v) => handleCustomInputChange(() => {
-                          setV4v6Mode(v as 'single' | 'range');
-                          if (v === 'single') setV4v6Percent2(0);
-                        })}
-                        isDark={isDark}
-                        accentColor="#5A5A40"
-                        options={[
-                          { value: 'single', label: '1 valor %' },
-                          { value: 'range', label: '2 valores %' },
-                        ]}
-                        className="!inline-flex !w-auto"
-                      />
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        isDark ? 'bg-[#2C3328] text-[#9CB386]' : 'bg-[#F0EDE5] text-[#5A5A40]'
+                      }`}>
+                        2 valores %
+                      </span>
                     )}
                   </div>
 
                   <CellDivisionContainer
-                    mode={baseDoseMode === 'single' ? 'single' : v4v6Mode}
+                    mode={baseDoseMode}
                     onModeChange={(m) => handleCustomInputChange(() => {
                       if (baseDoseMode === 'single') return;
-                      setV4v6Mode(m);
                       if (m === 'single') setV4v6Percent2(0);
                     })}
                     accentColor="#5A5A40"
                     isDark={isDark}
                   >
                     <Input3D
-                      label={baseDoseMode === 'single' ? '% do total' : (v4v6Mode === 'range' ? 'Min %' : '% do total')}
+                      label={baseDoseMode === 'single' ? '% do total' : (baseDoseMode === 'range' ? 'Min %' : '% do total')}
                       labelMorph
                       unit="%"
                       value={v4v6Percent}
@@ -996,20 +982,11 @@ export default function Home() {
                         Auto-calculado
                       </span>
                     ) : (
-                      <Select3D
-                        value={v8v10Mode}
-                        onChange={(v) => handleCustomInputChange(() => {
-                          setV8v10Mode(v as 'single' | 'range');
-                          if (v === 'single') setV8v10Percent2(0);
-                        })}
-                        isDark={isDark}
-                        accentColor="#8D6E63"
-                        options={[
-                          { value: 'single', label: '1 valor %' },
-                          { value: 'range', label: '2 valores %' },
-                        ]}
-                        className="!inline-flex !w-auto"
-                      />
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        isDark ? 'bg-[#2C3328] text-[#D4A373]' : 'bg-[#F0EDE5] text-[#8D6E63]'
+                      }`}>
+                        2 valores %
+                      </span>
                     )}
                   </div>
 
@@ -1031,16 +1008,16 @@ export default function Home() {
                     </>
                   ) : (
                     <CellDivisionContainer
-                      mode={v8v10Mode}
+                      mode={baseDoseMode === 'single' ? 'single' : baseDoseMode}
                       onModeChange={(m) => handleCustomInputChange(() => {
-                        setV8v10Mode(m);
+                        if (baseDoseMode === 'single') return;
                         if (m === 'single') setV8v10Percent2(0);
                       })}
                       accentColor="#8D6E63"
                       isDark={isDark}
                     >
                       <Input3D
-                        label={v8v10Mode === 'range' ? 'Min %' : '% do total'}
+                        label={baseDoseMode === 'range' ? 'Min %' : '% do total'}
                         labelMorph
                         unit="%"
                         value={v8v10Percent}
@@ -1121,10 +1098,8 @@ export default function Home() {
               calculations={calculations}
               splitBase={splitBase}
               v4v6Percent={v4v6Percent}
-              v4v6Mode={v4v6Mode}
               v4v6Percent2={v4v6Percent2}
               v8v10Percent={v8v10Percent}
-              v8v10Mode={v8v10Mode}
               v8v10Percent2={v8v10Percent2}
               baseDoseMode={baseDoseMode}
             />

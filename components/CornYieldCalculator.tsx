@@ -107,20 +107,20 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
 
   const pmgUnitario = useMemo(() => pmg / 1000, [pmg]);
 
-  const scHaBruto = useMemo(() => {
+  const kgHaBruto = useMemo(() => {
     const raw = (estande * espigas * quantidadeGraos * pmgUnitario) / 1000;
-    return Number(raw.toFixed(2));
+    return Number(raw.toFixed(1));
   }, [estande, espigas, quantidadeGraos, pmgUnitario]);
 
-  const kgHaBruto = useMemo(() => Number((scHaBruto * 60).toFixed(1)), [scHaBruto]);
-
-  const quebraValor = useMemo(() => {
-    return Number((scHaBruto * quebraDecimal).toFixed(2));
-  }, [scHaBruto, quebraDecimal]);
+  const scHaBruto = useMemo(() => Number((kgHaBruto / 60).toFixed(2)), [kgHaBruto]);
 
   const produtividadeLiquida = useMemo(() => {
-    return Number(Math.max(0, scHaBruto - quebraValor).toFixed(2));
-  }, [scHaBruto, quebraValor]);
+    return Number((scHaBruto * (1 - quebraDecimal)).toFixed(2));
+  }, [scHaBruto, quebraDecimal]);
+
+  const quebraValor = useMemo(() => {
+    return Number((scHaBruto - produtividadeLiquida).toFixed(2));
+  }, [scHaBruto, produtividadeLiquida]);
 
   // Agronomic validation
   const agronomicIssues = useMemo((): AgronomicValidationIssue[] => {
@@ -618,26 +618,19 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                 </div>
 
                 <div className="p-2 rounded-lg bg-black/5 dark:bg-white/5">
-                  <span className="text-[#8C897E] dark:text-[#9CA38C]">4. sc/ha Bruto:</span>
+                  <span className="text-[#8C897E] dark:text-[#9CA38C]">4. Produtividade Bruta:</span>
                   <div className="text-[#5A5A40] dark:text-[#A3B18A] font-bold">
-                    ({estande.toLocaleString('pt-BR')} × {espigas} × {quantidadeGraos} × {pmgUnitario.toFixed(3)}) ÷ 1000 = <strong>{scHaBruto} sc/ha</strong>
-                    <span className="text-[11px] font-normal block text-[#8C897E] dark:text-[#9CA38C]">
-                      (= {kgHaBruto.toLocaleString('pt-BR')} kg/ha)
-                    </span>
+                    ({estande.toLocaleString('pt-BR')} × {espigas} × {quantidadeGraos} × {pmgUnitario.toFixed(3)}) ÷ 1000 = <strong>{kgHaBruto.toLocaleString('pt-BR')} kg/ha</strong>
+                  </div>
+                  <div className="text-[#5A5A40] dark:text-[#A3B18A] font-bold mt-0.5">
+                    {kgHaBruto.toLocaleString('pt-BR')} kg ÷ 60 = <strong>{scHaBruto} sc/ha</strong>
                   </div>
                 </div>
 
                 <div className="p-2 rounded-lg bg-black/5 dark:bg-white/5">
-                  <span className="text-[#8C897E] dark:text-[#9CA38C]">5. Quebra (perda de colheita):</span>
+                  <span className="text-[#8C897E] dark:text-[#9CA38C]">5. Produtividade Líquida:</span>
                   <div className="text-[#D4A373] font-bold">
-                    {scHaBruto} sc/ha × {quebraDecimal} ({(quebraDecimal * 100).toFixed(1)}%) = <strong>{quebraValor} sc/ha de quebra</strong>
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded-lg bg-[#2E6F40]/10 border border-[#2E6F40]/20 text-[#2E6F40] dark:text-[#86efac]">
-                  <span className="font-bold">6. Produtividade Líquida Estimada:</span>
-                  <div className="text-sm font-bold mt-0.5">
-                    {scHaBruto} - {quebraValor} = <strong>{produtividadeLiquida} sc/ha líquido colhido</strong>
+                    {scHaBruto} sc/ha × {(1 - quebraDecimal).toFixed(2)} ({(quebraDecimal * 100).toFixed(0)}% perda) = <strong>{produtividadeLiquida} sc/ha</strong>
                   </div>
                 </div>
               </motion.div>

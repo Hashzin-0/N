@@ -11,10 +11,8 @@ export function computeCalculations(inputs: {
   baseDoseMode: 'single' | 'range';
   v4v6Percent: number;
   v4v6Percent2: number;
-  v4v6Mode: 'single' | 'range';
   v8v10Percent: number;
   v8v10Percent2: number;
-  v8v10Mode: 'single' | 'range';
   splitBase: 'dose_perdas' | 'necessidade_liquida';
 }): Calculations {
   const {
@@ -28,10 +26,8 @@ export function computeCalculations(inputs: {
     baseDoseMode,
     v4v6Percent,
     v4v6Percent2,
-    v4v6Mode,
     v8v10Percent,
     v8v10Percent2,
-    v8v10Mode,
     splitBase,
   } = inputs;
 
@@ -49,12 +45,12 @@ export function computeCalculations(inputs: {
   const base2_kg = base2;
 
   const v4v6_1 = v4v6Percent;
-  const v4v6_2 = v4v6Mode === 'range' ? v4v6Percent2 : 0;
+  const v4v6_2 = baseDoseMode === 'range' ? v4v6Percent2 : 0;
   const v4v6_1_kg = Number((targetSplitTotal * (v4v6_1 / 100)).toFixed(2));
   const v4v6_2_kg = v4v6_2 > 0 ? Number((targetSplitTotal * (v4v6_2 / 100)).toFixed(2)) : 0;
 
   const v8v10_1 = v8v10Percent;
-  const v8v10_2 = v8v10Mode === 'range' ? v8v10Percent2 : 0;
+  const v8v10_2 = baseDoseMode === 'range' ? v8v10Percent2 : 0;
 
   const v8v10_1_kg_direct = Number(Math.max(0, targetSplitTotal - base1_kg - v4v6_1_kg).toFixed(2));
   const v8v10_2_kg_direct = (v8v10_2 > 0 && v4v6_2 > 0)

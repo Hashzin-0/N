@@ -151,11 +151,10 @@ export default function CornYieldResultCard({
           <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>1. Estande:</span> {plantasPorMetro} ÷ {espacamentoLinhas} × 10.000 = {estande} plantas/ha</div>
           <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>2. Grãos/espiga:</span> {fileiras} × {graosPorFileira} = {quantidadeGraos} grãos</div>
           <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>3. PMG unitário:</span> {pmg} ÷ 1000 = {pmgUnitario.toFixed(3)} g/grão</div>
-          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>4. sc/ha Bruto:</span> ({estande} × {espigas} × {quantidadeGraos} × {pmgUnitario.toFixed(3)}) ÷ 1000 = {scHaBruto} sc/ha</div>
-          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>5. Quebra ({quebraDecimal * 100}%):</span> {scHaBruto} × {quebraDecimal} = -{quebraValor} sc/ha</div>
-          <div className={`border-t pt-1.5 mt-1.5 font-bold ${isDark ? 'border-[#2C3328] text-[#D4A373]' : 'border-[#F0EDE5] text-[#8D6E63]'}`}>
-            6. Produtividade Líquida: {scHaBruto} - {quebraValor} = {produtividadeLiquida} sc/ha ({Number((produtividadeLiquida * 60).toFixed(0)).toLocaleString('pt-BR')} kg/ha)
-          </div>
+          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>4. Produtividade Bruta:</span></div>
+          <div className="ml-2">({estande} × {espigas} × {quantidadeGraos} × {pmgUnitario.toFixed(3)}) ÷ 1000 = {Number((estande * espigas * quantidadeGraos * pmgUnitario / 1000).toFixed(1))} kg/ha</div>
+          <div className="ml-2">{Number((estande * espigas * quantidadeGraos * pmgUnitario / 1000).toFixed(1))} ÷ 60 = {scHaBruto} sc/ha</div>
+          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>5. Produtividade Líquida ({quebraDecimal * 100}% perda):</span> {scHaBruto} × {(1 - quebraDecimal).toFixed(2)} = {produtividadeLiquida} sc/ha</div>
         </div>
       </CalculationMemoryPanel>
     </div>

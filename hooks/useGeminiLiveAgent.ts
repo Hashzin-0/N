@@ -266,9 +266,9 @@ export function useGeminiLiveAgent(simContext: SimulatorContext) {
         const estande = Number((plantasPorMetro / espacamentoLinhas * 10000).toFixed(2));
         const quantidadeGraos = Number((fileiras * graosPorFileira).toFixed(0));
         const pmgCorrigido = Number((pmg / 1000).toFixed(4));
-        const scHaBruta = Number(((estande * espigas * quantidadeGraos * pmgCorrigido) / 1000).toFixed(2));
-        const quebraPerda = Number((scHaBruta * quebraDecimal).toFixed(2));
-        const scHaLiquida = Number((scHaBruta - quebraPerda).toFixed(2));
+        const kgHaBruta = Number(((estande * espigas * quantidadeGraos * pmgCorrigido) / 1000).toFixed(2));
+        const scHaBruta = Number((kgHaBruta / 60).toFixed(2));
+        const scHaLiquida = Number((scHaBruta * (1 - quebraDecimal)).toFixed(2));
 
         setActionLabel(`Produtividade: ${scHaLiquida} sc/ha`);
         smoothScrollToSection('estimativa_milho', `Estimativa Milho: ${scHaLiquida} sc/ha`);
@@ -278,11 +278,11 @@ export function useGeminiLiveAgent(simContext: SimulatorContext) {
           estande_populacao: estande,
           quantidade_graos: quantidadeGraos,
           pmg_convertido: pmgCorrigido,
+          kg_ha_bruta: kgHaBruta,
           sc_ha_bruta: scHaBruta,
-          quebra_perda: quebraPerda,
           sc_ha_liquida: scHaLiquida,
           quebra_percentual_aplicada: `${(quebraDecimal * 100).toFixed(1)}%`,
-          message: `Estande: ${estande.toLocaleString('pt-BR')} pl/ha. Grãos por espiga: ${quantidadeGraos}. Produtividade bruta: ${scHaBruta} sc/ha. Perda (quebra): ${quebraPerda} sc/ha. Produtividade líquida: ${scHaLiquida} sc/ha. A tela foi rolada até a calculadora de produtividade.`,
+          message: `Estande: ${estande.toLocaleString('pt-BR')} pl/ha. Grãos por espiga: ${quantidadeGraos}. Produtividade bruta: ${scHaBruta} sc/ha (${kgHaBruta.toLocaleString('pt-BR')} kg/ha). Produtividade líquida: ${scHaLiquida} sc/ha. A tela foi rolada até a calculadora de produtividade.`,
         };
       }
 
@@ -375,9 +375,9 @@ Fórmulas da Calculadora de Estimativa de Produtividade de Milho:
 - Estande (população) = contagem de plantas por metro ÷ espaçamento entre linhas (em metros) × 10.000
 - Quantidade de grãos = fileiras × grãos/fileira
 - PMG (em gramas por 1000 grãos) = valor da questão ÷ 1000 (para obter peso unitário em gramas)
-- Produtividade Bruta (sc/ha) = estande × espigas (por fileira/planta) × Quantidade de grãos × PMG ÷ 1000
-- Quebra (perda) = valor de sc/ha bruta × porcentagem (em decimal, ex: 0.05 para 5%)
-- Produtividade Líquida (sc/ha) = sc/ha bruta - Quebra
+- Produtividade Bruta (kg/ha) = estande × espigas × Quantidade de grãos × PMG ÷ 1000
+- Produtividade Bruta (sc/ha) = kg/ha ÷ 60
+- Produtividade Líquida (sc/ha) = sc/ha bruta × (1 - porcentagem de perda em decimal, ex: 0,85 para 15% de perda)
 Use a ferramenta 'calculateCornYield' para calcular e rolar automaticamente até a calculadora de produtividade!
 
 Sempre responda de forma concisa e direta, pois se trata de uma conversa falada em tempo real.`,

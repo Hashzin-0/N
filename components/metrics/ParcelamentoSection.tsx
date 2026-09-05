@@ -166,10 +166,8 @@ interface Props {
   calculations: Calculations;
   splitBase: 'dose_perdas' | 'necessidade_liquida';
   v4v6Percent: number;
-  v4v6Mode: 'single' | 'range';
   v4v6Percent2: number;
   v8v10Percent: number;
-  v8v10Mode: 'single' | 'range';
   v8v10Percent2: number;
   baseDoseMode: 'single' | 'range';
 }
@@ -178,10 +176,8 @@ export default function ParcelamentoSection({
   calculations,
   splitBase,
   v4v6Percent,
-  v4v6Mode,
   v4v6Percent2,
   v8v10Percent,
-  v8v10Mode,
   v8v10Percent2,
   baseDoseMode,
 }: Props) {
@@ -189,13 +185,12 @@ export default function ParcelamentoSection({
   const [showCalcBase, setShowCalcBase] = useState(false);
   const [showCalcV4V6, setShowCalcV4V6] = useState(false);
   const [showCalcV8V10, setShowCalcV8V10] = useState(false);
-  const [showCalcSoma, setShowCalcSoma] = useState(false);
   const [showAgronomicV4V6, setShowAgronomicV4V6] = useState(false);
   const [showAgronomicV8V10, setShowAgronomicV8V10] = useState(false);
   const { withLock } = useAnimationLock(400);
 
-  const isV4V6Range = v4v6Mode === 'range' && v4v6Percent2 > 0;
-  const isV8V10Range = v8v10Mode === 'range' && v8v10Percent2 > 0;
+  const isV4V6Range = baseDoseMode === 'range' && v4v6Percent2 > 0;
+  const isV8V10Range = baseDoseMode === 'range' && v8v10Percent2 > 0;
 
   const v4v6UserDiffersFromDefault =
     v4v6Percent !== 50 || v4v6Percent2 !== 60;
@@ -633,29 +628,6 @@ export default function ParcelamentoSection({
         </div>
       </div>
 
-      {/* Soma / Verification */}
-      <div className="relative">
-        <CalculationIsland
-          isVisible={showCalcSoma}
-          onToggle={() => setShowCalcSoma(!showCalcSoma)}
-          accentColor="#D4A373"
-          darkAccentColor="#D4A373"
-          isDark={isDark}
-        />
-        <CalculationMemoryPanel isVisible={showCalcSoma} isDark={isDark}>
-          <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
-            isDark ? 'bg-[#232821] border-[#2C3328] text-[#E8E6DF]' : 'bg-white border-[#E5E2D9] text-[#3D3D3D]'
-          }`}>
-            <div className={`font-bold text-xs mb-2 ${isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]'}`}>Soma / Verificação:</div>
-            <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>1ª Base:</span> {calculations.base1_kg.toFixed(2)} kg N/ha (valor absoluto)</div>
-            <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>2ª V4-V6:</span> {calculations.v4v6_1}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v4v6_1_kg.toFixed(2)} kg N/ha</div>
-            <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>3ª V8-V10:</span> {calculations.v8v10_1_final}% × {calculations.targetSplitTotal.toFixed(2)} = {calculations.v8v10_1_kg.toFixed(2)} kg N/ha</div>
-            <div className={`border-t pt-1.5 mt-1.5 font-bold ${isDark ? 'border-[#2C3328] text-[#D4A373]' : 'border-[#F0EDE5] text-[#8D6E63]'}`}>
-              Soma: {calculations.base1_kg.toFixed(2)} + {calculations.v4v6_1_kg.toFixed(2)} + {calculations.v8v10_1_kg.toFixed(2)} = {calculations.sumOfSplits.toFixed(2)} kg N/ha
-            </div>
-          </div>
-        </CalculationMemoryPanel>
-      </div>
     </div>
   );
 }
