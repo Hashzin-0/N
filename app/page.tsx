@@ -49,6 +49,10 @@ import AbntReferenceFormatter from '@/components/AbntReferenceFormatter';
 import { ABNTReference } from '@/lib/abnt/types';
 import BibliografiaAutoDetectCard from '@/components/metrics/BibliografiaAutoDetectCard';
 import GooeyNav, { GooeyNavItem } from '@/components/GooeyNav';
+import { ScrollStack } from '@/components/godui/scroll-stack';
+import { ElasticText } from '@/components/godui/elastic-text';
+import { JellyButton } from '@/components/godui/jelly-button';
+import GooeyStack from '@/components/godui/gooey-stack';
 
 // Interfaces for structured data
 interface Preset {
@@ -162,6 +166,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'calculadora' | 'estimativa_milho' | 'comparador' | 'itr' | 'abnt'>('calculadora');
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [bibliographyRef, setBibliographyRef] = useState<ABNTReference | null>(null);
+  const [yieldBannerExpanded, setYieldBannerExpanded] = useState(false);
 
   // GooeyNav items and tab mapping
   const gooeyNavItems: GooeyNavItem[] = [
@@ -574,31 +579,35 @@ export default function Home() {
                 <CheckCircle2 className="h-5 w-5 text-[#D4A373] shrink-0" />
                 <span>{saveToast}</span>
               </div>
-              <button
+              <JellyButton
                 onClick={() => {
                   setActiveTab('comparador');
                   const el = document.getElementById('scenario_comparator_section');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="text-xs bg-[#D4A373] text-white font-bold px-3 py-1.5 rounded-lg hover:bg-[#C19262] transition-colors shrink-0"
+                variant="primary"
+                size="sm"
+                className="text-xs bg-[#D4A373] text-white font-bold px-3 py-1.5 rounded-lg shrink-0 border-none"
               >
                 Ver Comparador ↓
-              </button>
+              </JellyButton>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* CORN YIELD ESTIMATION CALCULATOR (ALWAYS READY OR SWITCHABLE) */}
         <div id="corn_yield_calculator_section" className={activeTab === 'estimativa_milho' ? 'block' : 'hidden'}>
-          <CornYieldCalculator
-            onApplyYieldGoal={(scHa) => {
-              setYieldGoal(scHa);
-              setActivePreset('personalizado');
-              setActiveTab('calculadora');
-              setSaveToast(`Meta de ${scHa} sc/ha calculada e aplicada na Adubação Nitrogenada!`);
-              setTimeout(() => setSaveToast(null), 4500);
-            }}
-          />
+          <ScrollStack baseScale={0.92} peek={12} blur pinTop="12vh">
+            <CornYieldCalculator
+              onApplyYieldGoal={(scHa) => {
+                setYieldGoal(scHa);
+                setActivePreset('personalizado');
+                setActiveTab('calculadora');
+                setSaveToast(`Meta de ${scHa} sc/ha calculada e aplicada na Adubação Nitrogenada!`);
+                setTimeout(() => setSaveToast(null), 4500);
+              }}
+            />
+          </ScrollStack>
         </div>
 
         {/* COMPARATOR VIEW TAB */}
@@ -606,25 +615,30 @@ export default function Home() {
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-bold text-[#5A5A40] dark:text-[#E8E6DF] flex items-center gap-2">
               <Columns className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" />
-              Banco de Cenários e Comparador Agronômico
+              <ElasticText className="text-xl font-bold" mode="auto">Banco de Cenários e Comparador Agronômico</ElasticText>
             </h2>
-            <button
+            <JellyButton
               onClick={() => setActiveTab('calculadora')}
-              className="text-xs font-bold text-[#5A5A40] dark:text-[#9CB386] hover:underline flex items-center gap-1"
+              variant="outline"
+              size="sm"
+              className="text-xs font-bold text-[#5A5A40] dark:text-[#9CB386] hover:underline flex items-center gap-1 border-[#5A5A40]/30 dark:border-[#9CB386]/30"
             >
               Voltar para Calculadora →
-            </button>
+            </JellyButton>
           </div>
         </div>
 
         {/* ITR CALCULATOR TAB */}
         <div id="itr_section" className={activeTab === 'itr' ? 'block' : 'hidden'}>
-          <ITRCalculator />
+          <ScrollStack baseScale={0.92} peek={12} blur pinTop="12vh">
+            <ITRCalculator />
+          </ScrollStack>
         </div>
 
         {/* ABNT REFERENCE FORMATTER TAB */}
         <div id="abnt_section" className={activeTab === 'abnt' ? 'block' : 'hidden'}>
-          <AbntReferenceFormatter />
+          <ScrollStack baseScale={0.92} peek={12} blur pinTop="12vh">
+            <AbntReferenceFormatter />
             <BibliografiaAutoDetectCard
               onReferenceSelected={(ref) => {
                 setBibliographyRef(ref);
@@ -632,38 +646,61 @@ export default function Home() {
               }}
               initialUrl=""
             />
+          </ScrollStack>
         </div>
 
         {/* MAIN NITROGEN CALCULATOR VIEW */}
-        <div className={activeTab === 'calculadora' ? 'space-y-8 block' : 'hidden'}>
-          {/* QUICK PROMPT TO OPEN CORN YIELD CALCULATOR */}
-          <div className="bg-[#FDFBF7] dark:bg-[#1A1E18] border border-[#E5E2D9] dark:border-[#2C3328] p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-[#D4A373]/20 dark:bg-[#D4A373]/10 text-[#D4A373] rounded-xl shrink-0">
-                <Sparkles className="h-5 w-5" />
+        <div className={activeTab === 'calculadora' ? 'block' : 'hidden'}>
+          <ScrollStack baseScale={0.92} peek={12} blur pinTop="12vh">
+            {/* QUICK PROMPT TO OPEN CORN YIELD CALCULATOR — GooeyStack collapsible */}
+          <div onClick={() => setYieldBannerExpanded(!yieldBannerExpanded)} className="cursor-pointer">
+            <GooeyStack collapsed={!yieldBannerExpanded}>
+              {/* Collapsed pill — first child */}
+              <div className="flex items-center gap-3 px-5 py-4">
+                <div className="p-2 bg-[#D4A373]/20 dark:bg-[#D4A373]/10 text-[#D4A373] rounded-xl shrink-0">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <span className="text-sm font-bold text-white">
+                  Precisa calcular a produtividade estimada?
+                </span>
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-[#5A5A40] dark:text-[#E8E6DF]">
-                  Precisa calcular a produtividade estimada da lavoura primeiro?
-                </h4>
-                <p className="text-xs text-[#8C897E] dark:text-[#9EA399]">
-                  Estime sacas por hectare a partir de plantas/metro, espaçamento, espigas, grãos e PMG com visualização.
-                </p>
+              {/* Expanded content — second child */}
+              <div className="p-5">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-[#D4A373]/20 dark:bg-[#D4A373]/10 text-[#D4A373] rounded-xl shrink-0">
+                      <Sparkles className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-[#E8E6DF]">
+                        Precisa calcular a produtividade estimada da lavoura primeiro?
+                      </h4>
+                      <p className="text-xs text-[#9EA399]">
+                        Estime sacas por hectare a partir de plantas/metro, espaçamento, espigas, grãos e PMG com visualização.
+                      </p>
+                    </div>
+                  </div>
+                  <JellyButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveTab('estimativa_milho');
+                    }}
+                    variant="primary"
+                    size="md"
+                    className="flex items-center gap-1.5 text-xs font-bold bg-[#D4A373] text-white px-4 py-2 rounded-xl shrink-0 shadow-sm border-none"
+                  >
+                    <span>Abrir Calculadora de Espigas</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </JellyButton>
+                </div>
               </div>
-            </div>
-            <button
-              onClick={() => setActiveTab('estimativa_milho')}
-              className="flex items-center gap-1.5 text-xs font-bold bg-[#D4A373] hover:bg-[#C19262] text-white px-4 py-2 rounded-xl transition-all shrink-0 shadow-sm"
-            >
-              <span>Abrir Calculadora de Espigas</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
+            </GooeyStack>
           </div>
 
           {/* PERSISTENT SCENARIO SELECTOR */}
           <section id="preset_selector" className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] transition-colors">
             <h2 className="text-xs font-bold text-[#8C897E] dark:text-[#9EA399] uppercase tracking-wider mb-4 flex items-center gap-1.5 border-b border-[#F0EDE5] dark:border-[#2C3328] pb-2">
-              <Layers className="h-3.5 w-3.5 text-[#8C897E] dark:text-[#9EA399]" /> Cenários e Exercícios Prontos
+              <Layers className="h-3.5 w-3.5 text-[#8C897E] dark:text-[#9EA399]" /> <ElasticText className="text-xs font-bold uppercase tracking-wider" mode="auto">Cenários e Exercícios Prontos</ElasticText>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               {PRESETS.map((p) => (
@@ -722,7 +759,7 @@ export default function Home() {
               
               <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-4">
                 <h2 className="text-lg font-bold text-[#5A5A40] dark:text-[#E8E6DF] flex items-center gap-2">
-                  <Calculator className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> Entrada de Dados
+                  <Calculator className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> <ElasticText className="text-lg font-bold" mode="auto">Entrada de Dados</ElasticText>
                 </h2>
                 <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-1">Ajuste os dados de produtividade e histórico do solo</p>
               </div>
@@ -1141,38 +1178,41 @@ export default function Home() {
           mosNContribution={mosNContribution}
           soyNContribution={soyNContribution}
         />
+          </ScrollStack>
         </div>
 
         {/* SQLIKE STORAGE & COMPARATOR SECTION */}
         <div className={activeTab === 'comparador' ? 'block' : 'hidden'}>
-          <ScenarioComparator
-            records={savedRecords}
-            onReloadRecords={handleReloadRecords}
-            onLoadIntoCalculator={(rec) => {
-              handleLoadRecordIntoCalculator(rec);
-              setActiveTab('calculadora');
-            }}
-            activeCalculationData={{
-              yieldGoal,
-              nRequirementPerBag,
-              mosNContribution,
-              soyNContribution,
-              efficiency,
-              baseDose,
-              baseDose2,
-              v4v6Percent,
-              v4v6Percent2,
-              v8v10Percent,
-              v8v10Percent2,
-              splitBase,
-              totalExtraction: calculations.totalExtraction,
-              liquidNeed: calculations.liquidNeed,
-              recommendedDose: calculations.recommendedDose,
-              selectedV4V6Val: calculations.v4v6_1_kg,
-              selectedV8V10Val: calculations.v8v10_1_kg,
-              sumOfSplits: calculations.sumOfSplits,
-            }}
-          />
+          <ScrollStack baseScale={0.92} peek={12} blur pinTop="12vh">
+            <ScenarioComparator
+              records={savedRecords}
+              onReloadRecords={handleReloadRecords}
+              onLoadIntoCalculator={(rec) => {
+                handleLoadRecordIntoCalculator(rec);
+                setActiveTab('calculadora');
+              }}
+              activeCalculationData={{
+                yieldGoal,
+                nRequirementPerBag,
+                mosNContribution,
+                soyNContribution,
+                efficiency,
+                baseDose,
+                baseDose2,
+                v4v6Percent,
+                v4v6Percent2,
+                v8v10Percent,
+                v8v10Percent2,
+                splitBase,
+                totalExtraction: calculations.totalExtraction,
+                liquidNeed: calculations.liquidNeed,
+                recommendedDose: calculations.recommendedDose,
+                selectedV4V6Val: calculations.v4v6_1_kg,
+                selectedV8V10Val: calculations.v8v10_1_kg,
+                sumOfSplits: calculations.sumOfSplits,
+              }}
+            />
+          </ScrollStack>
         </div>
 
         {/* MODAL TO SAVE SCENARIO */}

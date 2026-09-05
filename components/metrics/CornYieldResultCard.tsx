@@ -7,6 +7,7 @@ import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
 import Button3D from '@/components/Button3D';
 import { Sparkles } from 'lucide-react';
 import { useAnimationLock } from '@/lib/useAnimationLock';
+import { ElasticText } from '@/components/godui/elastic-text';
 
 interface Props {
   isDark: boolean;
@@ -60,7 +61,9 @@ export default function CornYieldResultCard({
 
       <div className="border-b pb-3 border-[#F0EDE5] dark:border-[#2F3329] flex justify-between items-center">
         <span className="text-xs font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#A6A395]">
-          Resultado Final da Estimativa
+          <ElasticText className="text-xs font-bold uppercase tracking-wider" mode="auto">
+            Resultado Final da Estimativa
+          </ElasticText>
         </span>
         <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#D4A373]/20 text-[#D4A373] font-bold">
           Safra Milho
@@ -76,7 +79,9 @@ export default function CornYieldResultCard({
       >
         <div className="flex justify-between items-start">
           <span className="text-[11px] font-bold uppercase tracking-wider text-white/80">
-            Produtividade Líquida (Após Quebra)
+            <ElasticText className="text-[11px] font-bold uppercase tracking-wider" mode="auto">
+              Produtividade Líquida (Após Quebra)
+            </ElasticText>
           </span>
           <motion.span
             animate={{ rotate: [0, 10, -10, 0] }}
@@ -110,7 +115,9 @@ export default function CornYieldResultCard({
           isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
         }`}>
           <span className="text-[10px] uppercase font-bold text-[#8C897E] dark:text-[#A6A395] block">
-            Produtividade Bruta
+            <ElasticText className="text-[10px] uppercase font-bold" mode="auto">
+              Produtividade Bruta
+            </ElasticText>
           </span>
           <div className="text-xl font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A] mt-1">
             {scHaBruto} <span className="text-xs font-normal">sc/ha</span>
@@ -121,7 +128,9 @@ export default function CornYieldResultCard({
           isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
         }`}>
           <span className="text-[10px] uppercase font-bold text-[#D4A373] block">
-            Quebra / Perda ({quebraDecimal * 100}%)
+            <ElasticText className="text-[10px] uppercase font-bold" mode="auto">
+              Quebra / Perda ({quebraDecimal * 100}%)
+            </ElasticText>
           </span>
           <div className="text-xl font-mono font-bold text-[#D4A373] mt-1">
             -{quebraValor} <span className="text-xs font-normal">sc/ha</span>

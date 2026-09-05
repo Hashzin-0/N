@@ -233,7 +233,9 @@ export default function ParcelamentoSection({ animKey,
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#D4A373] dark:border-[#A27B5C]">
             <div>
               <span className="bg-[#D4A373] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
-                1ª Aplicação: Base
+                <ElasticText className="text-[9px]" mode="auto">
+                  1ª Aplicação: Base
+                </ElasticText>
               </span>
               <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
                 Padrão agronômico inicial: <strong>30 a 40 kg N/ha</strong>
@@ -286,7 +288,9 @@ export default function ParcelamentoSection({ animKey,
           <div className="flex justify-between items-start">
             <div>
               <span className="bg-[#5A5A40] dark:bg-[#3D4D35] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
-                2ª Aplicação: V4-V6
+                <ElasticText className="text-[9px]" mode="auto">
+                  2ª Aplicação: V4-V6
+                </ElasticText>
               </span>
               <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
                 {baseDoseMode === 'single' ? (
@@ -464,7 +468,9 @@ export default function ParcelamentoSection({ animKey,
           <div className="flex justify-between items-start">
             <div>
               <span className="bg-[#8D6E63] dark:bg-[#6D544C] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
-                3ª Aplicação: V8-V10
+                <ElasticText className="text-[9px]" mode="auto">
+                  3ª Aplicação: V8-V10
+                </ElasticText>
               </span>
               <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">
                 {baseDoseMode === 'single' ? (
@@ -618,9 +624,9 @@ export default function ParcelamentoSection({ animKey,
             <div className="flex items-center gap-2">
               <ArrowRightLeft className="h-4 w-4 text-[#8C897E] dark:text-[#9EA399]" />
               <div>
-                <span className="text-xs font-bold text-[#3D3D3D] dark:text-[#E8E6DF]">
+                <ElasticText className="text-xs font-bold text-[#3D3D3D] dark:text-[#E8E6DF]" mode="auto">
                   Diferença entre as duas doses principais
-                </span>
+                </ElasticText>
                 <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399]">Módulo da diferença: | V4-V6 - V8-V10 |</p>
               </div>
             </div>

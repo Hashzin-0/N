@@ -40,7 +40,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
           }}
         />
       </head>
-      <body suppressHydrationWarning className="antialiased transition-colors duration-300 overflow-x-hidden">
+      <body suppressHydrationWarning className="antialiased transition-colors duration-300 overflow-x-clip">
         <ThemeProvider>
           <DarkMode3DTransition />
           {children}

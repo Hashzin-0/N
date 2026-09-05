@@ -2,6 +2,113 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ── GodUI Theme Tokens ─────────────────────────────────────────── */
+:root {
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --button-py-sm: 0.5rem;
+  --button-px-sm: 1rem;
+  --button-text-sm: 0.875rem;
+  --button-leading-sm: 1.25rem;
+  --button-radius-sm: var(--radius-md);
+  --button-py-md: 0.75rem;
+  --button-px-md: 1.5rem;
+  --button-text-md: 0.875rem;
+  --button-leading-md: 1.25rem;
+  --button-radius-md: var(--radius-lg);
+  --button-py-lg: 1rem;
+  --button-px-lg: 2rem;
+  --button-text-lg: 1rem;
+  --button-leading-lg: 1.5rem;
+  --button-radius-lg: var(--radius-xl);
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --shadow-2xs: 0 1px 2px rgb(0 0 0 / 0.02);
+  --shadow-xs: 0 1px 3px rgb(0 0 0 / 0.04);
+  --shadow-sm: 0 2px 6px rgb(0 0 0 / 0.05);
+  --shadow: 0 4px 12px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 8px 20px rgb(0 0 0 / 0.08);
+  --shadow-lg: 0 16px 32px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 24px 48px rgb(0 0 0 / 0.12);
+  --shadow-2xl: 0 40px 80px rgb(0 0 0 / 0.16);
+  --rainbow-1: oklch(0.55 0.19 266);
+  --rainbow-2: oklch(0.68 0.16 305);
+  --rainbow-3: oklch(0.82 0.1 185);
+  --rainbow-4: oklch(0.78 0.12 14);
+  --rainbow-5: oklch(0.8 0.13 90);
+  --rainbow-speed: 2s;
+  --god-gradient: linear-gradient(135deg, oklch(0.55 0.19 266) 0%, oklch(1 0 0) 50%, oklch(0.85 0.12 90) 100%);
+  --god-glow: 0 0 24px oklch(0.55 0.19 266 / 0.14), 0 0 80px oklch(0.85 0.12 90 / 0.06);
+  --glow-highlight: 61, 102, 223;
+  --color-primary-rgb: 61, 102, 223;
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --shadow-2xs: 0 1px 2px rgb(0 0 0 / 0.12);
+  --shadow-xs: 0 1px 3px rgb(0 0 0 / 0.15);
+  --shadow-sm: 0 2px 6px rgb(0 0 0 / 0.2);
+  --shadow: 0 4px 12px rgb(0 0 0 / 0.25);
+  --shadow-md: 0 8px 20px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 16px 32px rgb(0 0 0 / 0.35);
+  --shadow-xl: 0 24px 48px rgb(0 0 0 / 0.4);
+  --shadow-2xl: 0 40px 80px rgb(0 0 0 / 0.5);
+  --rainbow-1: oklch(0.72 0.15 266);
+  --rainbow-2: oklch(0.74 0.16 305);
+  --rainbow-3: oklch(0.84 0.1 185);
+  --rainbow-4: oklch(0.8 0.12 14);
+  --rainbow-5: oklch(0.84 0.13 90);
+  --rainbow-speed: 2s;
+  --god-gradient: linear-gradient(135deg, oklch(0.72 0.15 266) 0%, oklch(1 0 0) 50%, oklch(0.86 0.12 90) 100%);
+  --god-glow: 0 0 24px oklch(0.72 0.15 266 / 0.28), 0 0 80px oklch(0.86 0.12 90 / 0.12);
+  --glow-highlight: 120, 160, 255;
+  --color-primary-rgb: 120, 160, 255;
+}
+
+@layer base {
+  :is(code, kbd, samp, pre) {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+}
+
 @utility voice-agent-spotlight-active {
   outline: 3px solid #5A5A40;
   outline-offset: 4px;
@@ -271,5 +378,24 @@
     #1c1e19 64%
   );
   pointer-events: none;
+}
+
+/* MagicButton rainbow animation */
+@keyframes magic-rainbow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-magic-rainbow {
+  animation: magic-rainbow 3s ease-in-out infinite;
+}
+
+:root {
+  --rainbow-1: #5A5A40;
+  --rainbow-2: #9CB386;
+  --rainbow-3: #D4A373;
+  --rainbow-4: #8D6E63;
+  --rainbow-5: #3D4C37;
 }
 

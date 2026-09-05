@@ -5,6 +5,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import CalculationIsland from '@/components/CalculationIsland';
 import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
 import { NumberTicker } from '@/components/godui/number-ticker';
+import { ElasticText } from '@/components/godui/elastic-text';
 
 interface Props {
   totalExtraction: number;
@@ -30,9 +31,9 @@ export default function SecondaryCreditsCard({ totalExtraction, mosNContribution
         isDark={isDark}
       />
       <div className="relative border-r border-[#F0EDE5] dark:border-[#2C3328] pr-2">
-        <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">
+        <ElasticText className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block" mode="auto">
           N Proveniente da MOS
-        </span>
+        </ElasticText>
         <div className="mt-1.5 text-2xl font-bold text-[#5A5A40] dark:text-[#9CB386]">
           <NumberTicker key={animKey} value={mosResult} decimalPlaces={2} className="text-2xl font-bold text-[#5A5A40] dark:text-[#9CB386]" />{' '}
           <span className="text-xs font-semibold text-[#8C897E] dark:text-[#9EA399]">kg N/ha</span>
@@ -56,9 +57,9 @@ export default function SecondaryCreditsCard({ totalExtraction, mosNContribution
         </CalculationMemoryPanel>
       </div>
       <div className="relative pl-2">
-        <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">
+        <ElasticText className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block" mode="auto">
           Crédito da Soja
-        </span>
+        </ElasticText>
         <div className="mt-1.5 text-2xl font-bold text-[#5A5A40] dark:text-[#9CB386]">
           <NumberTicker key={animKey} value={soyResult} decimalPlaces={2} className="text-2xl font-bold text-[#5A5A40] dark:text-[#9CB386]" />{' '}
           <span className="text-xs font-semibold text-[#8C897E] dark:text-[#9EA399]">kg N/ha</span>

@@ -4,6 +4,7 @@ import React from 'react';
 import { Info } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import { Calculations } from '@/lib/types';
+import { ElasticText } from '@/components/godui/elastic-text';
 
 interface Props {
   calculations: Calculations;
@@ -18,7 +19,7 @@ export default function DetailedMathPanel({ calculations, mosNContribution, soyN
     <section id="detailed_math_panel" className="bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-6 shadow-sm transition-colors">
       <div className="bg-[#FDFBF7] dark:bg-[#151813] border border-[#E5E2D9] dark:border-[#2C3328] p-5 rounded-xl text-xs text-[#3D3D3D] dark:text-[#E8E6DF] leading-relaxed space-y-2">
         <h4 className="font-bold text-[#5A5A40] dark:text-[#9CB386] flex items-center gap-1.5 text-sm">
-          <Info className="h-4 w-4 text-[#5A5A40] dark:text-[#9CB386]" /> Resumo de Respostas e Conferência (Pronto para Copiar)
+          <Info className="h-4 w-4 text-[#5A5A40] dark:text-[#9CB386]" /> <ElasticText className="text-sm font-bold" mode="auto">Resumo de Respostas e Conferência (Pronto para Copiar)</ElasticText>
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans pt-2">
           <div className="space-y-1.5">

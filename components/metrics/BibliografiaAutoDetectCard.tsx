@@ -8,6 +8,7 @@ import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
 import { formatReference } from '@/lib/abnt/utils';
 import { ABNTReference, ReferenceType } from '@/lib/abnt/types';
 import { cn } from '@/lib/utils';
+import { ElasticText } from '@/components/godui/elastic-text';
 
 interface BibliografiaAutoDetectProps {
   onReferenceSelected: (ref: ABNTReference) => void;
@@ -243,9 +244,9 @@ export default function BibliografiaAutoDetectCard({ onReferenceSelected, initia
         <div>
           <div className="flex items-center gap-2 mb-2">
             <BookOpen className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" />
-            <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block">
+            <ElasticText className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block" mode="auto">
               Auto-detecção ABNT
-            </span>
+            </ElasticText>
           </div>
           <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mb-3">
             Cole um link ou selecione um arquivo. O sistema extrai e formata automaticamente.
@@ -416,7 +417,9 @@ export default function BibliografiaAutoDetectCard({ onReferenceSelected, initia
               COMO FUNCIONA:
             </div>
             <div className={cn('font-bold', isDark ? 'text-[#9CB386]' : 'text-[#5A5A40]')}>
-              Auto-detecção de Referências ABNT
+              <ElasticText className="font-bold" mode="auto">
+                Auto-detecção de Referências ABNT
+              </ElasticText>
             </div>
             <p className={cn('mt-1', isDark ? 'text-[#9EA399]' : 'text-[#8C897E]')}>
               O sistema extrai automaticamente autor, título, ano e publicação do link ou arquivo colado. 

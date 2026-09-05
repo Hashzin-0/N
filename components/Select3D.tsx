@@ -43,113 +43,139 @@ export default function Select3D({
         </label>
       )}
 
-      <div
-        className={`grid gap-1.5 p-1 rounded-xl border ${
-          isDark
-            ? 'bg-[#151813] border-[#2C3328]'
-            : 'bg-[#F9F8F6] border-[#E5E2D9]'
-        }`}
-        style={{ perspective: 600 }}
-      >
-        {options.map((opt, idx) => {
-          const isActive = value === opt.value;
-          const isHovered = hoveredIdx === idx;
+      <div className="relative">
+        {/* SHADOW LAYER — MagicButton inspired */}
+        <div
+          className="absolute inset-0 rounded-xl translate-y-[2px]"
+          style={{
+            background: isDark
+              ? 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.25) 100%)'
+              : 'linear-gradient(135deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.12) 100%)',
+            filter: 'blur(6px)',
+          }}
+          aria-hidden="true"
+        />
 
-          return (
-            <motion.button
-              key={opt.value}
-              type="button"
-              onClick={withLock(() => onChange(opt.value))}
-              onMouseEnter={() => setHoveredIdx(idx)}
-              onMouseLeave={() => setHoveredIdx(null)}
-              className="relative text-left px-3 py-2.5 rounded-lg font-bold text-xs transition-colors overflow-hidden"
-              style={{ transformStyle: 'preserve-3d' }}
-              animate={{
-                rotateX: isActive ? 0 : isHovered ? 2 : 0,
-                rotateY: isActive ? 0 : isHovered ? -1 : 0,
-                scale: isActive ? 1.02 : isHovered ? 1.01 : 1,
-                z: isActive ? 15 : isHovered ? 5 : 0,
-              }}
-              transition={{
-                type: 'spring',
-                stiffness: 400,
-                damping: 25,
-              }}
-            >
-              {/* Active background with 3D depth */}
-              {isActive && (
-                <motion.div
-                  className="absolute inset-0 rounded-lg"
-                  layoutId={`select-bg-${id}`}
-                  style={{
-                    backgroundColor: accentColor,
-                    backgroundImage:
-                      'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.1) 100%)',
-                    boxShadow: `0 4px 12px -2px ${accentColor}66, inset 0 1px 0 rgba(255,255,255,0.2)`,
+        {/* EDGE LAYER — MagicButton inspired */}
+        <div
+          className="absolute inset-0 rounded-xl translate-y-[1px]"
+          style={{
+            background: `linear-gradient(135deg, ${accentColor}dd 0%, ${accentColor}99 50%, ${accentColor}bb 100%)`,
+          }}
+          aria-hidden="true"
+        />
+
+        {/* FRONT FACE — the actual select grid */}
+        <motion.div
+          className="relative rounded-xl -translate-y-[4px]"
+          style={{ transformStyle: 'preserve-3d' }}
+        >
+          <div
+            className={`grid gap-1.5 p-1 rounded-xl border ${
+              isDark
+                ? 'bg-[#151813] border-[#2C3328]'
+                : 'bg-[#F9F8F6] border-[#E5E2D9]'
+            }`}
+          >
+            {options.map((opt, idx) => {
+              const isActive = value === opt.value;
+              const isHovered = hoveredIdx === idx;
+
+              return (
+                <motion.button
+                  key={opt.value}
+                  type="button"
+                  onClick={withLock(() => onChange(opt.value))}
+                  onMouseEnter={() => setHoveredIdx(idx)}
+                  onMouseLeave={() => setHoveredIdx(null)}
+                  className="relative text-left px-3 py-2.5 rounded-lg font-bold text-xs transition-colors overflow-hidden"
+                  style={{ transformStyle: 'preserve-3d' }}
+                  animate={{
+                    rotateX: isActive ? 0 : isHovered ? 2 : 0,
+                    rotateY: isActive ? 0 : isHovered ? -1 : 0,
+                    scale: isActive ? 1.02 : isHovered ? 1.01 : 1,
+                    z: isActive ? 15 : isHovered ? 5 : 0,
                   }}
                   transition={{
                     type: 'spring',
-                    stiffness: 500,
-                    damping: 35,
-                  }}
-                />
-              )}
-
-              <div className="relative z-10 flex items-center gap-2">
-                {opt.icon && (
-                  <motion.span
-                    animate={{ rotateY: isActive ? 360 : 0 }}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                  >
-                    {opt.icon}
-                  </motion.span>
-                )}
-                <div>
-                  <span
-                    className={`block ${
-                      isActive
-                        ? 'text-white'
-                        : isDark
-                        ? 'text-[#C5C4B8]'
-                        : 'text-[#5A5A40]'
-                    }`}
-                  >
-                    {opt.label}
-                  </span>
-                  {opt.description && (
-                    <span
-                      className={`block text-[10px] font-normal mt-0.5 ${
-                        isActive
-                          ? 'text-white/75'
-                          : 'text-[#8C897E] dark:text-[#9EA399]'
-                      }`}
-                    >
-                      {opt.description}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Checkmark for active */}
-              {isActive && (
-                <motion.div
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                  initial={{ scale: 0, rotate: -90 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{
-                    type: 'spring',
-                    stiffness: 600,
-                    damping: 20,
+                    stiffness: 400,
+                    damping: 25,
                   }}
                 >
-                  <div className="w-4 h-4 rounded-full bg-white/25 flex items-center justify-center">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                  {isActive && (
+                    <motion.div
+                      className="absolute inset-0 rounded-lg"
+                      layoutId={`select-bg-${id}`}
+                      style={{
+                        backgroundColor: accentColor,
+                        backgroundImage:
+                          'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.1) 100%)',
+                        boxShadow: `0 4px 12px -2px ${accentColor}66, inset 0 1px 0 rgba(255,255,255,0.2)`,
+                      }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 500,
+                        damping: 35,
+                      }}
+                    />
+                  )}
+
+                  <div className="relative z-10 flex items-center gap-2">
+                    {opt.icon && (
+                      <motion.span
+                        animate={{ rotateY: isActive ? 360 : 0 }}
+                        transition={{ duration: 0.5, ease: 'easeOut' }}
+                      >
+                        {opt.icon}
+                      </motion.span>
+                    )}
+                    <div>
+                      <span
+                        className={`block ${
+                          isActive
+                            ? 'text-white'
+                            : isDark
+                            ? 'text-[#C5C4B8]'
+                            : 'text-[#5A5A40]'
+                        }`}
+                      >
+                        {opt.label}
+                      </span>
+                      {opt.description && (
+                        <span
+                          className={`block text-[10px] font-normal mt-0.5 ${
+                            isActive
+                              ? 'text-white/75'
+                              : 'text-[#8C897E] dark:text-[#9EA399]'
+                          }`}
+                        >
+                          {opt.description}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </motion.div>
-              )}
-            </motion.button>
-          );
-        })}
+
+                  {isActive && (
+                    <motion.div
+                      className="absolute right-3 top-1/2 -translate-y-1/2"
+                      initial={{ scale: 0, rotate: -90 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 600,
+                        damping: 20,
+                      }}
+                    >
+                      <div className="w-4 h-4 rounded-full bg-white/25 flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                      </div>
+                    </motion.div>
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+        </motion.div>
       </div>
     </div>
   );
