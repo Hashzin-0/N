@@ -1,6 +1,8 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useId } from 'react';
+import GooeySvgFilter from '@/components/GooeySvgFilter';
+import { useTheme } from '@/components/ThemeProvider';
 import './GooeyNav.css';
 
 export interface GooeyNavItem {
@@ -21,7 +23,6 @@ interface GooeyNavProps {
   className?: string;
 }
 
-// Pure helpers — Math.random only called inside event handlers / effects via makeParticles
 const noise = (n = 1) => n / 2 - Math.random() * n;
 
 const getXY = (distance: number, pointIndex: number, totalPoints: number) => {
@@ -62,9 +63,12 @@ const GooeyNav = ({
 }: GooeyNavProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLUListElement>(null);
-  const filterRef = useRef<HTMLSpanElement>(null);
+  const blobRef = useRef<HTMLSpanElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const [activeIndex, setActiveIndex] = useState(initialActiveIndex);
+  const { isDark } = useTheme();
+  const uid = useId().replace(/:/g, '');
+  const filterId = `gooey-nav-${uid}`;
 
   const makeParticles = (element: HTMLSpanElement) => {
     const d = particleDistances;
@@ -108,7 +112,7 @@ const GooeyNav = ({
   };
 
   const updateEffectPosition = (element: HTMLLIElement) => {
-    if (!containerRef.current || !filterRef.current || !textRef.current) return;
+    if (!containerRef.current || !blobRef.current || !textRef.current) return;
     const containerRect = containerRef.current.getBoundingClientRect();
     const pos = element.getBoundingClientRect();
 
@@ -118,7 +122,7 @@ const GooeyNav = ({
       width: `${pos.width}px`,
       height: `${pos.height}px`,
     };
-    Object.assign(filterRef.current.style, styles);
+    Object.assign(blobRef.current.style, styles);
     Object.assign(textRef.current.style, styles);
     textRef.current.innerText = element.innerText ?? '';
   };
@@ -130,9 +134,9 @@ const GooeyNav = ({
     setActiveIndex(index);
     updateEffectPosition(liEl);
 
-    if (filterRef.current) {
-      const particles = filterRef.current.querySelectorAll('.particle');
-      particles.forEach((p) => filterRef.current!.removeChild(p));
+    if (blobRef.current) {
+      const particles = blobRef.current.querySelectorAll('.particle');
+      particles.forEach((p) => blobRef.current!.removeChild(p));
     }
 
     if (textRef.current) {
@@ -141,8 +145,8 @@ const GooeyNav = ({
       textRef.current.classList.add('active');
     }
 
-    if (filterRef.current) {
-      makeParticles(filterRef.current);
+    if (blobRef.current) {
+      makeParticles(blobRef.current);
     }
 
     onNavigate?.(index, items[index]);
@@ -177,8 +181,32 @@ const GooeyNav = ({
     return () => resizeObserver.disconnect();
   }, [activeIndex]);
 
+  const unsupported =
+    typeof navigator !== 'undefined' &&
+    ((/safari/i.test(navigator.userAgent) && !/chrome|chromium|android/i.test(navigator.userAgent)) ||
+      /firefox/i.test(navigator.userAgent));
+
+  const blobColor = isDark ? '#2C3328' : '#E5E2D9';
+
   return (
     <div className={`gooey-nav-container ${className}`.trim()} ref={containerRef}>
+      <GooeySvgFilter id={filterId} strength={8} />
+
+      {/* Layer 1 — SVG-filtered blob + particles */}
+      <span
+        className="effect filter"
+        ref={blobRef}
+        style={unsupported ? undefined : { filter: `url(#${filterId})` }}
+      >
+        <span
+          className="effect-blob-bg"
+          style={{ backgroundColor: blobColor }}
+        />
+      </span>
+
+      {/* Layer 2 — Crisp text overlay */}
+      <span className="effect text" ref={textRef} />
+
       <nav>
         <ul ref={navRef}>
           {items.map((item, index) => (
@@ -194,8 +222,6 @@ const GooeyNav = ({
           ))}
         </ul>
       </nav>
-      <span className="effect filter" ref={filterRef} />
-      <span className="effect text" ref={textRef} />
     </div>
   );
 };

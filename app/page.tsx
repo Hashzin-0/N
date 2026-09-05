@@ -549,21 +549,24 @@ export default function Home() {
       <div className="lg:ml-[180px] px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
         {/* TOP NAVIGATION / MODE SWITCHER — GOOEY NAV */}
-        <div id="app_mode_nav" className="py-2">
-          <GooeyNav
-            items={gooeyNavItems}
-            initialActiveIndex={tabToIndex[activeTab] ?? 0}
-            onNavigate={(_index, _item) => {
-              const tab = indexToTab[_index];
-              if (tab) setActiveTab(tab as typeof activeTab);
-            }}
-            particleCount={12}
-            particleDistances={[80, 10]}
-            particleR={80}
-            animationTime={500}
-            timeVariance={200}
-            colors={[1, 2, 3, 1, 2, 3, 1, 4]}
-          />
+        <div id="app_mode_nav" className="sticky top-0 z-50 py-2">
+          <div className="bg-white/60 dark:bg-[#1A1E18]/70 backdrop-blur-md rounded-2xl border border-[#E5E2D9]/60 dark:border-[#2C3328]/60 shadow-sm px-1 py-1">
+            <GooeyNav
+              items={gooeyNavItems}
+              initialActiveIndex={tabToIndex[activeTab] ?? 0}
+              onNavigate={(_index, _item) => {
+                const tab = indexToTab[_index];
+                if (tab) setActiveTab(tab as typeof activeTab);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              particleCount={12}
+              particleDistances={[80, 10]}
+              particleR={80}
+              animationTime={500}
+              timeVariance={200}
+              colors={[1, 2, 3, 1, 2, 3, 1, 4]}
+            />
+          </div>
         </div>
 
         {/* TOAST NOTIFICATION FOR SAVE/LOAD ACTIONS */}
@@ -750,12 +753,8 @@ export default function Home() {
             </div>
           </section>
 
-        {/* TWO-COLUMN LAYOUT */}
-        <div id="main_grid" className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* LEFT COLUMN: PARAMETER FORM */}
-          <section id="form_section" className="lg:col-span-5 space-y-6">
-            <div className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-6 transition-colors">
+        {/* INPUT SECTION — standalone ScrollStack card */}
+            <div id="form_section" className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-6 transition-colors">
               
               <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-4">
                 <h2 className="text-lg font-bold text-[#5A5A40] dark:text-[#E8E6DF] flex items-center gap-2">
@@ -853,8 +852,8 @@ export default function Home() {
 
             </div>
 
-            {/* SEPARATE CONFIGURATION FOR CHOSEN SPLIT PERCENTAGES */}
-            <div className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-6 transition-colors">
+        {/* PARCELAMENTO CONFIGURATION — standalone ScrollStack card */}
+            <div id="parcelamento_config" className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-6 transition-colors">
               <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-4">
                 <h3 className="text-sm font-bold text-[#5A5A40] dark:text-[#E8E6DF] uppercase tracking-wider flex items-center gap-2">
                   <Percent className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> Configuração do Parcelamento
@@ -1117,10 +1116,8 @@ export default function Home() {
               </div>
             </div>
 
-          </section>
-
-          {/* RIGHT COLUMN: REAL-TIME OUTPUTS & CALCULATIONS */}
-          <section id="results_section" className="lg:col-span-7 space-y-6">
+        {/* RESULTS SECTION — standalone ScrollStack card */}
+          <section id="results_section" className="space-y-6">
             
             {/* CORE METRICS GRID */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -1169,8 +1166,6 @@ export default function Home() {
             <BalancoSection calculations={calculations} />
 
           </section>
-
-        </div>
 
         {/* DETAILED FORMULA AND MATHEMATICAL EXPLANATIONS PANEL */}
         <DetailedMathPanel

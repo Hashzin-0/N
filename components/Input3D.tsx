@@ -175,7 +175,7 @@ export default function Input3D({
       <div className="relative" style={{ transformStyle: 'preserve-3d' }}>
         {/* SHADOW LAYER — MagicButton inspired */}
         <div
-          className={`absolute inset-0 rounded-xl ${isFocused ? 'translate-y-[3px]' : isHovered ? 'translate-y-[5px]' : 'translate-y-[2px]'}`}
+          className={`absolute inset-0 rounded-xl ${isFocused ? 'translate-y-[1px]' : isHovered ? 'translate-y-[5px]' : 'translate-y-[2px]'}`}
           style={{
             background: isDark
               ? `linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.25) 100%)`
@@ -188,7 +188,7 @@ export default function Input3D({
 
         {/* EDGE LAYER — MagicButton inspired, shows accent color depth */}
         <div
-          className={`absolute inset-0 rounded-xl ${isFocused ? 'translate-y-[2px]' : isHovered ? 'translate-y-[3px]' : 'translate-y-[1px]'}`}
+          className={`absolute inset-0 rounded-xl ${isFocused ? 'translate-y-[0px]' : isHovered ? 'translate-y-[3px]' : 'translate-y-[1px]'}`}
           style={{
             background: `linear-gradient(135deg, ${edgeColor}dd 0%, ${edgeColor}99 50%, ${edgeColor}bb 100%)`,
             transition: 'translate 300ms cubic-bezier(0.3,0.7,0.4,1)',
@@ -202,7 +202,7 @@ export default function Input3D({
           animate={{
             rotateX: filling ? 2 : isFocused ? 1.5 : isHovered ? 0.5 : 0,
             rotateY: filling ? -1 : isFocused ? -0.5 : isHovered ? 0.3 : 0,
-            y: isFocused ? -3 : isHovered ? -5 : -4,
+            y: isFocused ? 0 : isHovered ? -5 : -4,
           }}
           transition={{
             type: 'spring',
