@@ -174,25 +174,54 @@ export default function Input3D({
 
       <div className="relative" style={{ transformStyle: 'preserve-3d' }}>
         {/* SHADOW LAYER — MagicButton inspired */}
-        <div
-          className={`absolute inset-0 rounded-xl ${isFocused ? 'translate-y-[1px]' : isHovered ? 'translate-y-[5px]' : 'translate-y-[2px]'}`}
-          style={{
-            background: isDark
-              ? `linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.25) 100%)`
-              : `linear-gradient(135deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.12) 100%)`,
-            filter: 'blur(6px)',
-            transition: 'translate 300ms cubic-bezier(0.3,0.7,0.4,1)',
+        <motion.div
+          className={`absolute inset-0 rounded-xl ${isFocused ? 'translate-y-[1px]' : isHovered ? 'translate-y-[5px]' : 'translate-y-[2px]'} ${
+            isFocused ? 'animate-magic-rainbow' : ''
+          }`}
+          animate={{
+            rotateX: filling ? 2 : isFocused ? 1.5 : isHovered ? 0.5 : 0,
+            rotateY: filling ? -1 : isFocused ? -0.5 : isHovered ? 0.3 : 0,
           }}
+          transition={{
+            type: 'spring',
+            stiffness: filling ? 200 : isFocused ? 350 : 450,
+            damping: 22,
+          }}
+          style={{
+            background: isFocused
+              ? 'linear-gradient(90deg, var(--rainbow-1), var(--rainbow-5), var(--rainbow-3), var(--rainbow-4), var(--rainbow-2))'
+              : isDark
+              ? 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.25) 100%)'
+              : 'linear-gradient(135deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.12) 100%)',
+            backgroundSize: isFocused ? '200% 100%' : undefined,
+            filter: isFocused ? 'blur(10px)' : 'blur(6px)',
+            opacity: isFocused ? 0.6 : 1,
+            transition: 'translate 300ms cubic-bezier(0.3,0.7,0.4,1), filter 300ms, opacity 300ms',
+          } as React.CSSProperties}
           aria-hidden="true"
         />
 
         {/* EDGE LAYER — MagicButton inspired, shows accent color depth */}
-        <div
-          className={`absolute inset-0 rounded-xl ${isFocused ? 'translate-y-[0px]' : isHovered ? 'translate-y-[3px]' : 'translate-y-[1px]'}`}
-          style={{
-            background: `linear-gradient(135deg, ${edgeColor}dd 0%, ${edgeColor}99 50%, ${edgeColor}bb 100%)`,
-            transition: 'translate 300ms cubic-bezier(0.3,0.7,0.4,1)',
+        <motion.div
+          className={`absolute inset-0 rounded-xl ${isFocused ? 'translate-y-[0px]' : isHovered ? 'translate-y-[3px]' : 'translate-y-[1px]'} ${
+            isFocused ? 'animate-magic-rainbow' : ''
+          }`}
+          animate={{
+            rotateX: filling ? 2 : isFocused ? 1.5 : isHovered ? 0.5 : 0,
+            rotateY: filling ? -1 : isFocused ? -0.5 : isHovered ? 0.3 : 0,
           }}
+          transition={{
+            type: 'spring',
+            stiffness: filling ? 200 : isFocused ? 350 : 450,
+            damping: 22,
+          }}
+          style={{
+            background: isFocused
+              ? 'linear-gradient(90deg, var(--rainbow-1), var(--rainbow-5), var(--rainbow-3), var(--rainbow-4), var(--rainbow-2))'
+              : `linear-gradient(135deg, ${edgeColor}dd 0%, ${edgeColor}99 50%, ${edgeColor}bb 100%)`,
+            backgroundSize: isFocused ? '200% 100%' : undefined,
+            transition: 'translate 300ms cubic-bezier(0.3,0.7,0.4,1)',
+          } as React.CSSProperties}
           aria-hidden="true"
         />
 

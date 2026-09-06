@@ -17,8 +17,6 @@ import {
   Database,
   Columns,
   Mic,
-  Sparkles,
-  ArrowRight,
   BookOpen
 } from 'lucide-react';
 import SaveScenarioModal from '@/components/SaveScenarioModal';
@@ -52,7 +50,6 @@ import GooeyNav, { GooeyNavItem } from '@/components/GooeyNav';
 import { ScrollStack } from '@/components/godui/scroll-stack';
 import { ElasticText } from '@/components/godui/elastic-text';
 import { JellyButton } from '@/components/godui/jelly-button';
-import GooeyStack from '@/components/godui/gooey-stack';
 
 // Interfaces for structured data
 interface Preset {
@@ -166,7 +163,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'calculadora' | 'estimativa_milho' | 'comparador' | 'itr' | 'abnt'>('calculadora');
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [bibliographyRef, setBibliographyRef] = useState<ABNTReference | null>(null);
-  const [yieldBannerExpanded, setYieldBannerExpanded] = useState(false);
+
 
   // GooeyNav items and tab mapping
   const gooeyNavItems: GooeyNavItem[] = [
@@ -655,51 +652,6 @@ export default function Home() {
         {/* MAIN NITROGEN CALCULATOR VIEW */}
         <div className={activeTab === 'calculadora' ? 'block' : 'hidden'}>
           <ScrollStack baseScale={0.92} peek={12} blur pinTop="12vh">
-            {/* QUICK PROMPT TO OPEN CORN YIELD CALCULATOR — GooeyStack collapsible */}
-          <div onClick={() => setYieldBannerExpanded(!yieldBannerExpanded)} className="cursor-pointer">
-            <GooeyStack collapsed={!yieldBannerExpanded}>
-              {/* Collapsed pill — first child */}
-              <div className="flex items-center gap-3 px-5 py-4">
-                <div className="p-2 bg-[#D4A373]/20 dark:bg-[#D4A373]/10 text-[#D4A373] rounded-xl shrink-0">
-                  <Sparkles className="h-5 w-5" />
-                </div>
-                <span className="text-sm font-bold text-white">
-                  Precisa calcular a produtividade estimada?
-                </span>
-              </div>
-              {/* Expanded content — second child */}
-              <div className="p-5">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 bg-[#D4A373]/20 dark:bg-[#D4A373]/10 text-[#D4A373] rounded-xl shrink-0">
-                      <Sparkles className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-[#E8E6DF]">
-                        Precisa calcular a produtividade estimada da lavoura primeiro?
-                      </h4>
-                      <p className="text-xs text-[#9EA399]">
-                        Estime sacas por hectare a partir de plantas/metro, espaçamento, espigas, grãos e PMG com visualização.
-                      </p>
-                    </div>
-                  </div>
-                  <JellyButton
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveTab('estimativa_milho');
-                    }}
-                    variant="primary"
-                    size="md"
-                    className="flex items-center gap-1.5 text-xs font-bold bg-[#D4A373] text-white px-4 py-2 rounded-xl shrink-0 shadow-sm border-none"
-                  >
-                    <span>Abrir Calculadora de Espigas</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </JellyButton>
-                </div>
-              </div>
-            </GooeyStack>
-          </div>
-
           {/* PERSISTENT SCENARIO SELECTOR */}
           <section id="preset_selector" className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] transition-colors">
             <h2 className="text-xs font-bold text-[#8C897E] dark:text-[#9EA399] uppercase tracking-wider mb-4 flex items-center gap-1.5 border-b border-[#F0EDE5] dark:border-[#2C3328] pb-2">
