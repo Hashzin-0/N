@@ -13,14 +13,9 @@ import {
   TrendingUp, 
   Sprout, 
   Layers, 
-  BookmarkPlus,
-  Database,
-  Columns,
   Mic,
   BookOpen
 } from 'lucide-react';
-import SaveScenarioModal from '@/components/SaveScenarioModal';
-import ScenarioComparator from '@/components/ScenarioComparator';
 import VoiceAssistantHUD from '@/components/VoiceAssistantHUD';
 import DarkMode3DToggle from '@/components/DarkMode3DToggle';
 import SectionNav3D from '@/components/SectionNav3D';
@@ -32,7 +27,7 @@ import Select3D from '@/components/Select3D';
 import CellDivisionContainer from '@/components/CellDivisionContainer';
 import { useGeminiLiveAgent } from '@/hooks/useGeminiLiveAgent';
 import { useTheme } from '@/components/ThemeProvider';
-import { SQLikeCalculationDB, CalculationRecord, useCalculationRecords, notifyStorageChange } from '@/lib/storage';
+import { useAnimationLock } from '@/lib/useAnimationLock';
 import { computeCalculations } from '@/lib/calculations';
 import ExtracaoTotalCard from '@/components/metrics/ExtracaoTotalCard';
 import NecessidadeLiquidaCard from '@/components/metrics/NecessidadeLiquidaCard';
@@ -49,7 +44,7 @@ import BibliografiaAutoDetectCard from '@/components/metrics/BibliografiaAutoDet
 import GooeyNav, { GooeyNavItem } from '@/components/GooeyNav';
 import { ScrollStack } from '@/components/godui/scroll-stack';
 import { ElasticText } from '@/components/godui/elastic-text';
-import { JellyButton } from '@/components/godui/jelly-button';
+
 
 // Interfaces for structured data
 interface Preset {
@@ -122,6 +117,7 @@ const PRESETS: Preset[] = [
 
 export default function Home() {
   const { isDark } = useTheme();
+  const { withLock } = useAnimationLock(400);
   const [isLoading, setIsLoading] = useState(true);
 
   // Input states
@@ -157,10 +153,8 @@ export default function Home() {
   const [fillingFields, setFillingFields] = useState<Set<string>>(new Set());
   const fillingTimersRef = useRef<NodeJS.Timeout[]>([]);
 
-  // SQLike Local Storage states
-  const savedRecords = useCalculationRecords();
-  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'calculadora' | 'estimativa_milho' | 'comparador' | 'itr' | 'abnt'>('calculadora');
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'calculadora' | 'estimativa_milho' | 'itr' | 'abnt'>('calculadora');
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [bibliographyRef, setBibliographyRef] = useState<ABNTReference | null>(null);
 
@@ -169,7 +163,6 @@ export default function Home() {
   const gooeyNavItems: GooeyNavItem[] = [
     { label: 'Adubação Nitrogenada', href: '#' },
     { label: 'Estimativa de Produtividade', href: '#' },
-    { label: 'Comparador', href: '#' },
     { label: 'ITR', href: '#' },
     { label: 'Referências ABNT', href: '#' },
   ];
@@ -177,21 +170,15 @@ export default function Home() {
   const tabToIndex: Record<string, number> = {
     calculadora: 0,
     estimativa_milho: 1,
-    comparador: 2,
-    itr: 3,
-    abnt: 4,
+    itr: 2,
+    abnt: 3,
   };
 
   const indexToTab: Record<number, string> = {
     0: 'calculadora',
     1: 'estimativa_milho',
-    2: 'comparador',
-    3: 'itr',
-    4: 'abnt',
-  };
-
-  const handleReloadRecords = () => {
-    notifyStorageChange();
+    2: 'itr',
+    3: 'abnt',
   };
 
   // Handle preset loading with 3D staggered animation
@@ -284,50 +271,6 @@ export default function Home() {
     splitBase,
   });
 
-  // Save scenario to SQLike local database
-  const handleSaveScenario = (name: string, notes: string) => {
-    SQLikeCalculationDB.insert({
-      name,
-      notes,
-      yield_goal: yieldGoal,
-      n_req_per_bag: nRequirementPerBag,
-      mos_n: mosNContribution,
-      soy_n: soyNContribution,
-      efficiency: efficiency,
-      base_dose: baseDose,
-      v4v6_percent: v4v6Percent,
-      v8v10_percent: v8v10Percent,
-      split_base: splitBase,
-      total_extraction: calculations.totalExtraction,
-      liquid_need: calculations.liquidNeed,
-      recommended_dose: calculations.recommendedDose,
-      selected_v4v6_val: calculations.v4v6_1_kg,
-      selected_v8v10_val: calculations.v8v10_1_kg,
-      sum_of_splits: calculations.sumOfSplits,
-    });
-    handleReloadRecords();
-    setSaveToast(`Cenário "${name}" gravado com sucesso no banco local!`);
-    setTimeout(() => setSaveToast(null), 4000);
-  };
-
-  // Load saved scenario from SQLike database into calculator inputs
-  const handleLoadRecordIntoCalculator = (record: CalculationRecord) => {
-    setYieldGoal(record.yield_goal);
-    setNRequirementPerBag(record.n_req_per_bag);
-    setMosNContribution(record.mos_n);
-    setSoyNContribution(record.soy_n);
-    setEfficiency(record.efficiency);
-    setBaseDose(record.base_dose);
-    setV4v6Percent(record.v4v6_percent);
-    setV8v10Percent(record.v8v10_percent);
-    setSplitBase(record.split_base);
-    setActivePreset('personalizado');
-    setActiveTab('calculadora');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setSaveToast(`Cenário "${record.name}" carregado na calculadora.`);
-    setTimeout(() => setSaveToast(null), 3500);
-  };
-
   // Handle dynamic layout print
   const handlePrint = () => {
     window.print();
@@ -369,9 +312,6 @@ export default function Home() {
     onLoadPreset: (presetId) => {
       const p = PRESETS.find((pr) => pr.id === presetId);
       if (p) handleLoadPreset(p);
-    },
-    onSaveScenario: (name, notes) => {
-      handleSaveScenario(name, notes || 'Salvo via assistente Puck');
     },
 
 
@@ -468,28 +408,6 @@ export default function Home() {
                 <span>{voiceAgent.state.isConnected ? 'Puck Conectado' : 'Falar com Puck'}</span>
               </button>
               <button
-                id="btn_open_save_modal"
-                onClick={() => setIsSaveModalOpen(true)}
-                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#D4A373] dark:bg-[#B38356] hover:bg-[#C19262] dark:hover:bg-[#C19262] text-white font-bold py-2.5 px-4 rounded-xl transition-all text-sm active:scale-95 shadow-md shadow-[#D4A37333]"
-                title="Salvar cálculo atual no banco local"
-              >
-                <BookmarkPlus className="h-4 w-4 text-white" />
-                Salvar Cenário
-              </button>
-              <button
-                id="btn_nav_comparator"
-                onClick={() => {
-                  setActiveTab('comparador');
-                  const el = document.getElementById('scenario_comparator_section');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white/10 dark:bg-white/5 hover:bg-white/20 text-white font-semibold py-2.5 px-4 rounded-xl border border-white/20 dark:border-white/10 transition-all text-sm active:scale-95"
-                title="Visualizar e comparar cenários salvos"
-              >
-                <Columns className="h-4 w-4 text-white" />
-                Comparador ({savedRecords.length})
-              </button>
-              <button
                 id="btn_print"
                 onClick={handlePrint}
                 className="p-2.5 bg-white/10 dark:bg-white/5 hover:bg-white/20 text-white rounded-xl border border-white/20 dark:border-white/10 transition-all active:scale-95"
@@ -546,8 +464,8 @@ export default function Home() {
       <div className="lg:ml-[180px] px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
         {/* TOP NAVIGATION / MODE SWITCHER — GOOEY NAV */}
-        <div id="app_mode_nav" className="sticky top-0 z-50 py-2">
-          <div className="bg-white/60 dark:bg-[#1A1E18]/70 backdrop-blur-md rounded-2xl border border-[#E5E2D9]/60 dark:border-[#2C3328]/60 shadow-sm px-1 py-1">
+        <div id="app_mode_nav" className="sticky top-0 z-50">
+          <div className="bg-white dark:bg-[#1C201A] px-1 py-1 transition-colors">
             <GooeyNav
               items={gooeyNavItems}
               initialActiveIndex={tabToIndex[activeTab] ?? 0}
@@ -566,31 +484,19 @@ export default function Home() {
           </div>
         </div>
 
-        {/* TOAST NOTIFICATION FOR SAVE/LOAD ACTIONS */}
+        {/* TOAST NOTIFICATION */}
         <AnimatePresence>
           {saveToast && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="bg-[#5A5A40] dark:bg-[#242A20] text-white p-4 rounded-2xl flex items-center justify-between gap-3 shadow-md border border-white/10 dark:border-[#353D30]"
+              className="bg-[#5A5A40] dark:bg-[#242A20] text-white p-4 rounded-2xl flex items-center gap-3 shadow-md border border-white/10 dark:border-[#353D30]"
             >
               <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold">
                 <CheckCircle2 className="h-5 w-5 text-[#D4A373] shrink-0" />
                 <span>{saveToast}</span>
               </div>
-              <JellyButton
-                onClick={() => {
-                  setActiveTab('comparador');
-                  const el = document.getElementById('scenario_comparator_section');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                variant="primary"
-                size="sm"
-                className="text-xs bg-[#D4A373] text-white font-bold px-3 py-1.5 rounded-lg shrink-0 border-none"
-              >
-                Ver Comparador ↓
-              </JellyButton>
             </motion.div>
           )}
         </AnimatePresence>
@@ -608,24 +514,6 @@ export default function Home() {
               }}
             />
           </ScrollStack>
-        </div>
-
-        {/* COMPARATOR VIEW TAB */}
-        <div className={activeTab === 'comparador' ? 'block' : 'hidden'}>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#5A5A40] dark:text-[#E8E6DF] flex items-center gap-2">
-              <Columns className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" />
-              <ElasticText className="text-xl font-bold" mode="auto">Banco de Cenários e Comparador Agronômico</ElasticText>
-            </h2>
-            <JellyButton
-              onClick={() => setActiveTab('calculadora')}
-              variant="outline"
-              size="sm"
-              className="text-xs font-bold text-[#5A5A40] dark:text-[#9CB386] hover:underline flex items-center gap-1 border-[#5A5A40]/30 dark:border-[#9CB386]/30"
-            >
-              Voltar para Calculadora →
-            </JellyButton>
-          </div>
         </div>
 
         {/* ITR CALCULATOR TAB */}
@@ -652,56 +540,26 @@ export default function Home() {
         {/* MAIN NITROGEN CALCULATOR VIEW */}
         <div className={activeTab === 'calculadora' ? 'block' : 'hidden'}>
           <ScrollStack baseScale={0.92} peek={12} blur pinTop="12vh">
-          {/* PERSISTENT SCENARIO SELECTOR */}
-          <section id="preset_selector" className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] transition-colors">
-            <h2 className="text-xs font-bold text-[#8C897E] dark:text-[#9EA399] uppercase tracking-wider mb-4 flex items-center gap-1.5 border-b border-[#F0EDE5] dark:border-[#2C3328] pb-2">
-              <Layers className="h-3.5 w-3.5 text-[#8C897E] dark:text-[#9EA399]" /> <ElasticText className="text-xs font-bold uppercase tracking-wider" mode="auto">Cenários e Exercícios Prontos</ElasticText>
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          {/* PERSISTENT SCENARIO SELECTOR — compact chips */}
+          <section id="preset_selector" className="bg-white dark:bg-[#1C201A] px-5 py-3 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] transition-colors">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="h-3 w-3" /> Cenários:
+              </span>
+              {/* eslint-disable-next-line react-hooks/refs -- false positive: PRESETS is a plain const, not a ref */}
               {PRESETS.map((p) => (
-                <button
+                <Button3D
                   key={p.id}
                   id={`preset_btn_${p.id}`}
-                  onClick={() => handleLoadPreset(p)}
-                  className={`text-left p-3.5 rounded-xl border transition-all relative overflow-hidden ${
-                    activePreset === p.id 
-                      ? 'border-[#5A5A40] dark:border-[#9CB386] bg-[#F9F8F6] dark:bg-[#232821] ring-1 ring-[#5A5A40] dark:ring-[#9CB386]' 
-                      : 'border-[#E5E2D9] dark:border-[#2C3328] hover:border-[#8C897E] dark:hover:border-[#4B5545] hover:bg-[#F9F8F6]/50 dark:hover:bg-[#232821]/50'
-                  }`}
+                  variant={activePreset === p.id ? 'secondary' : 'ghost'}
+                  size="sm"
+                  active={activePreset === p.id}
+                  isDark={isDark}
+                  onClick={withLock(() => handleLoadPreset(p))}
                 >
-                  <div className="font-semibold text-sm text-[#5A5A40] dark:text-[#E8E6DF] flex items-center gap-1.5">
-                    {p.name}
-                    {activePreset === p.id && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#D4A373] inline-block animate-pulse" />
-                    )}
-                  </div>
-                  <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-1 line-clamp-1">{p.description}</p>
-                  <div className="mt-2.5 flex gap-3 text-[10px] font-medium text-[#8C897E] dark:text-[#9EA399] border-t border-[#F0EDE5] dark:border-[#2C3328] pt-2">
-                    <span>Prod: <strong className="text-[#5A5A40] dark:text-[#9CB386]">{p.yieldGoal} sc/ha</strong></span>
-                    <span>MOS: <strong className="text-[#5A5A40] dark:text-[#9CB386]">{p.mosNContribution} kg/ha</strong></span>
-                  </div>
-                </button>
+                  {p.name.split(' ')[0]}
+                </Button3D>
               ))}
-              <button
-                id="preset_btn_custom"
-                className={`text-left p-3.5 rounded-xl border transition-all ${
-                  activePreset === 'personalizado' 
-                    ? 'border-[#D4A373] dark:border-[#D4A373] bg-[#FDFBF7] dark:bg-[#232821] ring-1 ring-[#D4A373]' 
-                    : 'border-dashed border-[#E5E2D9] dark:border-[#2C3328] hover:border-[#8C897E] bg-[#F9F8F6]/30 dark:bg-[#1C201A]/30'
-                }`}
-                disabled
-              >
-                <div className="font-semibold text-sm text-[#3D3D3D] dark:text-[#E8E6DF] flex items-center gap-1.5">
-                  Cenário Customizado
-                  {activePreset === 'personalizado' && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#D4A373] inline-block" />
-                  )}
-                </div>
-                <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-1">Valores ajustados manualmente no formulário.</p>
-                <div className="mt-2.5 flex gap-3 text-[10px] font-medium text-[#8C897E] dark:text-[#9EA399] border-t border-[#F0EDE5] dark:border-[#2C3328] pt-2">
-                  <span>Editando valores...</span>
-                </div>
-              </button>
             </div>
           </section>
 
@@ -1068,10 +926,8 @@ export default function Home() {
               </div>
             </div>
 
-        {/* RESULTS SECTION — standalone ScrollStack card */}
+        {/* RESULTS SECTION — core metrics */}
           <section id="results_section" className="space-y-6">
-            
-            {/* CORE METRICS GRID */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <ExtracaoTotalCard
                 totalExtraction={calculations.totalExtraction}
@@ -1084,26 +940,24 @@ export default function Home() {
                 mosNContribution={mosNContribution}
                 soyNContribution={soyNContribution}
               />
-<div id="card_dose_total" className="col-span-2 sm:col-span-3">
+              <div id="card_dose_total" className="col-span-2 sm:col-span-3">
                 <DoseRecomendadaCard
                   recommendedDose={calculations.recommendedDose}
                   liquidNeed={calculations.liquidNeed}
                   efficiency={efficiency}
-                  onSaveClick={() => setIsSaveModalOpen(true)}
                 />
               </div>
+            </div>
 
-              
-
-              </div>
-
-              <SecondaryCreditsCard
+            <SecondaryCreditsCard
               totalExtraction={calculations.totalExtraction}
               mosNContribution={mosNContribution}
               soyNContribution={soyNContribution}
             />
+          </section>
 
-            {/* DYNAMIC PARCELAMENTO DISCLOSURES PANEL */}
+        {/* PARCELAMENTO SECTION — split schedule */}
+          <section id="parcelamento_results" className="space-y-6">
             <ParcelamentoSection
               calculations={calculations}
               splitBase={splitBase}
@@ -1113,10 +967,11 @@ export default function Home() {
               v8v10Percent2={v8v10Percent2}
               baseDoseMode={baseDoseMode}
             />
+          </section>
 
-            {/* BALANCO SECTION */}
+        {/* BALANCO SECTION — balance validation */}
+          <section id="balanco_results" className="space-y-6">
             <BalancoSection calculations={calculations} />
-
           </section>
 
         {/* DETAILED FORMULA AND MATHEMATICAL EXPLANATIONS PANEL */}
@@ -1127,67 +982,6 @@ export default function Home() {
         />
           </ScrollStack>
         </div>
-
-        {/* SQLIKE STORAGE & COMPARATOR SECTION */}
-        <div className={activeTab === 'comparador' ? 'block' : 'hidden'}>
-          <ScrollStack baseScale={0.92} peek={12} blur pinTop="12vh">
-            <ScenarioComparator
-              records={savedRecords}
-              onReloadRecords={handleReloadRecords}
-              onLoadIntoCalculator={(rec) => {
-                handleLoadRecordIntoCalculator(rec);
-                setActiveTab('calculadora');
-              }}
-              activeCalculationData={{
-                yieldGoal,
-                nRequirementPerBag,
-                mosNContribution,
-                soyNContribution,
-                efficiency,
-                baseDose,
-                baseDose2,
-                v4v6Percent,
-                v4v6Percent2,
-                v8v10Percent,
-                v8v10Percent2,
-                splitBase,
-                totalExtraction: calculations.totalExtraction,
-                liquidNeed: calculations.liquidNeed,
-                recommendedDose: calculations.recommendedDose,
-                selectedV4V6Val: calculations.v4v6_1_kg,
-                selectedV8V10Val: calculations.v8v10_1_kg,
-                sumOfSplits: calculations.sumOfSplits,
-              }}
-            />
-          </ScrollStack>
-        </div>
-
-        {/* MODAL TO SAVE SCENARIO */}
-        <SaveScenarioModal
-          isOpen={isSaveModalOpen}
-          onClose={() => setIsSaveModalOpen(false)}
-          onSave={handleSaveScenario}
-          currentData={{
-            yieldGoal,
-            nRequirementPerBag,
-            mosNContribution,
-            soyNContribution,
-            efficiency,
-            baseDose,
-            baseDose2,
-            v4v6Percent,
-            v4v6Percent2,
-            v8v10Percent,
-            v8v10Percent2,
-            splitBase,
-            totalExtraction: calculations.totalExtraction,
-            liquidNeed: calculations.liquidNeed,
-            recommendedDose: calculations.recommendedDose,
-            selectedV4V6Val: calculations.v4v6_1_kg,
-            selectedV8V10Val: calculations.v8v10_1_kg,
-            sumOfSplits: calculations.sumOfSplits,
-          }}
-        />
 
         {/* GEMINI LIVE VOICE ASSISTANT HUD WITH 3D ORB */}
         <VoiceAssistantHUD

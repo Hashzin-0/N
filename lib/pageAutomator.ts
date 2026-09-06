@@ -14,7 +14,7 @@ export type PageSection =
   | 'resultados'
   | 'dose_total'
   | 'parcelamento'
-  | 'comparador'
+  | 'balanco'
   | 'adubos'
   | 'estimativa_milho'
   | 'itr';
@@ -30,7 +30,7 @@ const SECTION_ELEMENT_MAP: Record<PageSection, string> = {
   resultados: 'results_section',
   dose_total: 'card_dose_total',
   parcelamento: 'parceling_section',
-  comparador: 'scenario_comparator_section',
+  balanco: 'balanco_section',
   adubos: 'fertilizer_equivalent_section',
   estimativa_milho: 'corn_yield_calculator_section',
   itr: 'itr_section',
@@ -54,8 +54,6 @@ export function smoothScrollToSection(section: PageSection | string, label?: str
       targetEl = document.getElementById('form_section');
     } else if (section === 'parcelamento') {
       targetEl = document.getElementById('parceling_section');
-    } else if (section === 'comparador') {
-      targetEl = document.getElementById('scenario_comparator_section');
     } else if (section === 'estimativa_milho') {
       targetEl = document.getElementById('corn_yield_calculator_section');
     } else if (section === 'itr') {

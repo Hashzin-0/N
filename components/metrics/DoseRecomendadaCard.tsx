@@ -9,7 +9,7 @@ interface Props {
   recommendedDose: number;
   liquidNeed: number;
   efficiency: number;
-  onSaveClick: () => void;
+  onSaveClick?: () => void;
   animKey?: string | number;
 }
 
@@ -24,7 +24,7 @@ export default function DoseRecomendadaCard({ recommendedDose, liquidNeed, effic
       formulaSummary={`Eficiência: ${efficiency}% (Perdas de ${100 - efficiency}%)`}
       isDark={isDark}
       variant="hero"
-      saveAction={{ label: 'Salvar', onClick: onSaveClick }}
+      {...(onSaveClick ? { saveAction: { label: 'Salvar', onClick: onSaveClick } } : {})}
       animKey={animKey}
     >
       <div className="p-2.5 rounded-lg border font-mono text-[11px] leading-relaxed bg-[#232821] border-[#2C3328] text-[#E8E6DF]">

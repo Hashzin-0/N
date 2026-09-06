@@ -22,6 +22,7 @@ const NITROGEN_SECTIONS: SectionConfig[] = [
   { id: 'form_section', label: 'Parâmetros', shortLabel: 'Parâmetros', geometry: 'box', color: '#5A5A40', colorDark: '#9CB386' },
   { id: 'results_section', label: 'Resultados', shortLabel: 'Resultados', geometry: 'octahedron', color: '#2E6F40', colorDark: '#86efac' },
   { id: 'parceling_section', label: 'Parcelamento', shortLabel: 'Parcelamento', geometry: 'torusknot', color: '#D4A373', colorDark: '#D4A373' },
+  { id: 'balanco_section', label: 'Balanço', shortLabel: 'Balanço', geometry: 'octahedron', color: '#2E6F40', colorDark: '#86efac' },
   { id: 'detailed_math_panel', label: 'Fórmulas', shortLabel: 'Fórmulas', geometry: 'icosahedron', color: '#8D6E63', colorDark: '#CBB5A1' },
 ];
 
@@ -31,10 +32,6 @@ const CORN_SECTIONS: SectionConfig[] = [
   { id: 'corn_yield_alerts', label: 'Alertas', shortLabel: 'Alertas', geometry: 'cone', color: '#D4A373', colorDark: '#E0A96D' },
   { id: 'corn_yield_visual', label: 'Visual', shortLabel: 'Visual', geometry: 'torus', color: '#C19262', colorDark: '#D4A373' },
   { id: 'corn_yield_results', label: 'Resultados', shortLabel: 'Resultados', geometry: 'octahedron', color: '#2E6F40', colorDark: '#86efac' },
-];
-
-const COMPARATOR_SECTIONS: SectionConfig[] = [
-  { id: 'scenario_comparator_section', label: 'Comparador', shortLabel: 'Comparador', geometry: 'box', color: '#5A5A40', colorDark: '#9CB386' },
 ];
 
 const ABNT_SECTIONS: SectionConfig[] = [
@@ -54,7 +51,6 @@ export default function SectionNavGooey({ activeTab, onNavigate }: SectionNavGoo
     switch (activeTab) {
       case 'calculadora': return NITROGEN_SECTIONS;
       case 'estimativa_milho': return CORN_SECTIONS;
-      case 'comparador': return COMPARATOR_SECTIONS;
       case 'abnt': return ABNT_SECTIONS;
       default: return NITROGEN_SECTIONS;
     }

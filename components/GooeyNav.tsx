@@ -168,6 +168,7 @@ const GooeyNav = ({
     if (activeLi) {
       updateEffectPosition(activeLi as HTMLLIElement);
       textRef.current?.classList.add('active');
+      activeLi.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
 
     const resizeObserver = new ResizeObserver(() => {
@@ -186,11 +187,11 @@ const GooeyNav = ({
     ((/safari/i.test(navigator.userAgent) && !/chrome|chromium|android/i.test(navigator.userAgent)) ||
       /firefox/i.test(navigator.userAgent));
 
-  const blobColor = isDark ? '#2C3328' : '#E5E2D9';
+  const blobColor = isDark ? '#1C201A' : '#FFFFFF';
 
   return (
     <div className={`gooey-nav-container ${className}`.trim()} ref={containerRef}>
-      <GooeySvgFilter id={filterId} strength={8} />
+      <GooeySvgFilter id={filterId} strength={12} />
 
       {/* Layer 1 — SVG-filtered blob + particles */}
       <span

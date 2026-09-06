@@ -38,7 +38,6 @@ export interface SimulatorContext {
   onSetSoilParameters: (params: { mos?: number; soy?: number; efficiency?: number }) => void;
   onSetParceling: (params: { baseDose?: number; v4v6Percent?: number; v8v10Percent?: number }) => void;
   onLoadPreset: (presetId: string) => void;
-  onSaveScenario: (name: string, notes?: string) => void;
   onSetITRParameters: (params: { vtn: number; areaTotal: number; areaTributavel?: number; areaAproveitavel?: number; areaUtilizada?: number }) => void;
   onSetABNTReference: (ref: { type: string; author: string; title: string; year: number; editor?: string; url?: string }) => void;
   onSetBibliographyReference: (ref: ABNTReference) => void;
@@ -283,22 +282,6 @@ export function useGeminiLiveAgent(simContext: SimulatorContext) {
         };
       }
 
-      case 'saveCurrentScenario': {
-        const name = String(args.name || `Cenário Safra ${new Date().getFullYear()}`);
-        const notes = args.notes ? String(args.notes) : 'Salvo via comando de voz com Puck';
-
-        setActionLabel(`Gravando: "${name}"`);
-        ctx.onSaveScenario(name, notes);
-
-        smoothScrollToSection('comparador', `Cenário "${name}" Salvo`);
-
-        return {
-          success: true,
-          savedName: name,
-          message: `Cenário "${name}" gravado com sucesso no banco local. Tela rolada até o Comparador.`,
-        };
-      }
-
       case 'scrollToSection': {
         const section = String(args.section) as PageSection;
         const label = args.label ? String(args.label) : undefined;
@@ -419,8 +402,7 @@ Suas capacidades:
 4. Você também pode acessar a Calculadora ITR (Imposto Territorial Rural) com parâmetros de VTN, área total, área tributável, área aproveitável e área utilizada.
 5. Você também pode acessar o Formatter de Referências ABNT com dados de tipo, autor, título, ano, editor e URL.
 6. IMPORTANTE: Sempre que você alterar um valor no simulador (usando 'setYieldGoal', 'setSoilParameters', 'setFertilizerParceling', 'setITRParameters' ou 'setABNTReference'), o site rolará automaticamente para mostrar a alteração. Logo em seguida, quando você falar sobre os resultados da dose total e parcelamento, a tela rolará para a seção de resultados.
-5. Você pode salvar cenários no banco local usando 'saveCurrentScenario'.
-6. Você pode rolar a tela manualmente com 'scrollToSection' ('parametros', 'resultados', 'parcelamento', 'adubos', 'comparador').
+5. Você pode rolar a tela manualmente com 'scrollToSection' ('parametros', 'resultados', 'parcelamento', 'adubos', 'presets').
 
 Fórmulas do simulador de Adubação Nitrogenada:
 - Extração Total (kg N/ha) = Produtividade (sc/ha) × Exigência (ex: 1.35 kg N/sc)
@@ -569,24 +551,6 @@ Sempre responda de forma concisa e direta, pois se trata de uma conversa falada 
                     },
                   },
                   {
-                    name: 'saveCurrentScenario',
-                    description: 'Salva os dados do cálculo atual no banco de dados local com um nome e observações.',
-                    parameters: {
-                      type: 'OBJECT',
-                      properties: {
-                        name: {
-                          type: 'STRING',
-                          description: 'Nome para o cenário salvo',
-                        },
-                        notes: {
-                          type: 'STRING',
-                          description: 'Observações opcionais sobre o manejo',
-                        },
-                      },
-                      required: ['name'],
-                    },
-                  },
-                  {
                     name: 'scrollToSection',
                     description: 'Rola suavemente a tela até uma seção específica para o usuário visualizar.',
                     parameters: {
@@ -594,7 +558,7 @@ Sempre responda de forma concisa e direta, pois se trata de uma conversa falada 
                       properties: {
                         section: {
                           type: 'STRING',
-                          description: 'Seção de destino: "parametros", "resultados", "dose_total", "parcelamento", "comparador", "presets"',
+                          description: 'Seção de destino: "parametros", "resultados", "dose_total", "parcelamento", "presets"',
                         },
                         label: {
                           type: 'STRING',

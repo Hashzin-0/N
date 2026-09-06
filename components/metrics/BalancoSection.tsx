@@ -16,7 +16,7 @@ export default function BalancoSection({ calculations, animKey }: Props) {
   const { isDark } = useTheme();
 
   return (
-    <div className="calc-island-scoop bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-6 shadow-sm space-y-4 transition-colors relative">
+    <div id="balanco_section" className="calc-island-scoop bg-white dark:bg-[#1C201A] rounded-3xl border border-[#E5E2D9] dark:border-[#2C3328] p-6 shadow-sm space-y-4 transition-colors relative">
 
       <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-3 flex justify-between items-center">
         <div>
