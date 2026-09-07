@@ -305,7 +305,7 @@ export default function CornYieldCalculator({ onApplyYieldGoal, isConnected }: C
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className={`p-6 sm:p-7 ${isConnected ? 'rounded-b-3xl rounded-t-none border-x border-b border-t-0' : 'rounded-3xl border'} shadow-sm transition-colors ${
+        className={`p-6 sm:p-7 rounded-3xl border shadow-sm transition-colors ${
           isDark ? 'bg-[#1C201A] border-[#2C3328]' : 'bg-white border-[#E5E2D9]'
         }`}
       >

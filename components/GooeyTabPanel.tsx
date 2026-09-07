@@ -282,9 +282,10 @@ export default function GooeyTabPanel({
 
       {/* 
         TABS BAR WITH SEAMLESS UNLUMEN GOOEY CONNECTION:
-        - Active tab rises directly from the card top surface
-        - Concave fillets on both sides melt the tab into the card
-        - Inactive tabs sit quietly on background
+        - Active tab rises directly from the card top surface with matching border
+        - When first tab: no left inverse fillet, smooth continuous left border with content card
+        - When last tab: no right inverse fillet, smooth continuous right border with content card
+        - Middle tabs: smooth concave fillets on both sides with border strokes
       */}
       <div
         ref={tabsContainerRef}
@@ -295,21 +296,21 @@ export default function GooeyTabPanel({
         <div
           role="tablist"
           aria-label="Calculadoras Agronômicas N-Pro"
-          className="relative flex items-end gap-1 px-2 sm:px-4 w-full h-[52px]"
+          className="relative flex items-end gap-0 px-0 w-full h-[52px]"
         >
           {/* 
-            GOOEY LIQUID SURFACE:
-            Fused active tab ear connected directly to the card below
+            GOOEY LIQUID SURFACE & ACTIVE TAB EAR:
+            Fused active tab ear connected directly to the card below with matching border
           */}
           <div
-            className="absolute inset-0 pointer-events-none overflow-visible flex items-end px-2 sm:px-4"
+            className="absolute inset-0 pointer-events-none overflow-visible flex items-end px-0"
             style={{ filter: `url(#${gooeyFilterId})` }}
           >
-            {/* Shelf linking to card top */}
-            <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-white dark:bg-[#1C201A]" />
-
-            {ALL_4_TABS.map((tab) => {
+            {ALL_4_TABS.map((tab, idx) => {
               const isActive = activeTab === tab.id;
+              const isFirst = idx === 0;
+              const isLast = idx === ALL_4_TABS.length - 1;
+
               return (
                 <div
                   key={`gooey-tab-bg-${tab.id}`}
@@ -318,7 +319,13 @@ export default function GooeyTabPanel({
                   {isActive && (
                     <motion.div
                       layoutId="unlumen-gooey-active-ear"
-                      className="w-full h-full bg-white dark:bg-[#1C201A] rounded-t-2xl translate-y-[1px]"
+                      className={`w-full h-full bg-white dark:bg-[#1C201A] border-t border-l border-r border-[#E5E2D9] dark:border-[#2C3328] translate-y-[1px] ${
+                        isFirst
+                          ? 'rounded-tl-2xl rounded-tr-xl'
+                          : isLast
+                          ? 'rounded-tl-xl rounded-tr-2xl'
+                          : 'rounded-t-xl'
+                      }`}
                       transition={{
                         type: 'spring',
                         stiffness: 450,
@@ -334,31 +341,56 @@ export default function GooeyTabPanel({
 
           {/* 
             CONCAVE CORNER FILLETS (CONVEX TAB TO FLAT CARD TRANSITION):
-            Creates the continuous organic shoulder (Unlumen style)
+            Creates the continuous organic shoulder matching the card's border
           */}
-          <div className="absolute inset-0 pointer-events-none flex items-end px-2 sm:px-4 z-10 overflow-visible">
-            {ALL_4_TABS.map((tab) => {
+          <div className="absolute inset-0 pointer-events-none flex items-end px-0 z-10 overflow-visible">
+            {ALL_4_TABS.map((tab, idx) => {
               const isActive = activeTab === tab.id;
               if (!isActive) return <div key={`fillet-spacer-${tab.id}`} className="flex-1" />;
+
+              const isFirst = idx === 0;
+              const isLast = idx === ALL_4_TABS.length - 1;
 
               return (
                 <div
                   key={`fillet-${tab.id}`}
                   className="relative flex-1 h-[48px] flex items-end justify-between overflow-visible"
                 >
-                  {/* Left Concave Fillet */}
-                  <div className="absolute -left-[14px] bottom-0 w-[14px] h-[14px] overflow-hidden pointer-events-none">
-                    <svg viewBox="0 0 14 14" className="w-full h-full fill-white dark:fill-[#1C201A]">
-                      <path d="M14,0 C14,7.73 7.73,14 0,14 L14,14 Z" />
-                    </svg>
-                  </div>
+                  {/* Left Concave Fillet — omitted on first tab for seamless flat left edge */}
+                  {!isFirst && (
+                    <div className="absolute -left-[14px] bottom-0 w-[14px] h-[14px] overflow-visible pointer-events-none">
+                      <svg viewBox="0 0 14 14" className="w-full h-full overflow-visible">
+                        <path
+                          d="M14,0 C14,7.73 7.73,14 0,14 L14,14 Z"
+                          className="fill-white dark:fill-[#1C201A]"
+                        />
+                        <path
+                          d="M0,14 C7.73,14 14,7.73 14,0"
+                          fill="none"
+                          className="stroke-[#E5E2D9] dark:stroke-[#2C3328]"
+                          strokeWidth="1"
+                        />
+                      </svg>
+                    </div>
+                  )}
 
-                  {/* Right Concave Fillet */}
-                  <div className="absolute -right-[14px] bottom-0 w-[14px] h-[14px] overflow-hidden pointer-events-none">
-                    <svg viewBox="0 0 14 14" className="w-full h-full fill-white dark:fill-[#1C201A]">
-                      <path d="M0,0 C0,7.73 6.27,14 14,14 L0,14 Z" />
-                    </svg>
-                  </div>
+                  {/* Right Concave Fillet — omitted on last tab for seamless flat right edge */}
+                  {!isLast && (
+                    <div className="absolute -right-[14px] bottom-0 w-[14px] h-[14px] overflow-visible pointer-events-none">
+                      <svg viewBox="0 0 14 14" className="w-full h-full overflow-visible">
+                        <path
+                          d="M0,0 C0,7.73 6.27,14 14,14 L0,14 Z"
+                          className="fill-white dark:fill-[#1C201A]"
+                        />
+                        <path
+                          d="M0,0 C0,7.73 6.27,14 14,14"
+                          fill="none"
+                          className="stroke-[#E5E2D9] dark:stroke-[#2C3328]"
+                          strokeWidth="1"
+                        />
+                      </svg>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -413,9 +445,10 @@ export default function GooeyTabPanel({
 
       {/* 
         PHYSICAL 3D CARD CONTENT:
-        - Merged directly with active tab ear
+        - Merged directly with active tab ear (seamless integration)
+        - When first tab: rounded-tl-none so tab and card left border are one single line
+        - When last tab: rounded-tr-none so tab and card right border are one single line
         - 3D physical page transition with perspective, Y-rotation, and depth layering
-        - Subtle lateral thickness & realistic shadow
       */}
       <div
         id={`tabpanel-${activeTab}`}
@@ -439,7 +472,13 @@ export default function GooeyTabPanel({
               transformStyle: 'preserve-3d',
               transformOrigin: direction > 0 ? 'top left' : 'top right',
             }}
-            className="w-full relative rounded-b-3xl bg-white dark:bg-[#1C201A] border-x border-b border-[#E5E2D9] dark:border-[#2C3328] shadow-[0_20px_48px_-12px_rgba(0,0,0,0.12),0_4px_16px_-2px_rgba(0,0,0,0.04)] border-r-[4px] border-b-[4px] border-r-[#D0CCC0] dark:border-r-[#242A20] border-b-[#D0CCC0] dark:border-b-[#242A20]"
+            className={`w-full relative bg-white dark:bg-[#1C201A] border border-[#E5E2D9] dark:border-[#2C3328] shadow-[0_20px_48px_-12px_rgba(0,0,0,0.12),0_4px_16px_-2px_rgba(0,0,0,0.04)] border-r-[4px] border-b-[4px] border-r-[#D0CCC0] dark:border-r-[#242A20] border-b-[#D0CCC0] dark:border-b-[#242A20] ${
+              activeTabIdx === 0
+                ? 'rounded-b-3xl rounded-tr-3xl rounded-tl-none'
+                : activeTabIdx === ALL_4_TABS.length - 1
+                ? 'rounded-b-3xl rounded-tl-3xl rounded-tr-none'
+                : 'rounded-3xl'
+            }`}
           >
             {/* Lateral light edge — creates physical slab thickness feeling */}
             <div className="absolute inset-y-0 right-0 w-[2px] bg-gradient-to-b from-white/70 via-transparent to-black/15 dark:from-white/10 dark:to-black/35 pointer-events-none rounded-br-3xl" />

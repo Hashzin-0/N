@@ -61,10 +61,9 @@ export default React.memo(function Input3D({
   const mouseY = useMotionValue(0);
 
   const prevValueRef = useRef(value);
+  const displaySpanRef = useRef<HTMLSpanElement | null>(null);
+  const rafIdRef = useRef<number | null>(null);
   const [animDirection, setAnimDirection] = useState<'up' | 'down'>('up');
-  const motionValue = useMotionValue(value);
-  const springValue = useSpring(motionValue, { damping: 60, stiffness: 100 });
-  const [displayValue, setDisplayValue] = useState(value);
   const [isAnimating, setIsAnimating] = useState(false);
   const animTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -84,31 +83,57 @@ export default React.memo(function Input3D({
   const formatNumber = (num: number): string => numberFormatter.format(num);
 
   useEffect(() => {
-    const prevValue = prevValueRef.current;
-    if (prevValue !== value) {
-      const direction = value > prevValue ? 'up' : 'down';
-      setAnimDirection(direction);
-      if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
-      setIsAnimating(true);
-      motionValue.set(value);
-      animTimeoutRef.current = setTimeout(() => {
-        setIsAnimating(false);
-        setDisplayValue(value);
-      }, 400);
-      prevValueRef.current = value;
-    }
-  }, [value, motionValue]);
+    const from = prevValueRef.current;
+    const to = value;
+    prevValueRef.current = to;
 
-  useEffect(() => {
-    const unsubscribe = springValue.on('change', (latest) => {
-      setDisplayValue(Number(latest.toFixed(getDecimalPlaces(step))));
-    });
-    return () => unsubscribe();
-  }, [springValue, step]);
+    if (from === to) return;
+
+    const direction = to > from ? 'up' : 'down';
+    setAnimDirection(direction);
+    setIsAnimating(true);
+
+    if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
+    animTimeoutRef.current = setTimeout(() => {
+      setIsAnimating(false);
+    }, 450);
+
+    if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+
+    const startTime = performance.now();
+    const duration = 350; // ms — snappy & ultra-fluid
+
+    const stepFn = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      // Fluid easeOutCubic curve
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const current = from + (to - from) * ease;
+
+      if (displaySpanRef.current) {
+        displaySpanRef.current.textContent = formatNumber(current);
+      }
+
+      if (progress < 1) {
+        rafIdRef.current = requestAnimationFrame(stepFn);
+      } else {
+        if (displaySpanRef.current) {
+          displaySpanRef.current.textContent = formatNumber(to);
+        }
+      }
+    };
+
+    rafIdRef.current = requestAnimationFrame(stepFn);
+
+    return () => {
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    };
+  }, [value, step, decimalPlaces]);
 
   useEffect(() => {
     return () => {
       if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
   }, []);
 
@@ -305,18 +330,20 @@ export default React.memo(function Input3D({
                 <span className="tabular-nums tracking-wider">
                   {value === 0 ? (
                     <span className="text-[#8C897E] dark:text-[#9EA399]">{placeholder || '0'}</span>
-                  ) : isAnimating ? (
-                    <motion.span
-                      className="tabular-nums tracking-wider"
-                      style={{ color: animDirection === 'up' ? '#22c55e' : '#ef4444' }}
-                      initial={{ y: animDirection === 'up' ? 10 : -10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-                    >
-                      {formatNumber(displayValue)}
-                    </motion.span>
                   ) : (
-                    formatNumber(value)
+                    <span
+                      ref={displaySpanRef}
+                      className="tabular-nums tracking-wider transition-colors duration-300 inline-block"
+                      style={{
+                        color: isAnimating
+                          ? animDirection === 'up'
+                            ? '#22c55e'
+                            : '#ef4444'
+                          : undefined,
+                      }}
+                    >
+                      {formatNumber(value)}
+                    </span>
                   )}
                 </span>
               </div>

@@ -141,9 +141,9 @@ export default function Home() {
   // Active scenario preset
   const [activePreset, setActivePreset] = useState<string>('personalizado');
   
-  // Animation state for filling fields when loading presets
-  const [fillingFields, setFillingFields] = useState<Set<string>>(new Set());
-  const fillingTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // Animation state for filling fields when loading presets (single boolean to prevent re-render thrashing)
+  const [isFillingPreset, setIsFillingPreset] = useState(false);
+  const fillingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Tab state
   const [activeTab, setActiveTab] = useState<TabId>('nitrogen');
@@ -151,12 +151,15 @@ export default function Home() {
   const [bibliographyRef, setBibliographyRef] = useState<ABNTReference | null>(null);
 
 
-  // Handle preset loading — batch state updates with startTransition
+  // Handle preset loading — batch state updates with startTransition (instant, no lag)
   const handleLoadPreset = useCallback((preset: Preset) => {
-    fillingTimersRef.current.forEach(clearTimeout);
-    fillingTimersRef.current = [];
+    if (fillingTimerRef.current) clearTimeout(fillingTimerRef.current);
 
     setActivePreset(preset.id);
+    setIsFillingPreset(true);
+    fillingTimerRef.current = setTimeout(() => {
+      setIsFillingPreset(false);
+    }, 350);
 
     // Batch all value updates in a single transition (1 render instead of ~23)
     startTransition(() => {
@@ -172,26 +175,6 @@ export default function Home() {
       setV8v10Percent(preset.v8v10Percent);
       setV8v10Percent2(preset.v8v10Percent2);
       setBaseDoseMode(preset.baseDose2 > 0 ? 'range' : 'single');
-    });
-
-    // Staggered filling animation via requestAnimationFrame (visual only, no state thrashing)
-    const fieldNames = [
-      'yieldGoal', 'nRequirementPerBag', 'mosNContribution', 'soyNContribution',
-      'efficiency', 'baseDose', 'baseDose2', 'v4v6Percent', 'v4v6Percent2',
-      'v8v10Percent', 'v8v10Percent2',
-    ];
-    fieldNames.forEach((name, i) => {
-      const timer = setTimeout(() => {
-        setFillingFields(prev => new Set([...prev, name]));
-        setTimeout(() => {
-          setFillingFields(prev => {
-            const next = new Set(prev);
-            next.delete(name);
-            return next;
-          });
-        }, 300);
-      }, i * 60);
-      fillingTimersRef.current.push(timer);
     });
   }, []);
 
@@ -351,6 +334,60 @@ export default function Home() {
     onSetBibliographyReference,
   });
 
+  // Memoized tab contents to avoid unneeded re-renders when nitrogen parameters update
+  const productivityContent = useMemo(
+    () => (
+      <div className="w-full">
+        <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
+          <CornYieldCalculator
+            isConnected
+            onApplyYieldGoal={(scHa) => {
+              setYieldGoal(scHa);
+              setActivePreset('personalizado');
+              setActiveTab('nitrogen');
+              setSaveToast(`Meta de ${scHa} sc/ha calculada e aplicada na Adubação Nitrogenada!`);
+              setTimeout(() => setSaveToast(null), 4500);
+            }}
+          />
+        </ScrollStack>
+      </div>
+    ),
+    [],
+  );
+
+  const itrContent = useMemo(
+    () => (
+      <div className="w-full">
+        <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
+          <div className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328]">
+            <ITRCalculator isConnected />
+          </div>
+        </ScrollStack>
+      </div>
+    ),
+    [],
+  );
+
+  const abntContent = useMemo(
+    () => (
+      <div className="w-full">
+        <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
+          <div className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-6">
+            <AbntReferenceFormatter isConnected />
+            <BibliografiaAutoDetectCard
+              onReferenceSelected={(ref) => {
+                setBibliographyRef(ref);
+                setActiveTab("abnt");
+              }}
+              initialUrl=""
+            />
+          </div>
+        </ScrollStack>
+      </div>
+    ),
+    [],
+  );
+
   return (
     <>
       <LoadingSkeleton3D
@@ -472,7 +509,7 @@ export default function Home() {
             <div className="w-full">
               <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
         {/* INPUT SECTION — scenarios + inputs in one card */}
-            <div id="form_section" className="bg-white dark:bg-[#1C201A] p-6 rounded-b-3xl rounded-t-none shadow-sm border-x border-b border-[#E5E2D9] dark:border-[#2C3328] space-y-5 transition-colors">
+            <div id="form_section" className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-5 transition-colors">
 
               {/* HEADER */}
               <div className="flex items-center gap-3 border-b pb-4 border-[#F0EDE5] dark:border-[#2C3328]">
@@ -494,7 +531,7 @@ export default function Home() {
                 id="preset_selector"
                 presets={PRESETS}
                 activePreset={activePreset}
-                onPresetClick={(p) => withLock(() => handleLoadPreset(p))()}
+                onPresetClick={handleLoadPreset}
                 isDark={isDark}
               />
 
@@ -520,7 +557,7 @@ export default function Home() {
                   isDark={isDark}
                   accentColor="#5A5A40"
                   hint="Meta de rendimento em sacas de 60kg por hectare."
-                  filling={fillingFields.has('yieldGoal')}
+                  filling={isFillingPreset}
                 />
 
                 {/* N Requirement */}
@@ -536,7 +573,7 @@ export default function Home() {
                   isDark={isDark}
                   accentColor="#5A5A40"
                   hint="Extração unitária: 1.2 a 1.5 kg N por saca (padrão: 1.35)."
-                  filling={fillingFields.has('nRequirementPerBag')}
+                  filling={isFillingPreset}
                 />
 
                 {/* MOS Contribution */}
@@ -553,7 +590,7 @@ export default function Home() {
                   isDark={isDark}
                   accentColor="#5A5A40"
                   hint="Mineralização da Matéria Orgânica do Solo."
-                  filling={fillingFields.has('mosNContribution')}
+                  filling={isFillingPreset}
                 />
 
                 {/* Soy Credit */}
@@ -569,7 +606,7 @@ export default function Home() {
                   isDark={isDark}
                   accentColor="#5A5A40"
                   hint="Crédito de N da soja: 15 a 30 kg N/ha na sucessão Soja-Milho."
-                  filling={fillingFields.has('soyNContribution')}
+                  filling={isFillingPreset}
                 />
 
                 {/* Efficiency rate */}
@@ -587,7 +624,7 @@ export default function Home() {
                   isDark={isDark}
                   accentColor="#5A5A40"
                   hint="Eficiência padrão: 80% (fator 0.8). Perdas por volatilização/lixiviação."
-                  filling={fillingFields.has('efficiency')}
+                  filling={isFillingPreset}
                 />
 
               </div>
@@ -657,7 +694,7 @@ export default function Home() {
                       placeholder="Ex: 35"
                       isDark={isDark}
                       accentColor="#D4A373"
-                      filling={fillingFields.has('baseDose')}
+                      filling={isFillingPreset}
                     />
                     <Input3D
                       label="Max (kg N/ha)"
@@ -670,7 +707,7 @@ export default function Home() {
                       placeholder="0"
                       isDark={isDark}
                       accentColor="#D4A373"
-                      filling={fillingFields.has('baseDose2')}
+                      filling={isFillingPreset}
                     />
                   </CssGooeyStack>
 
@@ -713,7 +750,7 @@ export default function Home() {
                       placeholder="Ex: 50"
                       isDark={isDark}
                       accentColor="#5A5A40"
-                      filling={fillingFields.has('v4v6Percent')}
+                      filling={isFillingPreset}
                     />
                     <Input3D
                       label="Max %"
@@ -727,7 +764,7 @@ export default function Home() {
                       placeholder="0"
                       isDark={isDark}
                       accentColor="#5A5A40"
-                      filling={fillingFields.has('v4v6Percent2')}
+                      filling={isFillingPreset}
                     />
                   </CssGooeyStack>
 
@@ -789,7 +826,7 @@ export default function Home() {
                         accentColor="#8D6E63"
                         derived={v8v10Percent === 0}
                         hint={v8v10Percent === 0 ? `Auto-calculado: ${calculations.v8v10_1_auto}%` : undefined}
-                        filling={fillingFields.has('v8v10Percent')}
+                        filling={isFillingPreset}
                       />
                       <Input3D
                         label="Max %"
@@ -805,7 +842,7 @@ export default function Home() {
                         accentColor="#8D6E63"
                         derived={v8v10Percent2 === 0 && v4v6Percent2 > 0}
                         hint={v8v10Percent2 === 0 && v4v6Percent2 > 0 ? `Auto-calculado: ${calculations.v8v10_2_auto}%` : undefined}
-                        filling={fillingFields.has('v8v10Percent2')}
+                        filling={isFillingPreset}
                       />
                     </CssGooeyStack>
                   )}
@@ -874,47 +911,9 @@ export default function Home() {
           </ScrollStack>
             </div>
           }
-          productivityContent={
-            <div className="w-full">
-              <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
-                <CornYieldCalculator
-                  isConnected
-                  onApplyYieldGoal={(scHa) => {
-                    setYieldGoal(scHa);
-                    setActivePreset('personalizado');
-                    setActiveTab('nitrogen');
-                    setSaveToast(`Meta de ${scHa} sc/ha calculada e aplicada na Adubação Nitrogenada!`);
-                    setTimeout(() => setSaveToast(null), 4500);
-                  }}
-                />
-              </ScrollStack>
-            </div>
-          }
-          itrContent={
-            <div className="w-full">
-              <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
-                <div className="bg-white dark:bg-[#1C201A] p-6 rounded-b-3xl rounded-t-none shadow-sm border-x border-b border-[#E5E2D9] dark:border-[#2C3328]">
-                  <ITRCalculator isConnected />
-                </div>
-              </ScrollStack>
-            </div>
-          }
-          abntContent={
-            <div className="w-full">
-              <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
-                <div className="bg-white dark:bg-[#1C201A] p-6 rounded-b-3xl rounded-t-none shadow-sm border-x border-b border-[#E5E2D9] dark:border-[#2C3328] space-y-6">
-                  <AbntReferenceFormatter isConnected />
-                  <BibliografiaAutoDetectCard
-                    onReferenceSelected={(ref) => {
-                      setBibliographyRef(ref);
-                      setActiveTab("abnt");
-                    }}
-                    initialUrl=""
-                  />
-                </div>
-              </ScrollStack>
-            </div>
-          }
+          productivityContent={productivityContent}
+          itrContent={itrContent}
+          abntContent={abntContent}
         />
 
         {/* GEMINI LIVE VOICE ASSISTANT HUD WITH 3D ORB */}

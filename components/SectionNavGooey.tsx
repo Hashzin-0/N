@@ -1,10 +1,8 @@
 'use client';
 
-import React, { useMemo, useCallback, useRef, useEffect, useState } from 'react';
-import { motion, useTransform } from 'motion/react';
+import React, { useMemo, useCallback } from 'react';
 import { useTheme } from './ThemeProvider';
 import { useScrollSpy } from '@/hooks/useScrollSpy';
-import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MultiButton, type MultiButtonItem } from './godui/multi-button';
 import {
@@ -70,12 +68,6 @@ interface SectionNavGooeyProps {
 export default React.memo(function SectionNavGooey({ activeTab, activeSectionIds, onNavigate }: SectionNavGooeyProps) {
   const { isDark } = useTheme();
   const isMobile = useIsMobile();
-  const scrollProgressMV = useScrollProgress();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [fillWidth, setFillWidth] = useState(0);
-
-  const glowX = useTransform(scrollProgressMV, (v) => `${Math.max(0, Math.min(100, v * 100))}%`);
-  const glowY = useTransform(scrollProgressMV, (v) => `${Math.max(0, Math.min(100, v * 100))}%`);
 
   const sections = useMemo(() => {
     switch (activeTab) {
@@ -91,33 +83,26 @@ export default React.memo(function SectionNavGooey({ activeTab, activeSectionIds
 
   const currentSection = useScrollSpy({
     sectionIds,
-    rootMargin: '-25% 0px -45% 0px',
-    threshold: 0.1,
   });
 
-  const activeSet = useMemo(
-    () => new Set(activeSectionIds ?? (currentSection ? [currentSection] : [sectionIds[0]])),
-    [activeSectionIds, currentSection, sectionIds],
-  );
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const measure = () => {
-      const rect = el.getBoundingClientRect();
-      setFillWidth(Math.floor(rect.width));
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const selectedSectionId = useMemo(() => {
+    if (activeSectionIds && activeSectionIds.length > 0) {
+      return activeSectionIds[0];
+    }
+    return currentSection ?? sectionIds[0];
+  }, [activeSectionIds, currentSection, sectionIds]);
 
   const handleClick = useCallback(
     (sectionId: string) => {
       const el = document.getElementById(sectionId);
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const headerOffset = 80;
+        const elementPosition = el.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth',
+        });
         onNavigate?.(sectionId);
       }
     },
@@ -128,7 +113,7 @@ export default React.memo(function SectionNavGooey({ activeTab, activeSectionIds
     () =>
       sections.map((config) => {
         const Icon = config.icon;
-        const isActive = activeSet.has(config.id);
+        const isSelected = selectedSectionId === config.id;
         const colorHex = isDark ? config.colorDark : config.color;
 
         return {
@@ -136,9 +121,9 @@ export default React.memo(function SectionNavGooey({ activeTab, activeSectionIds
           icon: ({ className }: { className?: string }) => (
             <Icon
               className={`${className ?? 'size-4'} transition-transform duration-200 ${
-                isActive ? 'scale-110' : 'opacity-70'
+                isSelected ? 'scale-110' : 'opacity-70'
               }`}
-              style={{ color: isActive ? colorHex : undefined }}
+              style={{ color: isSelected ? colorHex : undefined }}
             />
           ),
           label: isMobile ? config.shortLabel : config.label,
@@ -146,100 +131,39 @@ export default React.memo(function SectionNavGooey({ activeTab, activeSectionIds
           onClick: () => handleClick(config.id),
         };
       }),
-    [sections, isDark, isMobile, activeSet, handleClick],
+    [sections, isDark, isMobile, selectedSectionId, handleClick],
   );
 
-  const accentColor = isDark ? '#9CB386' : '#5A5A40';
+  const accentColor = isDark ? '#9CB386' : '#2E6F40';
 
   return (
     <div
-      ref={containerRef}
-      className={`relative ${isMobile ? 'w-full' : 'h-full flex flex-col justify-start'}`}
+      className={`relative ${isMobile ? 'w-full flex justify-center py-1' : 'h-full flex flex-col justify-start py-2'}`}
       role="navigation"
       aria-label="Navegação de seções"
     >
       {/* 
-        3D CONTAINER SHELL (MIRRORS SELECT3D TOGGLE CONTAINER)
-        Features inset shadow + accent edge highlight
+        GODUI MULTI-BUTTON IN GOOEY MODE (LIQUID SHAPE AS IN SCREENSHOT 2):
+        - Clean floating gooey shape with SVG metaball bridges
+        - Free of continuous outer rectangular box container
+        - Dynamically tracks every single section synchronized with scroll
       */}
-      <div
-        className={`relative overflow-hidden rounded-2xl p-1 transition-colors duration-200 ${
-          isDark
-            ? 'bg-[#151913] border border-[#2B3327] shadow-[inset_0_2px_6px_rgba(0,0,0,0.5)]'
-            : 'bg-[#F2EFE9] border border-[#E0DCD3] shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
-        } ${isMobile ? 'w-full' : 'h-auto py-2'}`}
-      >
-        {/* 
-          SCROLL-SYNCED GLOW INDICATOR:
-          Glides across the gooey multi-select synchronized with page scroll,
-          illuminating the edge and surface contour.
-        */}
-        {isMobile ? (
-          <motion.div
-            style={{ left: glowX }}
-            className="absolute top-0 bottom-0 w-24 -translate-x-1/2 pointer-events-none z-0"
-            aria-hidden="true"
-          >
-            {/* Radial glow */}
-            <div
-              className="w-full h-full rounded-full opacity-60"
-              style={{
-                background: `radial-gradient(ellipse at center, ${accentColor}55 0%, ${accentColor}15 55%, transparent 75%)`,
-                filter: 'blur(8px)',
-              }}
-            />
-            {/* Top edge highlight */}
-            <div
-              className="absolute top-0 left-2 right-2 h-[2px] rounded-full opacity-80"
-              style={{
-                background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`,
-              }}
-            />
-          </motion.div>
-        ) : (
-          <motion.div
-            style={{ top: glowY }}
-            className="absolute left-0 right-0 h-24 -translate-y-1/2 pointer-events-none z-0"
-            aria-hidden="true"
-          >
-            {/* Radial glow */}
-            <div
-              className="w-full h-full rounded-full opacity-60"
-              style={{
-                background: `radial-gradient(ellipse at center, ${accentColor}55 0%, ${accentColor}15 55%, transparent 75%)`,
-                filter: 'blur(8px)',
-              }}
-            />
-            {/* Left edge highlight */}
-            <div
-              className="absolute top-2 bottom-2 left-0 w-[2px] rounded-full opacity-80"
-              style={{
-                background: `linear-gradient(180deg, transparent, ${accentColor}, transparent)`,
-              }}
-            />
-          </motion.div>
-        )}
-
-        {/* 
-          GODUI MULTI-BUTTON IN GOOEY MODE:
-          Provides the liquid gooey blob animation on selection & hover.
-        */}
-        <div className="relative z-10">
-          <MultiButton
-            gooey
-            variant="ghost"
-            size="md"
-            items={items}
-            fillWidth={fillWidth > 0 ? fillWidth : undefined}
-            highlightColor={accentColor}
-            className={
-              isMobile
-                ? 'w-full justify-around !gap-1'
-                : 'flex-col !rounded-xl w-full items-stretch justify-start space-y-1'
-            }
-          />
-        </div>
+      <div className={`relative z-10 flex ${isMobile ? 'justify-center' : 'w-full'}`}>
+        <MultiButton
+          gooey
+          variant="secondary"
+          size="md"
+          items={items}
+          selectedId={selectedSectionId}
+          highlightColor={accentColor}
+          className={
+            isMobile
+              ? 'justify-center !gap-0 overflow-visible shadow-md'
+              : 'flex-col w-full items-stretch justify-start space-y-1'
+          }
+        />
       </div>
     </div>
   );
 });
+

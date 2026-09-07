@@ -34,6 +34,8 @@ type MultiButtonRootProps = Omit<
 
 type MultiButtonSharedProps = MultiButtonRootProps & {
   items: MultiButtonItem[];
+  /** Optional active/selected item id to control active state (e.g. scroll sync or preset). */
+  selectedId?: string;
   /** Optional items used to reserve the same expanded label width as another row. */
   syncWidthTo?: MultiButtonItem[];
   /** Optional CSS color or token reference used for a faint active-item tint. */
@@ -42,6 +44,8 @@ type MultiButtonSharedProps = MultiButtonRootProps & {
   gooey?: boolean;
   variant?: MultiButtonVariant;
   size?: MultiButtonSize;
+  /** Optional fill width override in pixels. */
+  fillWidth?: number;
 };
 
 export type MultiButtonProps = MultiButtonSharedProps;
@@ -636,16 +640,23 @@ type MultiButtonLabelProps = {
   item: MultiButtonItem;
   reduceMotion: boolean;
   textClass: string;
+  highlightColor?: string;
+  active?: boolean;
 };
 
 const MultiButtonLabel = React.forwardRef<
   HTMLSpanElement,
   MultiButtonLabelProps
->(({ item, reduceMotion, textClass }, ref) => (
+>(({ item, reduceMotion, textClass, highlightColor, active }, ref) => (
   <motion.span
     ref={ref}
     {...labelMotion(reduceMotion)}
-    className={`relative z-raised -ml-1 shrink-0 whitespace-nowrap pr-2 font-medium leading-none ${textClass}`}
+    style={{
+      color: active && highlightColor ? highlightColor : undefined,
+    }}
+    className={`relative z-raised -ml-1 shrink-0 whitespace-nowrap pr-2 font-semibold leading-none transition-all duration-200 ${
+      active ? "scale-[1.06] font-bold" : ""
+    } ${textClass}`}
   >
     {item.label}
   </motion.span>
@@ -660,6 +671,7 @@ type MultiButtonItemButtonProps = {
   disclosureExpanded?: boolean;
   disabled: boolean;
   highlighted: boolean;
+  highlightColor?: string;
   gooey?: boolean;
   gooeyExpanded?: boolean;
   transparent?: boolean;
@@ -681,6 +693,8 @@ type MultiButtonItemButtonProps = {
 
 type MultiButtonItemIconProps = {
   actionIcon: MultiButtonItem["icon"];
+  active?: boolean;
+  highlightColor?: string;
   gooey: boolean;
   gooeyExpanded: boolean;
   iconClassName: string;
@@ -693,6 +707,8 @@ type MultiButtonItemIconProps = {
 
 function MultiButtonItemIcon({
   actionIcon: ActionIcon,
+  active,
+  highlightColor,
   gooey,
   gooeyExpanded,
   iconClassName,
@@ -706,16 +722,19 @@ function MultiButtonItemIcon({
   const iconTransition = reduceMotion
     ? ({ duration: 0 } as const)
     : CONTEXTUAL_ICON_TRANSITION;
-  const visibleState = { opacity: 1, scale: 1, filter: "blur(0px)" };
+  const visibleState = { opacity: 1, scale: active ? 1.15 : 1, filter: "blur(0px)" };
   const hiddenState = { opacity: 0, scale: 0.25, filter: "blur(4px)" };
 
   return (
     <span
       data-slot="multi-button-icon"
-      className={`relative z-raised flex h-full shrink-0 items-center justify-center motion-reduce:[transition:none] ${gooey ? GOOEY_ICON_TRANSITION_CLASSES[phase] : "[transition:transform_200ms_ease-out]"}`}
+      className={`relative z-raised flex h-full shrink-0 items-center justify-center motion-reduce:[transition:none] transition-all duration-200 ${
+        active ? "scale-110" : "scale-100"
+      } ${gooey ? GOOEY_ICON_TRANSITION_CLASSES[phase] : "[transition:transform_200ms_ease-out]"}`}
       style={{
         width: `${laneWidth}px`,
-        transform: `translateX(${iconOffset}px)`,
+        transform: `translateX(${iconOffset}px)${active ? " scale(1.15)" : ""}`,
+        color: active && highlightColor ? highlightColor : undefined,
       }}
       aria-hidden="true"
     >
@@ -755,6 +774,7 @@ function MultiButtonItemButton({
   disclosureExpanded,
   disabled,
   highlighted,
+  highlightColor,
   gooey = false,
   gooeyExpanded = true,
   transparent = false,
@@ -815,6 +835,8 @@ function MultiButtonItemButton({
       />
       <MultiButtonItemIcon
         actionIcon={item.icon}
+        active={active}
+        highlightColor={highlightColor}
         gooey={gooey}
         gooeyExpanded={gooeyExpanded}
         iconClassName={cfg.icon}
@@ -829,6 +851,8 @@ function MultiButtonItemButton({
           <MultiButtonLabel
             key={item.id}
             item={item}
+            active={active}
+            highlightColor={highlightColor}
             reduceMotion={reduceMotion}
             textClass={cfg.text}
           />
@@ -958,6 +982,7 @@ function MultiButtonItems({
           disclosureExpanded={compact && selected ? expanded : undefined}
           disabled={Boolean(item.disabled && !collapsedSelectedTrigger)}
           highlighted={!gooey && Boolean(highlightColor) && active}
+          highlightColor={highlightColor}
           gooey={gooey}
           gooeyExpanded={expanded}
           transparent={gooey}
@@ -1166,11 +1191,13 @@ const MultiButton = React.forwardRef<HTMLDivElement, MultiButtonProps>(
   (
     {
       items,
+      selectedId,
       syncWidthTo,
       highlightColor,
       gooey = false,
       variant = "default",
       size = "md",
+      fillWidth,
       className,
       style,
       ...props
@@ -1186,7 +1213,7 @@ const MultiButton = React.forwardRef<HTMLDivElement, MultiButtonProps>(
       setTouchExpandedId,
       touchExpandedId,
     } = useMultiButtonInteractions();
-    const activeId = hoveredId ?? touchExpandedId;
+    const activeId = hoveredId ?? touchExpandedId ?? selectedId ?? null;
     const {
       blobGeometries,
       cfg,
@@ -1216,15 +1243,18 @@ const MultiButton = React.forwardRef<HTMLDivElement, MultiButtonProps>(
       }
     };
 
+    const finalWidth = fillWidth && fillWidth > 0 ? fillWidth : expandedWidth;
+
     return (
       <MultiButtonRail
         activeId={activeId}
+        selectedId={selectedId}
         blobGeometries={blobGeometries}
         cellWidth={cfg.cell}
         className={className}
         compact={false}
         containerRef={containerRef}
-        containerWidth={expandedWidth}
+        containerWidth={finalWidth}
         expanded
         expandedWidth={expandedWidth}
         filterId={filterId}
@@ -1266,6 +1296,7 @@ const CompactMultiButton = React.forwardRef<
       gooey = false,
       variant = "default",
       size = "md",
+      fillWidth,
       className,
       style,
       onMouseEnter: onMouseEnterProp,

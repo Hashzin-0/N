@@ -33,7 +33,6 @@ export default React.memo(function Select3D({
   className = '',
 }: Select3DProps) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-  const { withLock } = useAnimationLock(400);
 
   return (
     <div className={`space-y-2 ${className}`} id={id}>
@@ -85,10 +84,10 @@ export default React.memo(function Select3D({
                 <motion.button
                   key={opt.value}
                   type="button"
-                  onClick={withLock(() => onChange(opt.value))}
+                  onClick={() => onChange(opt.value)}
                   onMouseEnter={() => setHoveredIdx(idx)}
                   onMouseLeave={() => setHoveredIdx(null)}
-                  className="relative text-left px-3 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 overflow-visible"
+                  className="relative text-left px-3 py-2.5 rounded-lg font-bold text-xs transition-all duration-200 overflow-visible"
                   style={{
                     transformStyle: 'preserve-3d',
                     boxShadow: isActive
