@@ -156,10 +156,12 @@ function SwapToggle3D({
       </div>
     </button>
   );
+}
 
 interface Props {
   calculations: Calculations;
   splitBase: 'dose_perdas' | 'necessidade_liquida';
+  v4v6Percent: number;
   v4v6Percent2: number;
   v8v10Percent: number;
   v8v10Percent2: number;
@@ -280,6 +282,7 @@ export default function ParcelamentoSection({ animKey,
               onClick={withLock(() => setShowAgronomicV4V6(!showAgronomicV4V6))}
               title={showAgronomicV4V6 ? 'Voltar para seus valores' : 'Ver padrão agronômico (50-60%)'}
             />
+          )}
           <div className="flex justify-between items-start">
             <div>
               <span className="bg-[#5A5A40] dark:bg-[#3D4D35] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
@@ -292,8 +295,8 @@ export default function ParcelamentoSection({ animKey,
                   <>Modo único: <strong>{v4v6Percent}%</strong> da meta ({baseLabel})</>
                 ) : (
                   <>Padrão agronômico: <strong>50% a 60%</strong> da meta ({baseLabel})</>
-})
-        </motion.div>              </p>
+                )}
+              </p>
             </div>
           </div>
 
@@ -402,8 +405,9 @@ export default function ParcelamentoSection({ animKey,
                   </span>
                 </div>
               </motion.div>
-})
-        </motion.div>          </AnimatePresence>
+            )}
+          </AnimatePresence>
+          </motion.div>
           </div>
           <CalculationMemoryPanel isVisible={showCalcV4V6} isDark={isDark}>
             <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
@@ -428,8 +432,8 @@ export default function ParcelamentoSection({ animKey,
                   <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Fórmula:</span> {v4v6Percent}% × {calculations.targetSplitTotal.toFixed(2)}</div>
                   <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Resultado:</span> {calculations.v4v6_1_kg.toFixed(2)} kg N/ha</div>
                 </>
-})
-        </motion.div>            </div>
+              )}
+            </div>
           </CalculationMemoryPanel>
         </div>
 
@@ -462,8 +466,7 @@ export default function ParcelamentoSection({ animKey,
               onClick={withLock(() => setShowAgronomicV8V10(!showAgronomicV8V10))}
               title={showAgronomicV8V10 ? 'Voltar para seus valores' : 'Ver padrão agronômico (20-30%)'}
             />
-})
-        </motion.div>
+          )}
           <div className="flex justify-between items-start">
             <div>
               <span className="bg-[#8D6E63] dark:bg-[#6D544C] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
@@ -476,8 +479,8 @@ export default function ParcelamentoSection({ animKey,
                   <>Auto-calculado: <strong>{calculations.v8v10_1_auto}%</strong> da meta ({baseLabel})</>
                 ) : (
                   <>Padrão agronômico: <strong>20% a 30%</strong> da meta ({baseLabel})</>
-})
-        </motion.div>              </p>
+                )}
+              </p>
             </div>
           </div>
 
@@ -586,8 +589,9 @@ export default function ParcelamentoSection({ animKey,
                   </span>
                 </div>
               </motion.div>
-})
-        </motion.div>          </AnimatePresence>
+            )}
+          </AnimatePresence>
+          </motion.div>
           </div>
           <CalculationMemoryPanel isVisible={showCalcV8V10} isDark={isDark}>
             <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
@@ -610,10 +614,10 @@ export default function ParcelamentoSection({ animKey,
                 <>
                   <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Percentual:</span> {calculations.v8v10_1_final}%</div>
                   <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Fórmula:</span> {calculations.v8v10_1_final}% × {calculations.targetSplitTotal.toFixed(2)}</div>
-                  <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Resultado:</span> {calculations.v8v10_1_kg.toFixed(2)} kg N/ha</div>
+                   <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Resultado:</span> {calculations.v8v10_1_kg.toFixed(2)} kg N/ha</div>
                 </>
-})
-        </motion.div>            </div>
+              )}
+            </div>
           </CalculationMemoryPanel>
         </div>
 

@@ -52,6 +52,7 @@ export default function PresetMultiButton<T extends { id: string; name: string }
         size="sm"
         items={items}
         highlightColor={isDark ? '#9CB386' : '#5A5A40'}
+        className="flex !w-full"
       />
     </div>
   );

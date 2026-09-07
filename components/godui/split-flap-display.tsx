@@ -157,34 +157,35 @@ function FlapDigit({
 }: FlapDigitProps) {
   const reduce = useReducedMotion();
   const [settled, setSettled] = React.useState(" ");
-  const steppedRef = React.useRef(0);
-  const lastDesiredRef = React.useRef(" ");
+  const [stepped, setStepped] = React.useState(0);
+  const [lastDesired, setLastDesired] = React.useState(" ");
 
   // Blank until the board is scrolled into view, then settle on the target.
   const desired = active ? target : " ";
 
   // New target → reset the per-column wave counter so the first flip staggers.
-  if (desired !== lastDesiredRef.current) {
-    lastDesiredRef.current = desired;
-    steppedRef.current = 0;
+  if (desired !== lastDesired) {
+    setLastDesired(desired);
+    setStepped(0);
   }
 
+  // Fast-forward: if the distance is too large, jump ahead so we don't spin forever.
+  const needsFastForward = !reduce && desired !== " " && fwdDistance(settled, desired, charset) > maxFlaps;
+  const effectiveSettled = needsFastForward ? charAtOffset(desired, -maxFlaps, charset) : settled;
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fast-forward only
   React.useEffect(() => {
-    if (reduce) {
-      setSettled(desired);
-      return;
+    if (needsFastForward && settled !== effectiveSettled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fast-forward sync
+      setSettled(effectiveSettled);
     }
-    // Never spin more than `maxFlaps` — fast-forward the head of a long run.
-    // Blanks clear in one flip (see stepToward), so they never pre-position.
-    if (desired !== " " && fwdDistance(settled, desired, charset) > maxFlaps) {
-      setSettled(charAtOffset(desired, -maxFlaps, charset));
-    }
-  }, [reduce, desired, settled, charset, maxFlaps]);
+  });
 
-  const flipping = !reduce && settled !== desired;
-  const next = flipping ? stepToward(settled, desired, charset) : settled;
+  const displaySettled = reduce ? desired : effectiveSettled;
+  const flipping = !reduce && displaySettled !== desired;
+  const next = flipping ? stepToward(displaySettled, desired, charset) : displaySettled;
 
-  const firstOfRun = steppedRef.current === 0;
+  const firstOfRun = stepped === 0;
   const fallDelay = firstOfRun ? startDelay : 0;
 
   return (
@@ -195,13 +196,13 @@ function FlapDigit({
       {/* Static leaves: the next glyph's top is revealed as the old top falls;
           the old bottom holds until the new bottom rises over it. */}
       <Half char={next} part="top" />
-      <Half char={settled} part="bottom" />
+      <Half char={displaySettled} part="bottom" />
 
       {flipping ? (
         // Keyed on the step so each flip remounts and restarts the keyframes.
-        <React.Fragment key={`${settled}-${next}`}>
+        <React.Fragment key={`${displaySettled}-${next}`}>
           <Half
-            char={settled}
+            char={displaySettled}
             part="top"
             className="z-raised origin-bottom animate-split-flap-fall [backface-visibility:hidden] [transform-style:preserve-3d]"
             style={{ animationDelay: `${fallDelay}s` }}
@@ -212,7 +213,7 @@ function FlapDigit({
             className="z-raised origin-top animate-split-flap-rise [backface-visibility:hidden] [transform-style:preserve-3d]"
             style={{ animationDelay: `${fallDelay + TICK}s` }}
             onAnimationEnd={() => {
-              steppedRef.current += 1;
+              setStepped(s => s + 1);
               setSettled(next);
             }}
           />

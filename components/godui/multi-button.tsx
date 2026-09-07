@@ -42,6 +42,8 @@ type MultiButtonSharedProps = MultiButtonRootProps & {
   gooey?: boolean;
   variant?: MultiButtonVariant;
   size?: MultiButtonSize;
+  /** Disable the blur animation on labels and icons during enter/exit transitions. */
+  disableBlur?: boolean;
 };
 
 export type MultiButtonProps = MultiButtonSharedProps;
@@ -615,15 +617,16 @@ function MultiButtonBlobLayer({
   );
 }
 
-function labelMotion(reduceMotion: boolean) {
+function labelMotion(reduceMotion: boolean, disableBlur?: boolean) {
+  const blurAmount = disableBlur ? "blur(0px)" : "blur(4px)";
   return {
     initial: reduceMotion
       ? false
-      : { opacity: 0, scale: 0.25, filter: "blur(4px)" },
+      : { opacity: 0, scale: 0.25, filter: blurAmount },
     animate: { opacity: 1, scale: 1, filter: "blur(0px)" },
     exit: reduceMotion
       ? undefined
-      : { opacity: 0, scale: 0.25, filter: "blur(4px)" },
+      : { opacity: 0, scale: 0.25, filter: blurAmount },
     transition: reduceMotion
       ? { duration: 0 }
       : {
@@ -638,15 +641,16 @@ type MultiButtonLabelProps = {
   item: MultiButtonItem;
   reduceMotion: boolean;
   textClass: string;
+  disableBlur?: boolean;
 };
 
 const MultiButtonLabel = React.forwardRef<
   HTMLSpanElement,
   MultiButtonLabelProps
->(({ item, reduceMotion, textClass }, ref) => (
+>(({ item, reduceMotion, textClass, disableBlur }, ref) => (
   <motion.span
     ref={ref}
-    {...labelMotion(reduceMotion)}
+    {...labelMotion(reduceMotion, disableBlur)}
     className={`relative z-raised -ml-1 shrink-0 whitespace-nowrap pr-2 font-medium leading-none ${textClass}`}
   >
     {item.label}
@@ -673,6 +677,7 @@ type MultiButtonItemButtonProps = {
   restIcon?: MultiButtonItem["icon"];
   showRestIcon?: boolean;
   visible?: boolean;
+  disableBlur?: boolean;
   onTouchAction: (
     event: React.PointerEvent<HTMLButtonElement>,
     id: string,
@@ -691,6 +696,7 @@ type MultiButtonItemIconProps = {
   reduceMotion: boolean;
   restIcon?: MultiButtonItem["icon"];
   showRestIcon: boolean;
+  disableBlur?: boolean;
 };
 
 function MultiButtonItemIcon({
@@ -703,13 +709,15 @@ function MultiButtonItemIcon({
   reduceMotion,
   restIcon: RestIcon,
   showRestIcon,
+  disableBlur,
 }: MultiButtonItemIconProps) {
   const phase = gooeyPhase(gooeyExpanded);
   const iconTransition = reduceMotion
     ? ({ duration: 0 } as const)
     : CONTEXTUAL_ICON_TRANSITION;
+  const blurAmount = disableBlur ? "blur(0px)" : "blur(4px)";
   const visibleState = { opacity: 1, scale: 1, filter: "blur(0px)" };
-  const hiddenState = { opacity: 0, scale: 0.25, filter: "blur(4px)" };
+  const hiddenState = { opacity: 0, scale: 0.25, filter: blurAmount };
 
   return (
     <span
@@ -768,6 +776,7 @@ function MultiButtonItemButton({
   restIcon,
   showRestIcon = false,
   visible = true,
+  disableBlur,
   onTouchAction,
   onHover,
   onAction,
@@ -825,6 +834,7 @@ function MultiButtonItemButton({
         reduceMotion={reduceMotion}
         restIcon={restIcon}
         showRestIcon={showRestIcon}
+        disableBlur={disableBlur}
       />
       <AnimatePresence initial={false} mode="popLayout">
         {active && (
@@ -833,6 +843,7 @@ function MultiButtonItemButton({
             item={item}
             reduceMotion={reduceMotion}
             textClass={cfg.text}
+            disableBlur={disableBlur}
           />
         )}
       </AnimatePresence>
@@ -897,6 +908,7 @@ type MultiButtonItemsProps = {
   selectedId?: string;
   size: MultiButtonSize;
   variant: MultiButtonVariant;
+  disableBlur?: boolean;
 };
 
 function MultiButtonItems({
@@ -917,6 +929,7 @@ function MultiButtonItems({
   selectedId,
   size,
   variant,
+  disableBlur,
 }: MultiButtonItemsProps) {
   const cfg = SIZE_CONFIG[size];
 
@@ -971,6 +984,7 @@ function MultiButtonItems({
           restIcon={compact && selected ? restIcon : undefined}
           showRestIcon={compact && selected && Boolean(restIcon) && !expanded}
           visible={!compact || expanded || selected}
+          disableBlur={disableBlur}
           onTouchAction={onTouchAction}
           onHover={onHover}
           onAction={onAction}
@@ -1012,6 +1026,7 @@ function MultiButtonRailContent({
   selectedId,
   size,
   variant,
+  disableBlur,
 }: MultiButtonRailContentProps) {
   return (
     <>
@@ -1052,6 +1067,7 @@ function MultiButtonRailContent({
         selectedId={selectedId}
         size={size}
         variant={variant}
+        disableBlur={disableBlur}
       />
     </>
   );
@@ -1103,7 +1119,6 @@ function MultiButtonRail({
       ref={setMergedRef}
       data-slot={slot}
       role="group"
-      aria-expanded={compact ? expanded : undefined}
       style={
         {
           ...style,
@@ -1187,6 +1202,7 @@ const MultiButton = React.forwardRef<HTMLDivElement, MultiButtonProps>(
       size = "md",
       className,
       style,
+      disableBlur,
       ...props
     },
     ref,
@@ -1258,6 +1274,7 @@ const MultiButton = React.forwardRef<HTMLDivElement, MultiButtonProps>(
         slot="multi-button"
         style={style}
         variant={variant}
+        disableBlur={disableBlur}
       />
     );
   },

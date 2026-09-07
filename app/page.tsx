@@ -544,6 +544,21 @@ export default function Home() {
         {/* INPUT SECTION — scenarios + inputs in one card */}
             <div id="form_section" className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-5 transition-colors">
 
+              {/* HEADER */}
+              <div className="flex items-center gap-3 border-b pb-4 border-[#F0EDE5] dark:border-[#2C3328]">
+                <div className="p-3 rounded-2xl bg-[#D4A373]/20 text-[#D4A373] border border-[#D4A373]/30">
+                  <Calculator className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#5A5A40] dark:text-[#E8E7DF]">
+                    Calculadora de Nitrogênio
+                  </h2>
+                  <p className="text-xs sm:text-sm text-[#8C897E] dark:text-[#A6A395] mt-0.5">
+                    Cálculo de dose, extração, necessidade líquida e parcelamento de N para milho.
+                  </p>
+                </div>
+              </div>
+
               {/* Scenario chips */}
               <PresetMultiButton
                 id="preset_selector"

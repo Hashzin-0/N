@@ -38,18 +38,18 @@ export default function DetailedMathPanel({ calculations, mosNContribution, soyN
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans pt-2">
           <div className="space-y-1.5">
-            <div>• <strong>Necessidade total de N (Extração):</strong> {calculations.totalExtraction.toFixed(2)} kg N/ha</div>
-            <div>• <strong>N proveniente da MOS:</strong> {mosNContribution.toFixed(2)} kg N/ha</div>
-            <div>• <strong>Crédito da Soja:</strong> {soyNContribution.toFixed(2)} kg N/ha</div>
-            <div>• <strong>Necessidade líquida de N:</strong> {calculations.liquidNeed.toFixed(2)} kg N/ha</div>
-            <div>• <strong>Dose de N a aplicar (com perdas):</strong> {calculations.recommendedDose.toFixed(2)} kg N/ha</div>
+            <div className="flex items-center gap-1">• <strong>Necessidade total de N (Extração):</strong> <SplitFlapValue value={calculations.totalExtraction} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
+            <div className="flex items-center gap-1">• <strong>N proveniente da MOS:</strong> <SplitFlapValue value={mosNContribution} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
+            <div className="flex items-center gap-1">• <strong>Crédito da Soja:</strong> <SplitFlapValue value={soyNContribution} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
+            <div className="flex items-center gap-1">• <strong>Necessidade líquida de N:</strong> <SplitFlapValue value={calculations.liquidNeed} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
+            <div className="flex items-center gap-1">• <strong>Dose de N a aplicar (com perdas):</strong> <SplitFlapValue value={calculations.recommendedDose} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
           </div>
           <div className="space-y-1.5">
-            <div>• <strong>Dose aplicada na Base:</strong> {calculations.base1_kg} kg N/ha</div>
-            <div>• <strong>Faixa V4-V6 (50% a 60%):</strong> {calculations.v4v6_50.toFixed(2)} a {calculations.v4v6_60.toFixed(2)} kg N/ha</div>
-            <div>• <strong>Faixa V8-V10 (20% a 30%):</strong> {calculations.v8v10_20.toFixed(2)} a {calculations.v8v10_30.toFixed(2)} kg N/ha</div>
-            <div>• <strong>Diferença de dose (V4-V6 vs V8-V10):</strong> {calculations.splitDifference} kg N/ha</div>
-            <div>• <strong>Soma das parcelas aplicadas:</strong> {calculations.sumOfSplits} kg N/ha (Meta: {calculations.targetSplitTotal} kg N/ha)</div>
+            <div className="flex items-center gap-1">• <strong>Dose aplicada na Base:</strong> <SplitFlapValue value={calculations.base1_kg} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
+            <div className="flex items-center gap-1">• <strong>Faixa V4-V6 (50% a 60%):</strong> <SplitFlapValue value={calculations.v4v6_50} decimalPlaces={2} size="sm" /> a <SplitFlapValue value={calculations.v4v6_60} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
+            <div className="flex items-center gap-1">• <strong>Faixa V8-V10 (20% a 30%):</strong> <SplitFlapValue value={calculations.v8v10_20} decimalPlaces={2} size="sm" /> a <SplitFlapValue value={calculations.v8v10_30} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
+            <div className="flex items-center gap-1">• <strong>Diferença de dose (V4-V6 vs V8-V10):</strong> <SplitFlapValue value={calculations.splitDifference} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
+            <div className="flex items-center gap-1">• <strong>Soma das parcelas aplicadas:</strong> <SplitFlapValue value={calculations.sumOfSplits} decimalPlaces={2} size="sm" /> kg N/ha (Meta: <SplitFlapValue value={calculations.targetSplitTotal} decimalPlaces={2} size="sm" unit="kg N/ha" />)</div>
           </div>
         </div>
       </div>

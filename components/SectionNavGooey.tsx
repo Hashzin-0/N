@@ -6,7 +6,7 @@ import { useScrollSpy } from '@/hooks/useScrollSpy';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MultiButton, type MultiButtonItem } from './godui/multi-button';
-import GeometryIcon3D from './GeometryIcon3D';
+import NavSvgIcon from './NavSvgIcon';
 
 interface SectionConfig {
   id: string;
@@ -82,7 +82,7 @@ export default function SectionNavGooey({ activeTab, onNavigate }: SectionNavGoo
         return {
           id: config.id,
           icon: ({ className }: { className?: string }) => (
-            <GeometryIcon3D
+            <NavSvgIcon
               geometry={config.geometry}
               color={colorHex}
               isActive={currentSection === config.id}
@@ -139,7 +139,8 @@ export default function SectionNavGooey({ activeTab, onNavigate }: SectionNavGoo
           size="md"
           items={items}
           highlightColor={isDark ? '#9CB386' : '#5A5A40'}
-          className={isMobile ? 'w-full' : 'flex-col !rounded-2xl h-full items-stretch'}
+          disableBlur
+          className={isMobile ? 'w-full justify-center gap-2' : 'flex-col !rounded-2xl h-full items-stretch justify-center gap-3'}
         />
       </div>
 
