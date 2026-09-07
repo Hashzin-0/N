@@ -18,6 +18,7 @@ export default function DarkMode3DToggle() {
   const isHovered = useRef<boolean>(false);
   const animFrameId = useRef<number | null>(null);
   const [contextLost, setContextLost] = useState(false);
+  const [rendererFailed, setRendererFailed] = useState(false);
 
   const { webglSupported, acquire, release } = useWebGLManager();
 
@@ -31,7 +32,7 @@ export default function DarkMode3DToggle() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || contextLost || !webglSupported) return;
+    if (!canvas || contextLost || !webglSupported || rendererFailed) return;
 
     let renderer: THREE.WebGLRenderer | null = null;
     let clock: THREE.Clock | null = null;
@@ -44,6 +45,7 @@ export default function DarkMode3DToggle() {
 
     const onContextRestored = () => {
       setContextLost(false);
+      setRendererFailed(false);
     };
 
     canvas.addEventListener('webglcontextlost', onContextLost);
@@ -59,7 +61,13 @@ export default function DarkMode3DToggle() {
       camera.position.z = 2.8;
 
       renderer = acquire(canvas, { powerPreference: 'high-performance' });
-      if (!renderer) return;
+      if (!renderer) {
+        setTimeout(() => setRendererFailed(true), 0);
+        return () => {
+          canvas.removeEventListener('webglcontextlost', onContextLost);
+          canvas.removeEventListener('webglcontextrestored', onContextRestored);
+        };
+      }
       renderer.setSize(width, height);
       rendererRef.current = renderer;
 
@@ -146,7 +154,7 @@ export default function DarkMode3DToggle() {
       if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
       if (renderer) release(renderer);
     };
-  }, [contextLost, webglSupported, acquire, release]);
+  }, [contextLost, webglSupported, rendererFailed, acquire, release]);
 
   const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -181,7 +189,7 @@ export default function DarkMode3DToggle() {
       aria-label="Alternar tema claro e escuro"
     >
       <div className="relative w-8 h-8 flex items-center justify-center overflow-visible">
-        {!webglSupported || contextLost ? (
+        {!webglSupported || contextLost || rendererFailed ? (
           <WebGLFallback
             variant="icon"
             color={isDarkActive ? '#1e293b' : '#fef3c7'}

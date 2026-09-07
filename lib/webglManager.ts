@@ -7,7 +7,12 @@ export function isWebGLAvailable(): boolean {
   if (typeof window === 'undefined') return false;
   try {
     const canvas = document.createElement('canvas');
-    webglAvailable = !!(canvas.getContext('webgl') || canvas.getContext('experimental-webgl'));
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    webglAvailable = !!gl;
+    if (gl) {
+      const loseCtx = (gl as WebGLRenderingContext).getExtension('WEBGL_lose_context');
+      if (loseCtx) loseCtx.loseContext();
+    }
   } catch {
     webglAvailable = false;
   }
@@ -73,6 +78,8 @@ export function acquireRenderer(
   canvas: HTMLCanvasElement,
   options: RendererOptions = {}
 ): THREE.WebGLRenderer | null {
+  if (!isWebGLAvailable()) return null;
+
   const existing = activeRenderers.find((r) => r.canvas === canvas && r.inUse);
   if (existing) return existing.renderer;
 
@@ -81,21 +88,30 @@ export function acquireRenderer(
     free.inUse = true;
     free.canvas = canvas;
     try {
-      free.renderer.dispose();
+      try {
+        free.renderer.dispose();
+      } catch {}
       const renderer = createRenderer(canvas, options);
       free.renderer = renderer;
       return renderer;
     } catch {
       free.inUse = false;
+      const idx = activeRenderers.indexOf(free);
+      if (idx !== -1) activeRenderers.splice(idx, 1);
       return null;
     }
   }
 
   if (activeRenderers.length >= MAX_RENDERERS) {
-    const oldest = activeRenderers[0];
-    oldest.renderer.dispose();
-    oldest.inUse = false;
-    activeRenderers.shift();
+    const oldest = activeRenderers.shift();
+    if (oldest) {
+      try {
+        const loseCtx = oldest.renderer.getContext()?.getExtension('WEBGL_lose_context');
+        if (loseCtx) loseCtx.loseContext();
+        oldest.renderer.dispose();
+      } catch {}
+      oldest.inUse = false;
+    }
   }
 
   try {
@@ -109,13 +125,15 @@ export function acquireRenderer(
 }
 
 export function releaseRenderer(renderer: THREE.WebGLRenderer): void {
-  const entry = activeRenderers.find((r) => r.renderer === renderer);
-  if (entry) {
-    entry.inUse = false;
-    entry.renderer.dispose();
-  } else {
-    renderer.dispose();
+  const idx = activeRenderers.findIndex((r) => r.renderer === renderer);
+  if (idx !== -1) {
+    activeRenderers.splice(idx, 1);
   }
+  try {
+    const loseCtx = renderer.getContext()?.getExtension('WEBGL_lose_context');
+    if (loseCtx) loseCtx.loseContext();
+    renderer.dispose();
+  } catch {}
 }
 
 function createRenderer(canvas: HTMLCanvasElement, options: RendererOptions): THREE.WebGLRenderer {
@@ -138,7 +156,11 @@ export function getActiveRendererCount(): number {
 
 export function disposeAllRenderers(): void {
   for (const entry of activeRenderers) {
-    entry.renderer.dispose();
+    try {
+      const loseCtx = entry.renderer.getContext()?.getExtension('WEBGL_lose_context');
+      if (loseCtx) loseCtx.loseContext();
+      entry.renderer.dispose();
+    } catch {}
     entry.inUse = false;
   }
   activeRenderers.length = 0;

@@ -7,36 +7,58 @@ import { useScrollSpy } from '@/hooks/useScrollSpy';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MultiButton, type MultiButtonItem } from './godui/multi-button';
-import NavSvgIcon from './NavSvgIcon';
+import {
+  FolderGit2,
+  Sliders,
+  Sparkles,
+  Layers,
+  Scale,
+  Calculator,
+  LayoutDashboard,
+  AlertTriangle,
+  Eye,
+  Trophy,
+  Landmark,
+  FileText,
+  BookOpen,
+  ScanSearch,
+} from 'lucide-react';
 
 interface SectionConfig {
   id: string;
   label: string;
   shortLabel: string;
-  geometry: 'dodecahedron' | 'box' | 'octahedron' | 'torusknot' | 'icosahedron' | 'cone' | 'torus' | 'sphere' | 'cylinder';
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   color: string;
   colorDark: string;
 }
 
 const NITROGEN_SECTIONS: SectionConfig[] = [
-  { id: 'preset_selector', label: 'Cenários', shortLabel: 'Cenários', geometry: 'dodecahedron', color: '#5A5A40', colorDark: '#9CB386' },
-  { id: 'form_section', label: 'Parâmetros', shortLabel: 'Parâmetros', geometry: 'box', color: '#5A5A40', colorDark: '#9CB386' },
-  { id: 'results_section', label: 'Resultados', shortLabel: 'Resultados', geometry: 'octahedron', color: '#2E6F40', colorDark: '#86efac' },
-  { id: 'parceling_section', label: 'Parcelamento', shortLabel: 'Parcelamento', geometry: 'torusknot', color: '#D4A373', colorDark: '#D4A373' },
-  { id: 'balanco_section', label: 'Balanço', shortLabel: 'Balanço', geometry: 'octahedron', color: '#2E6F40', colorDark: '#86efac' },
-  { id: 'detailed_math_panel', label: 'Fórmulas', shortLabel: 'Fórmulas', geometry: 'icosahedron', color: '#8D6E63', colorDark: '#CBB5A1' },
+  { id: 'preset_selector', label: 'Cenários', shortLabel: 'Cenários', icon: FolderGit2, color: '#5A5A40', colorDark: '#9CB386' },
+  { id: 'form_section', label: 'Parâmetros', shortLabel: 'Parâmetros', icon: Sliders, color: '#5A5A40', colorDark: '#9CB386' },
+  { id: 'results_section', label: 'Resultados', shortLabel: 'Resultados', icon: Sparkles, color: '#2E6F40', colorDark: '#86efac' },
+  { id: 'parceling_section', label: 'Parcelamento', shortLabel: 'Parcelamento', icon: Layers, color: '#D4A373', colorDark: '#D4A373' },
+  { id: 'balanco_section', label: 'Balanço', shortLabel: 'Balanço', icon: Scale, color: '#2E6F40', colorDark: '#86efac' },
+  { id: 'detailed_math_panel', label: 'Fórmulas', shortLabel: 'Fórmulas', icon: Calculator, color: '#8D6E63', colorDark: '#CBB5A1' },
 ];
 
 const CORN_SECTIONS: SectionConfig[] = [
-  { id: 'corn_yield_header', label: 'Visão Geral', shortLabel: 'Visão Geral', geometry: 'sphere', color: '#C19262', colorDark: '#D4A373' },
-  { id: 'corn_yield_params', label: 'Parâmetros', shortLabel: 'Parâmetros', geometry: 'cylinder', color: '#5A5A40', colorDark: '#9CB386' },
-  { id: 'corn_yield_alerts', label: 'Alertas', shortLabel: 'Alertas', geometry: 'cone', color: '#D4A373', colorDark: '#E0A96D' },
-  { id: 'corn_yield_visual', label: 'Visual', shortLabel: 'Visual', geometry: 'torus', color: '#C19262', colorDark: '#D4A373' },
-  { id: 'corn_yield_results', label: 'Resultados', shortLabel: 'Resultados', geometry: 'octahedron', color: '#2E6F40', colorDark: '#86efac' },
+  { id: 'corn_yield_header', label: 'Visão Geral', shortLabel: 'Visão', icon: LayoutDashboard, color: '#C19262', colorDark: '#D4A373' },
+  { id: 'corn_yield_params', label: 'Parâmetros', shortLabel: 'Parâmetros', icon: Sliders, color: '#5A5A40', colorDark: '#9CB386' },
+  { id: 'corn_yield_alerts', label: 'Alertas', shortLabel: 'Alertas', icon: AlertTriangle, color: '#D4A373', colorDark: '#E0A96D' },
+  { id: 'corn_yield_visual', label: 'Visual 3D', shortLabel: 'Visual', icon: Eye, color: '#C19262', colorDark: '#D4A373' },
+  { id: 'corn_yield_results', label: 'Resultados', shortLabel: 'Resultados', icon: Trophy, color: '#2E6F40', colorDark: '#86efac' },
+];
+
+const ITR_SECTIONS: SectionConfig[] = [
+  { id: 'itr_section', label: 'Cálculo ITR', shortLabel: 'ITR', icon: Landmark, color: '#5A5A40', colorDark: '#9CB386' },
+  { id: 'itr_params_section', label: 'Parâmetros VTN', shortLabel: 'Parâmetros', icon: Sliders, color: '#5A5A40', colorDark: '#9CB386' },
+  { id: 'itr_results_section', label: 'Demonstrativo', shortLabel: 'Demonstrativo', icon: FileText, color: '#2E6F40', colorDark: '#86efac' },
 ];
 
 const ABNT_SECTIONS: SectionConfig[] = [
-  { id: 'abnt_section', label: 'Referências ABNT', shortLabel: 'ABNT', geometry: 'cylinder', color: '#5A5A40', colorDark: '#9CB386' },
+  { id: 'abnt_section', label: 'Referências ABNT', shortLabel: 'ABNT', icon: BookOpen, color: '#5A5A40', colorDark: '#9CB386' },
+  { id: 'bibliography_autodetect', label: 'Detector Fontes', shortLabel: 'Detector', icon: ScanSearch, color: '#2E6F40', colorDark: '#86efac' },
 ];
 
 interface SectionNavGooeyProps {
@@ -51,13 +73,15 @@ export default React.memo(function SectionNavGooey({ activeTab, activeSectionIds
   const scrollProgressMV = useScrollProgress();
   const containerRef = useRef<HTMLDivElement>(null);
   const [fillWidth, setFillWidth] = useState(0);
-  const glowX = useTransform(scrollProgressMV, (v) => `${v * 100}%`);
-  const glowY = useTransform(scrollProgressMV, (v) => `${v * 100}%`);
+
+  const glowX = useTransform(scrollProgressMV, (v) => `${Math.max(0, Math.min(100, v * 100))}%`);
+  const glowY = useTransform(scrollProgressMV, (v) => `${Math.max(0, Math.min(100, v * 100))}%`);
 
   const sections = useMemo(() => {
     switch (activeTab) {
       case 'nitrogen': return NITROGEN_SECTIONS;
       case 'productivity': return CORN_SECTIONS;
+      case 'itr': return ITR_SECTIONS;
       case 'abnt': return ABNT_SECTIONS;
       default: return NITROGEN_SECTIONS;
     }
@@ -67,13 +91,13 @@ export default React.memo(function SectionNavGooey({ activeTab, activeSectionIds
 
   const currentSection = useScrollSpy({
     sectionIds,
-    rootMargin: '-30% 0px -50% 0px',
+    rootMargin: '-25% 0px -45% 0px',
     threshold: 0.1,
   });
 
   const activeSet = useMemo(
-    () => new Set(activeSectionIds ?? (currentSection ? [currentSection] : [])),
-    [activeSectionIds, currentSection],
+    () => new Set(activeSectionIds ?? (currentSection ? [currentSection] : [sectionIds[0]])),
+    [activeSectionIds, currentSection, sectionIds],
   );
 
   useEffect(() => {
@@ -103,16 +127,18 @@ export default React.memo(function SectionNavGooey({ activeTab, activeSectionIds
   const items: MultiButtonItem[] = useMemo(
     () =>
       sections.map((config) => {
-        const colorHex = isDark ? config.colorDark : config.color;
+        const Icon = config.icon;
         const isActive = activeSet.has(config.id);
+        const colorHex = isDark ? config.colorDark : config.color;
+
         return {
           id: config.id,
           icon: ({ className }: { className?: string }) => (
-            <NavSvgIcon
-              geometry={config.geometry}
-              color={colorHex}
-              isActive={isActive}
-              className={className}
+            <Icon
+              className={`${className ?? 'size-4'} transition-transform duration-200 ${
+                isActive ? 'scale-110' : 'opacity-70'
+              }`}
+              style={{ color: isActive ? colorHex : undefined }}
             />
           ),
           label: isMobile ? config.shortLabel : config.label,
@@ -123,104 +149,97 @@ export default React.memo(function SectionNavGooey({ activeTab, activeSectionIds
     [sections, isDark, isMobile, activeSet, handleClick],
   );
 
-  const glowColor = isDark ? '#9CB386' : '#5A5A40';
-
-  const insetShadow = isDark
-    ? 'inset 0 6px 12px -4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(155,179,134,0.25)'
-    : 'inset 0 6px 12px -4px rgba(0,0,0,0.15), inset 0 1px 0 rgba(90,90,64,0.25)';
+  const accentColor = isDark ? '#9CB386' : '#5A5A40';
 
   return (
     <div
       ref={containerRef}
-      className={`relative ${isMobile ? 'w-full' : 'h-full flex flex-col'}`}
-      role="tablist"
+      className={`relative ${isMobile ? 'w-full' : 'h-full flex flex-col justify-start'}`}
+      role="navigation"
       aria-label="Navegação de seções"
     >
-      {/* Gooey body filter — makes the nav feel embedded in the page */}
-      <svg className="absolute" style={{ width: 0, height: 0 }} aria-hidden="true">
-        <defs>
-          <filter
-            id="section-nav-body-gooey"
-            x="-30%"
-            y="-30%"
-            width="160%"
-            height="160%"
-            colorInterpolationFilters="sRGB"
-          >
-            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-            <feColorMatrix
-              in="blur"
-              mode="matrix"
-              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 12 -5"
-            />
-          </filter>
-        </defs>
-      </svg>
-
-      {/* Nav rail with gooey body effect */}
+      {/* 
+        3D CONTAINER SHELL (MIRRORS SELECT3D TOGGLE CONTAINER)
+        Features inset shadow + accent edge highlight
+      */}
       <div
-        className={`relative ${isMobile ? '' : 'flex-1'}`}
-        style={{ filter: 'url(#section-nav-body-gooey)' }}
+        className={`relative overflow-hidden rounded-2xl p-1 transition-colors duration-200 ${
+          isDark
+            ? 'bg-[#151913] border border-[#2B3327] shadow-[inset_0_2px_6px_rgba(0,0,0,0.5)]'
+            : 'bg-[#F2EFE9] border border-[#E0DCD3] shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]'
+        } ${isMobile ? 'w-full' : 'h-auto py-2'}`}
       >
-        {/* Inset shadow card — follows MultiButton shape via gooey filter */}
-        <div
-          className={`relative ${isMobile ? '' : 'h-full'}`}
-          style={{
-            boxShadow: insetShadow,
-            borderRadius: '1rem',
-          }}
-        >
+        {/* 
+          SCROLL-SYNCED GLOW INDICATOR:
+          Glides across the gooey multi-select synchronized with page scroll,
+          illuminating the edge and surface contour.
+        */}
+        {isMobile ? (
+          <motion.div
+            style={{ left: glowX }}
+            className="absolute top-0 bottom-0 w-24 -translate-x-1/2 pointer-events-none z-0"
+            aria-hidden="true"
+          >
+            {/* Radial glow */}
+            <div
+              className="w-full h-full rounded-full opacity-60"
+              style={{
+                background: `radial-gradient(ellipse at center, ${accentColor}55 0%, ${accentColor}15 55%, transparent 75%)`,
+                filter: 'blur(8px)',
+              }}
+            />
+            {/* Top edge highlight */}
+            <div
+              className="absolute top-0 left-2 right-2 h-[2px] rounded-full opacity-80"
+              style={{
+                background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`,
+              }}
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            style={{ top: glowY }}
+            className="absolute left-0 right-0 h-24 -translate-y-1/2 pointer-events-none z-0"
+            aria-hidden="true"
+          >
+            {/* Radial glow */}
+            <div
+              className="w-full h-full rounded-full opacity-60"
+              style={{
+                background: `radial-gradient(ellipse at center, ${accentColor}55 0%, ${accentColor}15 55%, transparent 75%)`,
+                filter: 'blur(8px)',
+              }}
+            />
+            {/* Left edge highlight */}
+            <div
+              className="absolute top-2 bottom-2 left-0 w-[2px] rounded-full opacity-80"
+              style={{
+                background: `linear-gradient(180deg, transparent, ${accentColor}, transparent)`,
+              }}
+            />
+          </motion.div>
+        )}
+
+        {/* 
+          GODUI MULTI-BUTTON IN GOOEY MODE:
+          Provides the liquid gooey blob animation on selection & hover.
+        */}
+        <div className="relative z-10">
           <MultiButton
             gooey
             variant="ghost"
             size="md"
             items={items}
             fillWidth={fillWidth > 0 ? fillWidth : undefined}
-            highlightColor={isDark ? '#9CB386' : '#5A5A40'}
-            disableBlur
-            className={isMobile ? 'w-full justify-center' : 'flex-col !rounded-2xl h-full items-stretch justify-center'}
+            highlightColor={accentColor}
+            className={
+              isMobile
+                ? 'w-full justify-around !gap-1'
+                : 'flex-col !rounded-xl w-full items-stretch justify-start space-y-1'
+            }
           />
         </div>
       </div>
-
-      {/* Scroll glow dot — small indicator on edge */}
-      <svg
-        className="absolute inset-0 pointer-events-none"
-        style={{ overflow: 'visible', zIndex: 10 }}
-        aria-hidden="true"
-      >
-        <defs>
-          <filter id="section-glow-blur" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-            <feColorMatrix
-              in="blur"
-              mode="matrix"
-              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 14 -6"
-            />
-          </filter>
-        </defs>
-        {isMobile ? (
-          <motion.circle
-            cx={glowX}
-            cy="50%"
-            r="4"
-            fill={glowColor}
-            opacity={0.85}
-            filter="url(#section-glow-blur)"
-            style={{ transition: 'cx 0.15s ease-out' }}
-          />
-        ) : (
-          <motion.circle
-            cx="50%"
-            cy={glowY}
-            r="4"
-            fill={glowColor}
-            opacity={0.85}
-            filter="url(#section-glow-blur)"
-            style={{ transition: 'cy 0.15s ease-out' }}
-          />
-        )}
-      </svg>
     </div>
   );
 });

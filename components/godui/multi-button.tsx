@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import * as React from "react";
 
 export type MultiButtonVariant = "default" | "outline" | "secondary" | "ghost";
@@ -42,10 +42,6 @@ type MultiButtonSharedProps = MultiButtonRootProps & {
   gooey?: boolean;
   variant?: MultiButtonVariant;
   size?: MultiButtonSize;
-  /** Disable the blur animation on labels and icons during enter/exit transitions. */
-  disableBlur?: boolean;
-  /** When provided, distribute items equally across this pixel width instead of computing natural expanded width. */
-  fillWidth?: number;
 };
 
 export type MultiButtonProps = MultiButtonSharedProps;
@@ -479,47 +475,40 @@ function useMultiButtonLayout({
   reserveLabelSpace = true,
   size,
   syncWidthTo,
-  fillWidth,
 }: {
   activeId: string | null;
   items: MultiButtonItem[];
   reserveLabelSpace?: boolean;
   size: MultiButtonSize;
   syncWidthTo?: MultiButtonItem[];
-  fillWidth?: number;
 }) {
   const cfg = SIZE_CONFIG[size];
   const { labelWidths, reservedLabelWidth, measurementRef, reserveItems } =
     useLabelWidths(items, syncWidthTo, size);
   const effectiveLabelWidth = reserveLabelSpace ? reservedLabelWidth : 0;
   const dividerWidth = Math.max(0, items.length - 1);
-  const naturalWidth =
+  const expandedWidth =
     items.length > 0
       ? items.length * cfg.cell + effectiveLabelWidth + dividerWidth
       : cfg.cell;
-  const expandedWidth = fillWidth && fillWidth > 0 ? fillWidth : naturalWidth;
-  const itemWidths = fillWidth && fillWidth > 0
-    ? items.map(() => fillWidth / items.length)
-    : items.map((item) =>
-        actionWidth(
-          item,
-          activeId,
-          items.length,
-          cfg.cell,
-          labelWidths,
-          effectiveLabelWidth,
-        ),
-      );
+  const itemWidths = items.map((item) =>
+    actionWidth(
+      item,
+      activeId,
+      items.length,
+      cfg.cell,
+      labelWidths,
+      effectiveLabelWidth,
+    ),
+  );
   const blobGeometries = React.useMemo(() => {
-    return items.reduce<{ item: MultiButtonItem; width: number; x: number }[]>(
-      (acc, item, index) => {
-        const width = itemWidths[index] ?? cfg.cell;
-        const prevX = index > 0 ? acc[index - 1].x + acc[index - 1].width + 1 : 0;
-        acc.push({ item, width, x: prevX });
-        return acc;
-      },
-      [],
-    );
+    return items.reduce<MultiButtonBlobGeometry[]>((acc, item, index) => {
+      const width = itemWidths[index] ?? cfg.cell;
+      const prev = acc[index - 1];
+      const x = prev ? prev.x + prev.width + 1 : 0;
+      acc.push({ item, width, x });
+      return acc;
+    }, []);
   }, [items, itemWidths, cfg.cell]);
 
   return {
@@ -624,16 +613,15 @@ function MultiButtonBlobLayer({
   );
 }
 
-function labelMotion(reduceMotion: boolean, disableBlur?: boolean) {
-  const blurAmount = disableBlur ? "blur(0px)" : "blur(4px)";
+function labelMotion(reduceMotion: boolean) {
   return {
     initial: reduceMotion
       ? false
-      : { opacity: 0, scale: 0.25, filter: blurAmount },
+      : { opacity: 0, scale: 0.25, filter: "blur(4px)" },
     animate: { opacity: 1, scale: 1, filter: "blur(0px)" },
     exit: reduceMotion
       ? undefined
-      : { opacity: 0, scale: 0.25, filter: blurAmount },
+      : { opacity: 0, scale: 0.25, filter: "blur(4px)" },
     transition: reduceMotion
       ? { duration: 0 }
       : {
@@ -648,16 +636,15 @@ type MultiButtonLabelProps = {
   item: MultiButtonItem;
   reduceMotion: boolean;
   textClass: string;
-  disableBlur?: boolean;
 };
 
 const MultiButtonLabel = React.forwardRef<
   HTMLSpanElement,
   MultiButtonLabelProps
->(({ item, reduceMotion, textClass, disableBlur }, ref) => (
+>(({ item, reduceMotion, textClass }, ref) => (
   <motion.span
     ref={ref}
-    {...labelMotion(reduceMotion, disableBlur)}
+    {...labelMotion(reduceMotion)}
     className={`relative z-raised -ml-1 shrink-0 whitespace-nowrap pr-2 font-medium leading-none ${textClass}`}
   >
     {item.label}
@@ -684,7 +671,6 @@ type MultiButtonItemButtonProps = {
   restIcon?: MultiButtonItem["icon"];
   showRestIcon?: boolean;
   visible?: boolean;
-  disableBlur?: boolean;
   onTouchAction: (
     event: React.PointerEvent<HTMLButtonElement>,
     id: string,
@@ -703,7 +689,6 @@ type MultiButtonItemIconProps = {
   reduceMotion: boolean;
   restIcon?: MultiButtonItem["icon"];
   showRestIcon: boolean;
-  disableBlur?: boolean;
 };
 
 function MultiButtonItemIcon({
@@ -716,15 +701,13 @@ function MultiButtonItemIcon({
   reduceMotion,
   restIcon: RestIcon,
   showRestIcon,
-  disableBlur,
 }: MultiButtonItemIconProps) {
   const phase = gooeyPhase(gooeyExpanded);
   const iconTransition = reduceMotion
     ? ({ duration: 0 } as const)
     : CONTEXTUAL_ICON_TRANSITION;
-  const blurAmount = disableBlur ? "blur(0px)" : "blur(4px)";
   const visibleState = { opacity: 1, scale: 1, filter: "blur(0px)" };
-  const hiddenState = { opacity: 0, scale: 0.25, filter: blurAmount };
+  const hiddenState = { opacity: 0, scale: 0.25, filter: "blur(4px)" };
 
   return (
     <span
@@ -783,7 +766,6 @@ function MultiButtonItemButton({
   restIcon,
   showRestIcon = false,
   visible = true,
-  disableBlur,
   onTouchAction,
   onHover,
   onAction,
@@ -841,7 +823,6 @@ function MultiButtonItemButton({
         reduceMotion={reduceMotion}
         restIcon={restIcon}
         showRestIcon={showRestIcon}
-        disableBlur={disableBlur}
       />
       <AnimatePresence initial={false} mode="popLayout">
         {active && (
@@ -850,7 +831,6 @@ function MultiButtonItemButton({
             item={item}
             reduceMotion={reduceMotion}
             textClass={cfg.text}
-            disableBlur={disableBlur}
           />
         )}
       </AnimatePresence>
@@ -915,7 +895,6 @@ type MultiButtonItemsProps = {
   selectedId?: string;
   size: MultiButtonSize;
   variant: MultiButtonVariant;
-  disableBlur?: boolean;
 };
 
 function MultiButtonItems({
@@ -936,7 +915,6 @@ function MultiButtonItems({
   selectedId,
   size,
   variant,
-  disableBlur,
 }: MultiButtonItemsProps) {
   const cfg = SIZE_CONFIG[size];
 
@@ -991,7 +969,6 @@ function MultiButtonItems({
           restIcon={compact && selected ? restIcon : undefined}
           showRestIcon={compact && selected && Boolean(restIcon) && !expanded}
           visible={!compact || expanded || selected}
-          disableBlur={disableBlur}
           onTouchAction={onTouchAction}
           onHover={onHover}
           onAction={onAction}
@@ -1033,7 +1010,6 @@ function MultiButtonRailContent({
   selectedId,
   size,
   variant,
-  disableBlur,
 }: MultiButtonRailContentProps) {
   return (
     <>
@@ -1074,7 +1050,6 @@ function MultiButtonRailContent({
         selectedId={selectedId}
         size={size}
         variant={variant}
-        disableBlur={disableBlur}
       />
     </>
   );
@@ -1107,23 +1082,12 @@ function MultiButtonRail({
   ...contentProps
 }: MultiButtonRailProps) {
   const cfg = SIZE_CONFIG[size];
-  const forwardedRefInternal = React.useRef(forwardedRef);
-  React.useEffect(() => {
-    forwardedRefInternal.current = forwardedRef;
-  });
-  const setMergedRef = React.useCallback(
-    (node: HTMLDivElement | null) => {
-      containerRef.current = node;
-      const ref = forwardedRefInternal.current;
-      if (typeof ref === "function") ref(node);
-      else if (ref) ref.current = node;
-    },
-    [containerRef],
-  );
+
+  React.useImperativeHandle(forwardedRef, () => containerRef.current as HTMLDivElement);
 
   return (
     <motion.div
-      ref={setMergedRef}
+      ref={containerRef}
       data-slot={slot}
       role="group"
       style={
@@ -1209,8 +1173,6 @@ const MultiButton = React.forwardRef<HTMLDivElement, MultiButtonProps>(
       size = "md",
       className,
       style,
-      disableBlur,
-      fillWidth,
       ...props
     },
     ref,
@@ -1232,7 +1194,7 @@ const MultiButton = React.forwardRef<HTMLDivElement, MultiButtonProps>(
       itemWidths,
       measurementRef,
       reserveItems,
-    } = useMultiButtonLayout({ activeId, items, size, syncWidthTo, fillWidth });
+    } = useMultiButtonLayout({ activeId, items, size, syncWidthTo });
 
     const collapseTouchAction = React.useCallback(
       () => setTouchExpandedId(null),
@@ -1282,7 +1244,6 @@ const MultiButton = React.forwardRef<HTMLDivElement, MultiButtonProps>(
         slot="multi-button"
         style={style}
         variant={variant}
-        disableBlur={disableBlur}
       />
     );
   },
@@ -1358,9 +1319,19 @@ const CompactMultiButton = React.forwardRef<
       expandedWidth,
     });
 
-    React.useLayoutEffect(() => {
+    React.useEffect(() => {
       expansionStateRef.current = { expanded: isExpanded, expandedWidth };
-    }, [expandedWidth, isExpanded]);
+      const raf = requestAnimationFrame(() => {
+        if (!isExpanded) {
+          setCompactRailReady(false);
+        } else if (reduceMotion) {
+          setCompactRailReady(true);
+        } else {
+          setCompactRailReady(expandedWidth === cfg.cell);
+        }
+      });
+      return () => cancelAnimationFrame(raf);
+    }, [cfg.cell, expandedWidth, isExpanded, reduceMotion]);
 
     React.useEffect(
       () => () => {

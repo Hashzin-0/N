@@ -23,6 +23,7 @@ export default function LiveVoiceOrb3D({
   size = 180,
 }: LiveVoiceOrb3DProps) {
   const [contextLost, setContextLost] = useState(false);
+  const [rendererFailed, setRendererFailed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -82,7 +83,10 @@ export default function LiveVoiceOrb3D({
     camera.position.z = 4.8;
 
     const renderer = acquire(canvas, { powerPreference: 'high-performance' });
-    if (!renderer) return;
+    if (!renderer) {
+      setTimeout(() => setRendererFailed(true), 0);
+      return;
+    }
 
     renderer.setSize(width, height);
     rendererRef.current = renderer;
@@ -278,7 +282,7 @@ export default function LiveVoiceOrb3D({
       release(renderer);
       rendererRef.current = null;
     };
-  }, [size, webglSupported, contextLost, acquire, release]);
+  }, [size, webglSupported, contextLost, rendererFailed, acquire, release]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     isDragging.current = true;
@@ -313,7 +317,7 @@ export default function LiveVoiceOrb3D({
     isDragging.current = false;
   };
 
-  if (!webglSupported || contextLost) {
+  if (!webglSupported || contextLost || rendererFailed) {
     const glowColor =
       status === 'speaking' ? '#2E6F40' :
       status === 'listening' ? '#D4A373' :

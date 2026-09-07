@@ -56,6 +56,7 @@ const SideRays = ({
   const meshRef = useRef<InstanceType<typeof Mesh> | null>(null);
   const cleanupFunctionRef = useRef<(() => void) | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [webglFailed, setWebglFailed] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
@@ -80,7 +81,7 @@ const SideRays = ({
   }, []);
 
   useEffect(() => {
-    if (!isVisible || !containerRef.current) return;
+    if (!isVisible || !containerRef.current || webglFailed) return;
 
     if (cleanupFunctionRef.current) {
       cleanupFunctionRef.current();
@@ -94,10 +95,41 @@ const SideRays = ({
 
       if (!containerRef.current) return;
 
-      const renderer = new Renderer({
-        dpr: Math.min(window.devicePixelRatio, 2),
-        alpha: true,
-      });
+      // Safe test for WebGL context availability to prevent OGL unhandled errors
+      let canWebGL = false;
+      try {
+        const testCanvas = document.createElement('canvas');
+        const testGl = testCanvas.getContext('webgl2') || testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+        if (testGl) {
+          canWebGL = true;
+          const loseCtx = (testGl as WebGLRenderingContext).getExtension('WEBGL_lose_context');
+          if (loseCtx) loseCtx.loseContext();
+        }
+      } catch {
+        canWebGL = false;
+      }
+
+      if (!canWebGL) {
+        setWebglFailed(true);
+        return;
+      }
+
+      let renderer: InstanceType<typeof Renderer> | null = null;
+      try {
+        renderer = new Renderer({
+          dpr: Math.min(window.devicePixelRatio || 1, 2),
+          alpha: true,
+        });
+        if (!renderer || !renderer.gl) {
+          setWebglFailed(true);
+          return;
+        }
+      } catch (err) {
+        console.warn('SideRays: WebGL unavailable, switching to CSS ray fallback:', err);
+        setWebglFailed(true);
+        return;
+      }
+
       rendererRef.current = renderer;
 
       const gl = renderer.gl;
@@ -229,7 +261,7 @@ void main() {
           animationIdRef.current = null;
         }
         window.removeEventListener('resize', updateSize);
-        if (renderer) {
+        if (renderer && renderer.gl) {
           try {
             const loseCtx = renderer.gl.getExtension('WEBGL_lose_context');
             if (loseCtx) loseCtx.loseContext();
@@ -253,7 +285,7 @@ void main() {
         cleanupFunctionRef.current = null;
       }
     };
-  }, [isVisible, speed, rayColor1, rayColor2, intensity, spread, origin, tilt, saturation, blend, falloff, opacity]);
+  }, [isVisible, speed, rayColor1, rayColor2, intensity, spread, origin, tilt, saturation, blend, falloff, opacity, webglFailed]);
 
   useEffect(() => {
     if (!uniformsRef.current) return;
@@ -272,6 +304,26 @@ void main() {
     u.iFalloff.value = falloff;
     u.iOpacity.value = opacity;
   }, [speed, rayColor1, rayColor2, intensity, spread, origin, tilt, saturation, blend, falloff, opacity]);
+
+  if (webglFailed) {
+    return (
+      <div
+        className={`side-rays-container ${className} overflow-hidden pointer-events-none`.trim()}
+        style={{
+          background: `radial-gradient(ellipse at 85% 15%, ${rayColor1}28 0%, ${rayColor2}18 45%, transparent 70%)`,
+          opacity,
+        }}
+      >
+        <div
+          className="w-full h-full animate-pulse opacity-70"
+          style={{
+            background: `conic-gradient(from 220deg at 88% 12%, ${rayColor1}20 0deg, ${rayColor2}25 55deg, transparent 110deg)`,
+            animationDuration: '4s',
+          }}
+        />
+      </div>
+    );
+  }
 
   return <div ref={containerRef} className={`side-rays-container ${className}`.trim()} />;
 };

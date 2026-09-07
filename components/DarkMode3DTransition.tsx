@@ -124,7 +124,10 @@ export default function DarkMode3DTransition() {
           particleMat.dispose();
           shockwaveGeo.dispose();
           shockwaveMat.dispose();
-          if (renderer) release(renderer);
+          if (renderer) {
+            release(renderer);
+            renderer = null;
+          }
         }
       };
 

@@ -293,6 +293,7 @@ export default function Home() {
     if (p1 !== undefined) setV4v6Percent(p1);
     if (p2 !== undefined) setV8v10Percent(p2);
     setActivePreset('personalizado');
+    setActiveTab('nitrogen');
   }, []);
 
   const onLoadPreset = useCallback((presetId: string) => {
@@ -468,10 +469,10 @@ export default function Home() {
           activeTab={activeTab}
           onTabChange={handleTabChange}
           nitrogenContent={
-            <div className="px-4 sm:px-6 lg:px-8 py-6">
+            <div className="w-full">
               <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
         {/* INPUT SECTION — scenarios + inputs in one card */}
-            <div id="form_section" className="bg-white dark:bg-[#1C201A] p-6 rounded-b-3xl rounded-t-none shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-5 transition-colors">
+            <div id="form_section" className="bg-white dark:bg-[#1C201A] p-6 rounded-b-3xl rounded-t-none shadow-sm border-x border-b border-[#E5E2D9] dark:border-[#2C3328] space-y-5 transition-colors">
 
               {/* HEADER */}
               <div className="flex items-center gap-3 border-b pb-4 border-[#F0EDE5] dark:border-[#2C3328]">
@@ -874,7 +875,7 @@ export default function Home() {
             </div>
           }
           productivityContent={
-            <div className="px-4 sm:px-6 lg:px-8 py-6">
+            <div className="w-full">
               <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
                 <CornYieldCalculator
                   isConnected
@@ -890,23 +891,27 @@ export default function Home() {
             </div>
           }
           itrContent={
-            <div className="px-4 sm:px-6 lg:px-8 py-6">
+            <div className="w-full">
               <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
-                <ITRCalculator isConnected />
+                <div className="bg-white dark:bg-[#1C201A] p-6 rounded-b-3xl rounded-t-none shadow-sm border-x border-b border-[#E5E2D9] dark:border-[#2C3328]">
+                  <ITRCalculator isConnected />
+                </div>
               </ScrollStack>
             </div>
           }
           abntContent={
-            <div className="px-4 sm:px-6 lg:px-8 py-6">
+            <div className="w-full">
               <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
-                <AbntReferenceFormatter isConnected />
-                <BibliografiaAutoDetectCard
-                  onReferenceSelected={(ref) => {
-                    setBibliographyRef(ref);
-                    setActiveTab("abnt");
-                  }}
-                  initialUrl=""
-                />
+                <div className="bg-white dark:bg-[#1C201A] p-6 rounded-b-3xl rounded-t-none shadow-sm border-x border-b border-[#E5E2D9] dark:border-[#2C3328] space-y-6">
+                  <AbntReferenceFormatter isConnected />
+                  <BibliografiaAutoDetectCard
+                    onReferenceSelected={(ref) => {
+                      setBibliographyRef(ref);
+                      setActiveTab("abnt");
+                    }}
+                    initialUrl=""
+                  />
+                </div>
               </ScrollStack>
             </div>
           }

@@ -27,6 +27,7 @@ export default function CornEar3DVisualizer({
   const isDragging = useRef(false);
   const isAlarmRef = useRef(isAlarmActive);
   const [contextLost, setContextLost] = useState(false);
+  const [rendererFailed, setRendererFailed] = useState(false);
 
   const { webglSupported, acquire, release } = useWebGLManager();
 
@@ -36,7 +37,7 @@ export default function CornEar3DVisualizer({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || contextLost || !webglSupported) return;
+    if (!canvas || contextLost || !webglSupported || rendererFailed) return;
 
     const width = canvas.parentElement?.clientWidth || 320;
     const height = 240;
@@ -51,6 +52,7 @@ export default function CornEar3DVisualizer({
 
     const onContextRestored = () => {
       setContextLost(false);
+      setRendererFailed(false);
     };
 
     canvas.addEventListener('webglcontextlost', onContextLost);
@@ -63,7 +65,13 @@ export default function CornEar3DVisualizer({
       camera.position.set(0, 0, 8.5);
 
       renderer = acquire(canvas, { powerPreference: 'high-performance' });
-      if (!renderer) return;
+      if (!renderer) {
+        setTimeout(() => setRendererFailed(true), 0);
+        return () => {
+          canvas.removeEventListener('webglcontextlost', onContextLost);
+          canvas.removeEventListener('webglcontextrestored', onContextRestored);
+        };
+      }
       renderer.setSize(width, height);
 
 
@@ -189,7 +197,7 @@ export default function CornEar3DVisualizer({
         if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
       };
     }
-  }, [rows, kernelsPerRow, isDark, contextLost, webglSupported, acquire, release]);
+  }, [rows, kernelsPerRow, isDark, contextLost, webglSupported, rendererFailed, acquire, release]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     isDragging.current = true;
@@ -235,12 +243,12 @@ export default function CornEar3DVisualizer({
       <canvas
         ref={canvasRef}
         className={`w-full h-[220px] ${
-          contextLost || !webglSupported ? 'hidden' : 'cursor-grab active:cursor-grabbing'
+          contextLost || !webglSupported || rendererFailed ? 'hidden' : 'cursor-grab active:cursor-grabbing'
         }`}
         style={{ touchAction: 'none' }}
       />
 
-      {(contextLost || !webglSupported) && (
+      {(contextLost || !webglSupported || rendererFailed) && (
         <WebGLFallback variant="full" color="#D4A373" label="Visualização indisponível">
           <span className="text-4xl" role="img" aria-label="Espiga de milho">🌽</span>
         </WebGLFallback>
