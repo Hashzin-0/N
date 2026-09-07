@@ -69,30 +69,29 @@ const CssGooeyStack = React.forwardRef<HTMLDivElement, CssGooeyStackProps>(
             {items[0]}
           </div>
 
-          {/* First input — centered when collapsed, left when expanded */}
+          {/* First input — always on the left */}
           <div
             style={{
               position: "absolute",
               top: 0,
-              left: collapsed ? "50%" : "0",
-              transform: collapsed ? "translateX(-50%)" : "none",
+              left: 0,
               zIndex: 2,
-              transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
             }}
           >
             {items[0]}
           </div>
 
-          {/* Second input — hidden when collapsed, right when expanded */}
+          {/* Second input — emerges from left, slides to right when expanded */}
           {items.length > 1 && (
             <div
               style={{
                 position: "absolute",
                 top: 0,
-                right: "0",
+                left: collapsed ? 0 : undefined,
+                right: collapsed ? undefined : 0,
                 zIndex: 1,
                 opacity: collapsed ? 0 : 1,
-                transform: collapsed ? "scale(0.95) translateX(20px)" : "scale(1)",
+                transform: collapsed ? "scale(0.95)" : "scale(1)",
                 transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >

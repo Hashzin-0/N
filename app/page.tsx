@@ -41,7 +41,7 @@ import ITRCalculator from '@/components/ITRCalculator';
 import AbntReferenceFormatter from '@/components/AbntReferenceFormatter';
 import { ABNTReference } from '@/lib/abnt/types';
 import BibliografiaAutoDetectCard from '@/components/metrics/BibliografiaAutoDetectCard';
-import GooeyNav, { GooeyNavItem } from '@/components/GooeyNav';
+import GooeyTabPanel, { type TabId } from '@/components/GooeyTabPanel';
 import { ScrollStack } from '@/components/godui/scroll-stack';
 import { ElasticText } from '@/components/godui/elastic-text';
 import PresetMultiButton from '@/components/godui/preset-multi-button';
@@ -155,32 +155,10 @@ export default function Home() {
   const fillingTimersRef = useRef<NodeJS.Timeout[]>([]);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<'calculadora' | 'estimativa_milho' | 'itr' | 'abnt'>('calculadora');
+  const [activeTab, setActiveTab] = useState<TabId>('nitrogen');
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [bibliographyRef, setBibliographyRef] = useState<ABNTReference | null>(null);
 
-
-  // GooeyNav items and tab mapping
-  const gooeyNavItems: GooeyNavItem[] = [
-    { label: 'Adubação Nitrogenada', href: '#' },
-    { label: 'Estimativa de Produtividade', href: '#' },
-    { label: 'ITR', href: '#' },
-    { label: 'Referências ABNT', href: '#' },
-  ];
-
-  const tabToIndex: Record<string, number> = {
-    calculadora: 0,
-    estimativa_milho: 1,
-    itr: 2,
-    abnt: 3,
-  };
-
-  const indexToTab: Record<number, string> = {
-    0: 'calculadora',
-    1: 'estimativa_milho',
-    2: 'itr',
-    3: 'abnt',
-  };
 
   // Handle preset loading with 3D staggered animation
   const handleLoadPreset = useCallback((preset: Preset) => {
@@ -464,27 +442,6 @@ export default function Home() {
       {/* Main content area - offset for desktop sidebar */}
       <div className="lg:ml-[180px] px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        {/* TOP NAVIGATION / MODE SWITCHER — GOOEY NAV */}
-        <div id="app_mode_nav" className="py-2">
-          <div className="bg-white/60 dark:bg-[#1A1E18]/70 backdrop-blur-md rounded-2xl border border-[#E5E2D9]/60 dark:border-[#2C3328]/60 shadow-sm px-1 py-1 transition-colors">
-            <GooeyNav
-              items={gooeyNavItems}
-              initialActiveIndex={tabToIndex[activeTab] ?? 0}
-              onNavigate={(_index, _item) => {
-                const tab = indexToTab[_index];
-                if (tab) setActiveTab(tab as typeof activeTab);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              particleCount={12}
-              particleDistances={[80, 10]}
-              particleR={80}
-              animationTime={500}
-              timeVariance={200}
-              colors={[1, 2, 3, 1, 2, 3, 1, 4]}
-            />
-          </div>
-        </div>
-
         {/* TOAST NOTIFICATION */}
         <AnimatePresence>
           {saveToast && (
@@ -502,45 +459,16 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {/* CORN YIELD ESTIMATION CALCULATOR (ALWAYS READY OR SWITCHABLE) */}
-        <div id="corn_yield_calculator_section" className={activeTab === 'estimativa_milho' ? 'block' : 'hidden'}>
-          <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
-            <CornYieldCalculator
-              onApplyYieldGoal={(scHa) => {
-                setYieldGoal(scHa);
-                setActivePreset('personalizado');
-                setActiveTab('calculadora');
-                setSaveToast(`Meta de ${scHa} sc/ha calculada e aplicada na Adubação Nitrogenada!`);
-                setTimeout(() => setSaveToast(null), 4500);
-              }}
-            />
-          </ScrollStack>
-        </div>
-
-        {/* ITR CALCULATOR TAB */}
-        <div id="itr_section" className={activeTab === 'itr' ? 'block' : 'hidden'}>
-          <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
-            <ITRCalculator />
-          </ScrollStack>
-        </div>
-
-        {/* ABNT REFERENCE FORMATTER TAB */}
-        <div id="abnt_section" className={activeTab === 'abnt' ? 'block' : 'hidden'}>
-          <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
-            <AbntReferenceFormatter />
-            <BibliografiaAutoDetectCard
-              onReferenceSelected={(ref) => {
-                setBibliographyRef(ref);
-                setActiveTab("abnt");
-              }}
-              initialUrl=""
-            />
-          </ScrollStack>
-        </div>
-
-        {/* MAIN NITROGEN CALCULATOR VIEW */}
-        <div className={activeTab === 'calculadora' ? 'block' : 'hidden'}>
-          <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
+        {/* TAB PANEL — GOOEY TABS WITH ANIMATED TRANSITIONS */}
+        <GooeyTabPanel
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          nitrogenContent={
+            <div className="h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+              <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
         {/* INPUT SECTION — scenarios + inputs in one card */}
             <div id="form_section" className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-5 transition-colors">
 
@@ -952,7 +880,45 @@ export default function Home() {
           soyNContribution={soyNContribution}
         />
           </ScrollStack>
-        </div>
+            </div>
+          }
+          productivityContent={
+            <div className="h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+              <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
+                <CornYieldCalculator
+                  onApplyYieldGoal={(scHa) => {
+                    setYieldGoal(scHa);
+                    setActivePreset('personalizado');
+                    setActiveTab('nitrogen');
+                    setSaveToast(`Meta de ${scHa} sc/ha calculada e aplicada na Adubação Nitrogenada!`);
+                    setTimeout(() => setSaveToast(null), 4500);
+                  }}
+                />
+              </ScrollStack>
+            </div>
+          }
+          itrContent={
+            <div className="h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+              <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
+                <ITRCalculator />
+              </ScrollStack>
+            </div>
+          }
+          abntContent={
+            <div className="h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+              <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
+                <AbntReferenceFormatter />
+                <BibliografiaAutoDetectCard
+                  onReferenceSelected={(ref) => {
+                    setBibliographyRef(ref);
+                    setActiveTab("abnt");
+                  }}
+                  initialUrl=""
+                />
+              </ScrollStack>
+            </div>
+          }
+        />
 
         {/* GEMINI LIVE VOICE ASSISTANT HUD WITH 3D ORB */}
         <VoiceAssistantHUD

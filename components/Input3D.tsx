@@ -54,9 +54,9 @@ export default function Input3D({
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  const [labelKey, setLabelKey] = useState(0);
 
   const prevValueRef = useRef(value);
   const [animDirection, setAnimDirection] = useState<'up' | 'down'>('up');
@@ -109,6 +109,17 @@ export default function Input3D({
     };
   }, []);
 
+  // Warm up CSS 3D compositing layers on mount so first focus doesn't lag
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.style.willChange = 'transform';
+    const timer = setTimeout(() => {
+      el.style.willChange = 'auto';
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   const tiltX = useTransform(mouseY, [-0.5, 0.5], [3, -3]);
   const tiltY = useTransform(mouseX, [-0.5, 0.5], [-3, 3]);
 
@@ -148,6 +159,7 @@ export default function Input3D({
 
   return (
     <motion.div
+      ref={containerRef}
       className={`relative group ${className}`}
       style={{ perspective: 600 }}
       onMouseMove={handleMouseMove}
@@ -156,7 +168,7 @@ export default function Input3D({
     >
       {label && (
         <div className="flex justify-between items-center mb-1.5">
-          <label className="text-[11px] uppercase tracking-wider text-[#8C897E] dark:text-[#A6A395]">
+          <label className="text-[11px] uppercase tracking-wider text-[#8C897E] dark:text-[#A6A395] relative">
             {labelMorph ? (
               <MorphText
                 text={label}
@@ -164,15 +176,26 @@ export default function Input3D({
                 darkAccentColor={isDark ? '#9CB386' : '#5A5A40'}
               />
             ) : (
-              isFocused ? (
-                <ElasticText key={labelKey} className="text-[11px] font-normal uppercase tracking-wider" mode="auto" startOnView={false}>
+              <>
+                {/* Simple span: visible when NOT focused */}
+                {!isFocused && (
+                  <span className="text-[11px] font-normal uppercase tracking-wider block">
+                    {label}
+                  </span>
+                )}
+                {/* ElasticText: always mounted, fades in on focus. Pre-mounted to avoid cold-start lag. */}
+                <ElasticText
+                  className={`text-[11px] font-normal uppercase tracking-wider ${
+                    isFocused
+                      ? 'relative block opacity-100 transition-opacity duration-200'
+                      : 'absolute inset-0 opacity-0 pointer-events-none'
+                  }`}
+                  mode="auto"
+                  startOnView={false}
+                >
                   {label}
                 </ElasticText>
-              ) : (
-                <span className="text-[11px] font-normal uppercase tracking-wider">
-                  {label}
-                </span>
-              )
+              </>
             )}
           </label>
           {unit && (
@@ -311,7 +334,7 @@ export default function Input3D({
                 const val = parseFloat(e.target.value);
                 if (!isNaN(val)) onChange(val);
               }}
-              onFocus={() => { setIsFocused(true); setLabelKey((k) => k + 1); }}
+              onFocus={() => setIsFocused(true)}
               onBlur={(e) => {
                 setIsFocused(false);
                 const val = parseFloat(e.target.value);
@@ -341,15 +364,16 @@ export default function Input3D({
               }}
             />
 
-            {/* Derived badge */}
-            {derived && (
-              <div className="absolute top-1.5 right-2 z-10">
-                <span className="text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-md bg-[#2E6F40]/15 text-[#2E6F40] dark:text-[#86efac] border border-[#2E6F40]/20">
-                  Calculado
-                </span>
-              </div>
-            )}
           </div>
+
+          {/* Derived badge — outside overflow-hidden so it's never clipped */}
+          {derived && (
+            <div className="absolute top-1.5 right-2 z-10">
+              <span className="text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded-md bg-[#2E6F40]/15 text-[#2E6F40] dark:text-[#86efac] border border-[#2E6F40]/20">
+                Calculado
+              </span>
+            </div>
+          )}
         </motion.div>
       </div>
 

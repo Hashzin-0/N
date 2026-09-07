@@ -49,8 +49,8 @@ export default function SectionNavGooey({ activeTab, onNavigate }: SectionNavGoo
   const scrollProgress = useScrollProgress();
   const sections = useMemo(() => {
     switch (activeTab) {
-      case 'calculadora': return NITROGEN_SECTIONS;
-      case 'estimativa_milho': return CORN_SECTIONS;
+      case 'nitrogen': return NITROGEN_SECTIONS;
+      case 'productivity': return CORN_SECTIONS;
       case 'abnt': return ABNT_SECTIONS;
       default: return NITROGEN_SECTIONS;
     }

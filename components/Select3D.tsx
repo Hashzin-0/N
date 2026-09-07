@@ -110,6 +110,17 @@ export default function Select3D({
                     damping: 25,
                   }}
                 >
+                  {/* EDGE LAYER — accent color depth, visible when elevated */}
+                  <span
+                    className="absolute inset-0 rounded-lg pointer-events-none transition-opacity duration-200"
+                    style={{
+                      backgroundImage: `linear-gradient(135deg, ${accentColor}dd 0%, ${accentColor}99 50%, ${accentColor}bb 100%)`,
+                      transform: 'translateY(2px)',
+                      opacity: isActive ? 1 : 0,
+                    }}
+                    aria-hidden="true"
+                  />
+
                   <div className="relative z-10 flex items-center gap-2 overflow-hidden rounded-lg">
                     {opt.icon && (
                       <motion.span
