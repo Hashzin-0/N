@@ -210,8 +210,9 @@ export default function ParcelamentoSection({ animKey,
       <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-4 flex justify-between items-center">
         <div>
           <h3 className="text-sm font-bold text-[#5A5A40] dark:text-[#E8E6DF] uppercase tracking-wider flex items-center gap-2">
+            <Scale className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" />
             <ElasticText className="text-[10px] font-bold tracking-widest" mode="auto" startOnView loop={false}>
-              <Scale className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> Cronograma de Parcelamento
+              Cronograma de Parcelamento
             </ElasticText>
           </h3>
           <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-0.5">

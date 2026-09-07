@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 export function getTextContent(children: ReactNode): string | null {
   const text = collectText(children);
@@ -6,20 +6,20 @@ export function getTextContent(children: ReactNode): string | null {
 }
 
 function collectText(children: ReactNode): string {
-  if (children == null || typeof children === 'boolean') {
-    return '';
+  if (children == null || typeof children === "boolean") {
+    return "";
   }
-  if (typeof children === 'string' || typeof children === 'number') {
+  if (typeof children === "string" || typeof children === "number") {
     return String(children);
   }
   if (Array.isArray(children)) {
-    return children.map(collectText).join('');
+    return children.map(collectText).join("");
   }
-  if (typeof children === 'object' && 'props' in children) {
+  if (typeof children === "object" && "props" in children) {
     const props = (children as { props?: { children?: ReactNode } }).props;
-    return collectText(props?.children ?? '');
+    return collectText(props?.children ?? "");
   }
-  return '';
+  return "";
 }
 
 export function lerp(min: number, max: number, t: number): number {

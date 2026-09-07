@@ -18,7 +18,9 @@ import Input3D from './Input3D';
 import Button3D from './Button3D';
 import { useTheme } from './ThemeProvider';
 import CornYieldResultCard from './metrics/CornYieldResultCard';
+import PresetMultiButton from './godui/preset-multi-button';
 import { useAnimationLock } from '@/lib/useAnimationLock';
+import { SplitFlapValue } from '@/components/godui/split-flap-value';
 import type { AgronomicValidationIssue } from '@/lib/types';
 
 interface CornYieldCalculatorProps {
@@ -326,24 +328,12 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
           </div>
 
           {/* PRESET CHIPS */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#A6A395] uppercase tracking-wider">
-              Cenários:
-            </span>
-            {/* eslint-disable-next-line react-hooks/refs -- false positive: YIELD_PRESETS is a plain const, not a ref */}
-            {YIELD_PRESETS.map((p) => (
-              <Button3D
-                key={p.id}
-                variant={activePreset === p.id ? 'secondary' : 'ghost'}
-                size="sm"
-                active={activePreset === p.id}
-                isDark={isDark}
-                onClick={withLock(() => loadPreset(p))}
-              >
-                {p.name.split(' ')[0]}
-              </Button3D>
-            ))}
-          </div>
+          <PresetMultiButton
+            presets={YIELD_PRESETS}
+            activePreset={activePreset}
+            onPresetClick={(p) => withLock(() => loadPreset(p))()}
+            isDark={isDark}
+          />
         </div>
 
         {/* NOTIFICATION TOAST */}
@@ -622,15 +612,15 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
                   <div className="text-[#5A5A40] dark:text-[#A3B18A] font-bold">
                     ({estande.toLocaleString('pt-BR')} × {espigas} × {quantidadeGraos} × {pmgUnitario.toFixed(3)}) ÷ 1000 = <strong>{kgHaBruto.toLocaleString('pt-BR')} kg/ha</strong>
                   </div>
-                  <div className="text-[#5A5A40] dark:text-[#A3B18A] font-bold mt-0.5">
-                    {kgHaBruto.toLocaleString('pt-BR')} kg ÷ 60 = <strong>{scHaBruto} sc/ha</strong>
+                  <div className="text-[#5A5A40] dark:text-[#A3B18A] font-bold mt-0.5 flex items-baseline gap-2">
+                    {kgHaBruto.toLocaleString('pt-BR')} kg ÷ 60 = <SplitFlapValue value={scHaBruto} size="sm" unit="sc/ha" />
                   </div>
                 </div>
 
                 <div className="p-2 rounded-lg bg-black/5 dark:bg-white/5">
                   <span className="text-[#8C897E] dark:text-[#9CA38C]">5. Produtividade Líquida:</span>
-                  <div className="text-[#D4A373] font-bold">
-                    {scHaBruto} sc/ha × {(1 - quebraDecimal).toFixed(2)} ({(quebraDecimal * 100).toFixed(0)}% perda) = <strong>{produtividadeLiquida} sc/ha</strong>
+                  <div className="text-[#D4A373] font-bold flex items-baseline gap-2">
+                    {scHaBruto} sc/ha × {(1 - quebraDecimal).toFixed(2)} ({(quebraDecimal * 100).toFixed(0)}% perda) = <SplitFlapValue value={produtividadeLiquida} size="sm" unit="sc/ha" />
                   </div>
                 </div>
               </motion.div>

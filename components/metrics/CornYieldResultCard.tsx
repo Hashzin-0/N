@@ -8,6 +8,7 @@ import Button3D from '@/components/Button3D';
 import { Sparkles } from 'lucide-react';
 import { useAnimationLock } from '@/lib/useAnimationLock';
 import { ElasticText } from '@/components/godui/elastic-text';
+import { SplitFlapValue } from '@/components/godui/split-flap-value';
 
 interface Props {
   isDark: boolean;
@@ -163,8 +164,9 @@ export default function CornYieldResultCard({
           <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>3. PMG unitário:</span> {pmg} ÷ 1000 = {pmgUnitario.toFixed(3)} g/grão</div>
           <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>4. Produtividade Bruta:</span></div>
           <div className="ml-2">({estande} × {espigas} × {quantidadeGraos} × {pmgUnitario.toFixed(3)}) ÷ 1000 = {Number((estande * espigas * quantidadeGraos * pmgUnitario / 1000).toFixed(1))} kg/ha</div>
-          <div className="ml-2">{Number((estande * espigas * quantidadeGraos * pmgUnitario / 1000).toFixed(1))} ÷ 60 = {scHaBruto} sc/ha</div>
-          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>5. Produtividade Líquida ({quebraDecimal * 100}% perda):</span> {scHaBruto} × {(1 - quebraDecimal).toFixed(2)} = {produtividadeLiquida} sc/ha</div>
+          <div className="ml-2 flex items-baseline gap-2">{Number((estande * espigas * quantidadeGraos * pmgUnitario / 1000).toFixed(1))} ÷ 60 = <SplitFlapValue value={scHaBruto} size="sm" unit="sc/ha" /></div>
+          <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>5. Produtividade Líquida ({quebraDecimal * 100}% perda):</span></div>
+          <div className="flex items-baseline gap-2">{scHaBruto} × {(1 - quebraDecimal).toFixed(2)} = <SplitFlapValue value={produtividadeLiquida} size="sm" unit="sc/ha" /></div>
         </div>
       </CalculationMemoryPanel>
     </div>

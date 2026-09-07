@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Plug, ArrowUp } from 'lucide-react';
-import GooeyStack from '@/components/godui/gooey-stack';
+import { GooeyStack } from '@/components/godui/gooey-stack';
 
 export function ConnectPrompt() {
   const [open, setOpen] = useState(false);

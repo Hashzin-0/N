@@ -88,7 +88,7 @@ export default function Select3D({
                   onClick={withLock(() => onChange(opt.value))}
                   onMouseEnter={() => setHoveredIdx(idx)}
                   onMouseLeave={() => setHoveredIdx(null)}
-                  className="relative text-left px-3 py-2.5 rounded-lg font-bold text-xs transition-colors overflow-hidden"
+                  className="relative text-left px-3 py-2.5 rounded-lg font-bold text-xs transition-colors"
                   style={{ transformStyle: 'preserve-3d' }}
                   animate={{
                     y: isActive ? -3 : 0,
@@ -135,7 +135,7 @@ export default function Select3D({
                     aria-hidden="true"
                   />
 
-                  <div className="relative z-10 flex items-center gap-2">
+                  <div className="relative z-10 flex items-center gap-2 overflow-hidden rounded-lg">
                     {opt.icon && (
                       <motion.span
                         animate={{ rotateY: isActive ? 360 : 0 }}

@@ -1,136 +1,261 @@
-'use client';
+"use client";
 
-import { useId } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, useReducedMotion } from "motion/react";
+import * as React from "react";
 
-interface GooeyStackProps {
-  collapsed: boolean;
-  children: React.ReactNode;
-  className?: string;
-}
+export type GooeyStackProps = Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  "onChange"
+> & {
+  children?: React.ReactNode;
+  gap?: number;
+  collapsed?: boolean;
+  expandedGap?: number;
+  collapsedGap?: number;
+  gooeyness?: number;
+  radius?: number;
+};
 
-export default function GooeyStack({ collapsed, children, className = '' }: GooeyStackProps) {
-  const uid = useId().replace(/:/g, '');
-  const filterId = `gooey-${uid}`;
-  const maskId = `gooey-mask-${uid}`;
+const SPRING = {
+  type: "spring",
+  stiffness: 130,
+  damping: 24,
+  mass: 1.2,
+} as const;
 
-  const childArray = Array.isArray(children) ? children : [children];
-  const firstChild = childArray[0];
-  const secondChild = childArray[1];
+const clamp = (v: number, lo: number, hi: number) =>
+  Math.min(hi, Math.max(lo, v));
 
-  return (
-    <div className={`relative ${className}`.trim()}>
-      {/* === SVG FILTER (defined once per instance) === */}
-      <svg className="absolute" style={{ width: 0, height: 0 }}>
-        <defs>
-          <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%"
-            colorInterpolationFilters="sRGB">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
-            <feColorMatrix in="blur" mode="matrix"
-              values="18 0 0 0 0
-                      0 18 0 0 0
-                      0 0 18 0 0
-                      0 0 0 18 -7"
-              result="goo" />
-            <feComposite in="SourceGraphic" in2="goo" operator="atop" />
-          </filter>
-        </defs>
-      </svg>
+const GooeyStack = React.forwardRef<HTMLDivElement, GooeyStackProps>(
+  (
+    {
+      children,
+      gap,
+      collapsed = false,
+      expandedGap = 18,
+      collapsedGap = -48,
+      gooeyness = 10,
+      radius = 28,
+      className,
+      style,
+      ...props
+    },
+    forwardedRef,
+  ) => {
+    const reduce = useReducedMotion() ?? false;
+    const filterId = React.useId().replace(/:/g, "");
 
-      {/* === COLLAPSED: single rounded pill === */}
-      <AnimatePresence>
-        {collapsed && (
-          <motion.div
-            key="pill"
-            className="relative flex items-center justify-center h-12 rounded-full
-                       bg-neutral-800 dark:bg-neutral-900
-                       border border-white/[0.06]
-                       shadow-[0_2px_12px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.05)]
-                       cursor-pointer select-none overflow-hidden"
-            initial={{ opacity: 0, scale: 0.85, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.85, y: 8 }}
-            transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-          >
-            {firstChild}
-          </motion.div>
-        )}
-      </AnimatePresence>
+    const items = React.Children.toArray(children);
+    const n = items.length;
 
-      {/* === EXPANDED: split card with SVG gooey filter === */}
-      <AnimatePresence>
-        {!collapsed && (
-          <motion.div
-            key="expanded"
-            className="relative"
-            initial={{ opacity: 0, scale: 0.92, y: 6 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: 6 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-          >
-            {/* --- Blob split layer (filtered — organic merge effect) --- */}
-            <div
-              className="absolute inset-0 overflow-visible pointer-events-none"
-              style={{ filter: `url(#${filterId})` }}
+    const g = gap ?? (collapsed ? collapsedGap : expandedGap);
+
+    const contentRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+    const [widths, setWidths] = React.useState<number[]>(() =>
+      items.map(() => 0),
+    );
+
+    React.useLayoutEffect(() => {
+      const measure = () => {
+        setWidths(contentRefs.current.map((el) => el?.offsetWidth ?? 0));
+      };
+      measure();
+      if (typeof ResizeObserver === "undefined") return;
+      const ro = new ResizeObserver(measure);
+      for (const el of contentRefs.current) {
+        if (el) ro.observe(el);
+      }
+      return () => ro.disconnect();
+    }, [n]);
+
+    const widthsToRight = (i: number) => {
+      let d = 0;
+      for (let j = i + 1; j < n; j++) d += widths[j] ?? 0;
+      return d;
+    };
+    const cardsToRight = (i: number) => n - 1 - i;
+
+    const expandedTotal =
+      widths.reduce((s, w) => s + w, 0) + Math.max(0, n - 1) * expandedGap;
+
+    const merge = clamp(-g / -Math.min(collapsedGap, -1), 0, 1);
+
+    const stateOf = (i: number) => {
+      const rank = cardsToRight(i);
+      const rightExpanded = widthsToRight(i) + rank * expandedGap;
+      const rightNow = widthsToRight(i) + rank * g;
+      const x = rightExpanded - rightNow;
+      if (rank === 0) {
+        return { x: 0, scale: 1, opacity: 1, silOpacity: 1, blur: 0 };
+      }
+      return {
+        x,
+        scale: 1 - rank * 0.05 * merge,
+        opacity: Math.max(0, 1 - rank * 1.1 * merge),
+        silOpacity: Math.max(0, 1 - merge),
+        blur: Math.min(16, rank * 13 * merge),
+      };
+    };
+
+    const rightOf = (i: number) =>
+      widthsToRight(i) + cardsToRight(i) * expandedGap;
+    const transition = reduce ? { duration: 0 } : SPRING;
+
+    return (
+      <div
+        ref={forwardedRef}
+        data-slot="gooey-stack"
+        data-collapsed={g < expandedGap ? "true" : undefined}
+        className={`relative flex items-center ${className ?? ""}`}
+        style={{
+          height: expandedTotal || undefined,
+          ...style,
+        }}
+        {...props}
+      >
+        {/* Goo filter */}
+        <svg aria-hidden="true" className="pointer-events-none absolute size-0">
+          <defs>
+            <filter
+              id={filterId}
+              x="-50%"
+              y="-50%"
+              width="200%"
+              height="200%"
+              colorInterpolationFilters="sRGB"
             >
-              <div className="relative w-full h-full">
-                {/* Left blob */}
-                <div
-                  className="absolute top-0 left-0 h-full rounded-xl"
-                  style={{
-                    width: '52%',
-                    background: 'linear-gradient(135deg, #1a1c17 0%, #222520 100%)',
-                    transform: 'translateX(0%)',
-                    transition: 'transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                  }}
+              <feGaussianBlur
+                in="SourceGraphic"
+                stdDeviation={gooeyness}
+                result="blur"
+              />
+              <feColorMatrix
+                in="blur"
+                mode="matrix"
+                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 80 -40"
+                result="goo"
+              />
+              <feFlood
+                style={{ floodColor: "var(--card)" }}
+                result="cardColor"
+              />
+              <feComposite
+                in="cardColor"
+                in2="goo"
+                operator="in"
+                result="fillLayer"
+              />
+              <feGaussianBlur in="goo" stdDeviation="1.1" result="edge" />
+              <feColorMatrix
+                in="edge"
+                mode="matrix"
+                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 50 -41"
+                result="eroded"
+              />
+              <feComposite in="goo" in2="eroded" operator="out" result="ring" />
+              <feFlood
+                style={{ floodColor: "var(--border)" }}
+                result="borderColor"
+              />
+              <feComposite
+                in="borderColor"
+                in2="ring"
+                operator="in"
+                result="borderLayer"
+              />
+              <feMerge result="surface">
+                <feMergeNode in="fillLayer" />
+                <feMergeNode in="borderLayer" />
+              </feMerge>
+              <feGaussianBlur in="surface" stdDeviation="0.4" />
+            </filter>
+          </defs>
+        </svg>
+
+        {/* Reduced-motion fallback */}
+        <div className="absolute inset-0" style={{ opacity: reduce ? 1 : 0 }}>
+          {items.map((_, i) => {
+            const s = stateOf(i);
+            return (
+              <motion.div
+                key={i}
+                className="absolute inset-y-0 border border-border bg-card"
+                style={{
+                  right: rightOf(i),
+                  width: widths[i] || undefined,
+                  borderRadius: radius,
+                  zIndex: i,
+                }}
+                initial={false}
+                animate={{ x: s.x, scale: s.scale, opacity: s.opacity }}
+                transition={transition}
+              />
+            );
+          })}
+        </div>
+
+        {/* SVG goo surface — horizontal rects */}
+        <motion.svg
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 overflow-visible [transform:translateZ(0)]"
+          width="100%"
+          height="100%"
+          style={{ opacity: reduce ? 0 : 1 }}
+        >
+          <g filter={reduce ? undefined : `url(#${filterId})`}>
+            {items.map((_, i) => {
+              const s = stateOf(i);
+              const rightPos = rightOf(i);
+              const totalW = expandedTotal || 0;
+              const leftPos = totalW - rightPos - (widths[i] ?? 0);
+              return (
+                <motion.rect
+                  key={i}
+                  x={leftPos}
+                  y={0}
+                  width={widths[i] || 0}
+                  height="100%"
+                  rx={radius}
+                  fill="#000"
+                  initial={false}
+                  animate={{ x: s.x, opacity: s.silOpacity }}
+                  transition={transition}
                 />
-                {/* Right blob */}
-                <div
-                  className="absolute top-0 right-0 h-full rounded-xl"
-                  style={{
-                    width: '52%',
-                    background: 'linear-gradient(135deg, #222520 0%, #1a1c17 100%)',
-                    transform: 'translateX(0%)',
-                    transition: 'transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                  }}
-                />
-              </div>
-            </div>
+              );
+            })}
+          </g>
+        </motion.svg>
 
-            {/* --- Card content (NOT filtered — crisp text) --- */}
-            <div className="relative z-10">
-              <div className="rounded-xl overflow-hidden
-                              bg-gradient-to-br from-neutral-800/95 to-neutral-900/95
-                              dark:from-neutral-800/95 dark:to-neutral-900/95
-                              border border-white/[0.06]
-                              shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.04)]">
+        {/* Content layer */}
+        <div className="absolute inset-0 flex items-center">
+          {items.map((child, i) => {
+            const s = stateOf(i);
+            return (
+              <motion.div
+                key={i}
+                ref={(el) => {
+                  contentRefs.current[i] = el;
+                }}
+                className="absolute inset-y-0"
+                style={{ right: rightOf(i), zIndex: i }}
+                initial={false}
+                animate={{
+                  x: s.x,
+                  scale: s.scale,
+                  opacity: s.opacity,
+                  filter: reduce ? "blur(0px)" : `blur(${s.blur}px)`,
+                }}
+                transition={transition}
+              >
+                {child}
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  },
+);
+GooeyStack.displayName = "GooeyStack";
 
-                {/* Connector row */}
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.08, duration: 0.25 }}
-                >
-                  {firstChild}
-                </motion.div>
-
-                {/* Separator */}
-                <div className="h-px mx-5 bg-white/[0.06]" />
-
-                {/* Body / textarea area */}
-                <motion.div
-                  className="relative"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  transition={{ delay: 0.12, duration: 0.3 }}
-                >
-                  {secondChild}
-                </motion.div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
+export { GooeyStack };

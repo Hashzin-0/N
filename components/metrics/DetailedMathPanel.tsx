@@ -5,6 +5,7 @@ import { Info } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import { Calculations } from '@/lib/types';
 import { ElasticText } from '@/components/godui/elastic-text';
+import { SplitFlapValue } from '@/components/godui/split-flap-value';
 
 interface Props {
   calculations: Calculations;
@@ -21,6 +22,20 @@ export default function DetailedMathPanel({ calculations, mosNContribution, soyN
         <h4 className="font-bold text-[#5A5A40] dark:text-[#9CB386] flex items-center gap-1.5 text-sm">
           <Info className="h-4 w-4 text-[#5A5A40] dark:text-[#9CB386]" /> <ElasticText className="text-sm font-bold" mode="auto" startOnView loop={false}>Resumo de Respostas e Conferência (Pronto para Copiar)</ElasticText>
         </h4>
+        <div className="flex flex-wrap items-center justify-center gap-4 py-3 my-1 rounded-xl bg-[#F5F3ED] dark:bg-[#1A1D17] border border-[#E5E2D9] dark:border-[#2C3328]">
+          <div className="text-center">
+            <div className="text-[9px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#9EA399] mb-1">Extração</div>
+            <SplitFlapValue value={calculations.totalExtraction} size="sm" unit="kg N/ha" />
+          </div>
+          <div className="text-center">
+            <div className="text-[9px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#9EA399] mb-1">N Líquida</div>
+            <SplitFlapValue value={calculations.liquidNeed} size="sm" unit="kg N/ha" />
+          </div>
+          <div className="text-center">
+            <div className="text-[9px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#9EA399] mb-1">Dose Final</div>
+            <SplitFlapValue value={calculations.recommendedDose} size="sm" unit="kg N/ha" />
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans pt-2">
           <div className="space-y-1.5">
             <div>• <strong>Necessidade total de N (Extração):</strong> {calculations.totalExtraction.toFixed(2)} kg N/ha</div>

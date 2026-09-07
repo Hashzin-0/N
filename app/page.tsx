@@ -24,7 +24,7 @@ import CornYieldCalculator from '@/components/CornYieldCalculator';
 import Input3D from '@/components/Input3D';
 import Button3D from '@/components/Button3D';
 import Select3D from '@/components/Select3D';
-import CellDivisionContainer from '@/components/CellDivisionContainer';
+import { GooeyStack } from '@/components/godui/gooey-stack';
 import { useGeminiLiveAgent } from '@/hooks/useGeminiLiveAgent';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAnimationLock } from '@/lib/useAnimationLock';
@@ -44,6 +44,7 @@ import BibliografiaAutoDetectCard from '@/components/metrics/BibliografiaAutoDet
 import GooeyNav, { GooeyNavItem } from '@/components/GooeyNav';
 import { ScrollStack } from '@/components/godui/scroll-stack';
 import { ElasticText } from '@/components/godui/elastic-text';
+import PresetMultiButton from '@/components/godui/preset-multi-button';
 
 
 // Interfaces for structured data
@@ -544,25 +545,13 @@ export default function Home() {
             <div id="form_section" className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-5 transition-colors">
 
               {/* Scenario chips */}
-              <div id="preset_selector" className="flex items-center gap-3 flex-wrap pb-4 border-b border-[#F0EDE5] dark:border-[#2C3328]">
-                <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase tracking-wider flex items-center gap-1.5">
-                  <Layers className="h-3 w-3" /> Cenários:
-                </span>
-                {/* eslint-disable-next-line react-hooks/refs -- false positive: PRESETS is a plain const, not a ref */}
-                {PRESETS.map((p) => (
-                  <Button3D
-                    key={p.id}
-                    id={`preset_btn_${p.id}`}
-                    variant={activePreset === p.id ? 'secondary' : 'ghost'}
-                    size="sm"
-                    active={activePreset === p.id}
-                    isDark={isDark}
-                    onClick={withLock(() => handleLoadPreset(p))}
-                  >
-                    {p.name.split(' ')[0]}
-                  </Button3D>
-                ))}
-              </div>
+              <PresetMultiButton
+                id="preset_selector"
+                presets={PRESETS}
+                activePreset={activePreset}
+                onPresetClick={(p) => withLock(() => handleLoadPreset(p))()}
+                isDark={isDark}
+              />
 
               <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-4">
                 <h2 className="text-lg font-bold text-[#5A5A40] dark:text-[#E8E6DF] flex items-center gap-2">
@@ -720,21 +709,7 @@ export default function Home() {
                     />
                   </div>
 
-                  <CellDivisionContainer
-                    mode={baseDoseMode}
-                    onModeChange={(m) => handleCustomInputChange(() => {
-                      setBaseDoseMode(m);
-                      if (m === 'single') {
-                        setBaseDose2(0);
-                        setV4v6Mode('single');
-                        setV4v6Percent2(0);
-                        setV8v10Mode('single');
-                        setV8v10Percent2(0);
-                      }
-                    })}
-                    accentColor="#D4A373"
-                    isDark={isDark}
-                  >
+                  <GooeyStack collapsed={baseDoseMode === 'single'}>
                     <Input3D
                       label={baseDoseMode === 'range' ? 'Min (kg N/ha)' : 'Valor (kg N/ha)'}
                       labelMorph
@@ -749,20 +724,22 @@ export default function Home() {
                       accentColor="#D4A373"
                       filling={fillingFields.has('baseDose')}
                     />
-                    <Input3D
-                      label="Max (kg N/ha)"
-                      unit="kg N/ha"
-                      value={baseDose2}
-                      onChange={(v) => handleCustomInputChange(() => setBaseDose2(v))}
-                      step={1}
-                      min={0}
-                      max={100}
-                      placeholder="0"
-                      isDark={isDark}
-                      accentColor="#D4A373"
-                      filling={fillingFields.has('baseDose2')}
-                    />
-                  </CellDivisionContainer>
+                    {baseDoseMode === 'range' && (
+                      <Input3D
+                        label="Max (kg N/ha)"
+                        unit="kg N/ha"
+                        value={baseDose2}
+                        onChange={(v) => handleCustomInputChange(() => setBaseDose2(v))}
+                        step={1}
+                        min={0}
+                        max={100}
+                        placeholder="0"
+                        isDark={isDark}
+                        accentColor="#D4A373"
+                        filling={fillingFields.has('baseDose2')}
+                      />
+                    )}
+                  </GooeyStack>
 
                   <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-1 leading-relaxed">
                     * Faixa agronômica típica: 30 a 40 kg N/ha.
@@ -790,15 +767,7 @@ export default function Home() {
                     )}
                   </div>
 
-                  <CellDivisionContainer
-                    mode={baseDoseMode}
-                    onModeChange={(m) => handleCustomInputChange(() => {
-                      if (baseDoseMode === 'single') return;
-                      if (m === 'single') setV4v6Percent2(0);
-                    })}
-                    accentColor="#5A5A40"
-                    isDark={isDark}
-                  >
+                  <GooeyStack collapsed={baseDoseMode === 'single'}>
                     <Input3D
                       label={baseDoseMode === 'single' ? '% do total' : (baseDoseMode === 'range' ? 'Min %' : '% do total')}
                       labelMorph
@@ -829,7 +798,7 @@ export default function Home() {
                         filling={fillingFields.has('v4v6Percent2')}
                       />
                     )}
-                  </CellDivisionContainer>
+                  </GooeyStack>
 
                   <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] leading-relaxed">
                     * Faixa agronômica padrão: 50% a 60% do total.
@@ -874,14 +843,7 @@ export default function Home() {
                       </div>
                     </>
                   ) : (
-                    <CellDivisionContainer
-                      mode={baseDoseMode}
-                      onModeChange={(m) => handleCustomInputChange(() => {
-                        if (m === 'single') setV8v10Percent2(0);
-                      })}
-                      accentColor="#8D6E63"
-                      isDark={isDark}
-                    >
+                    <GooeyStack collapsed={false}>
                       <Input3D
                         label={baseDoseMode === 'range' ? 'Min %' : '% do total'}
                         labelMorph
@@ -898,23 +860,25 @@ export default function Home() {
                         hint={v8v10Percent === 0 ? `Auto-calculado: ${calculations.v8v10_1_auto}%` : undefined}
                         filling={fillingFields.has('v8v10Percent')}
                       />
-                      <Input3D
-                        label="Max %"
-                        labelMorph
-                        unit="%"
-                        value={v8v10Percent2}
-                        onChange={(v) => handleCustomInputChange(() => setV8v10Percent2(v))}
-                        step={1}
-                        min={0}
-                        max={100}
-                        placeholder="0"
-                        isDark={isDark}
-                        accentColor="#8D6E63"
-                        derived={v8v10Percent2 === 0 && v4v6Percent2 > 0}
-                        hint={v8v10Percent2 === 0 && v4v6Percent2 > 0 ? `Auto-calculado: ${calculations.v8v10_2_auto}%` : undefined}
-                        filling={fillingFields.has('v8v10Percent2')}
-                      />
-                    </CellDivisionContainer>
+                      {baseDoseMode === 'range' && (
+                        <Input3D
+                          label="Max %"
+                          labelMorph
+                          unit="%"
+                          value={v8v10Percent2}
+                          onChange={(v) => handleCustomInputChange(() => setV8v10Percent2(v))}
+                          step={1}
+                          min={0}
+                          max={100}
+                          placeholder="0"
+                          isDark={isDark}
+                          accentColor="#8D6E63"
+                          derived={v8v10Percent2 === 0 && v4v6Percent2 > 0}
+                          hint={v8v10Percent2 === 0 && v4v6Percent2 > 0 ? `Auto-calculado: ${calculations.v8v10_2_auto}%` : undefined}
+                          filling={fillingFields.has('v8v10Percent2')}
+                        />
+                      )}
+                    </GooeyStack>
                   )}
 
                   <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] leading-relaxed">

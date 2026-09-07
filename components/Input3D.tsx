@@ -164,7 +164,7 @@ export default function Input3D({
                 darkAccentColor={isDark ? '#9CB386' : '#5A5A40'}
               />
             ) : (
-              <ElasticText key={labelKey} className="text-[11px] font-bold uppercase tracking-wider" mode="auto">
+              <ElasticText key={labelKey} className="text-[11px] font-bold uppercase tracking-wider" mode="auto" startOnView={false}>
                 {label}
               </ElasticText>
             )}
