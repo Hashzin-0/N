@@ -34,29 +34,6 @@ const CssGooeyStack = React.forwardRef<HTMLDivElement, CssGooeyStackProps>(
         style={style}
         {...props}
       >
-        {/* ── SVG Goo Filter Definition ──────────────────────────────── */}
-        <svg
-          style={{ position: "absolute", width: 0, height: 0 }}
-          aria-hidden="true"
-        >
-          <defs>
-            <filter id={filterId}>
-              <feGaussianBlur
-                in="SourceGraphic"
-                stdDeviation="10"
-                result="blur"
-              />
-              <feColorMatrix
-                in="blur"
-                mode="matrix"
-                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8"
-                result="goo"
-              />
-              <feComposite in="SourceGraphic" in2="goo" operator="atop" />
-            </filter>
-          </defs>
-        </svg>
-
         {/* ── Goo-filtered layer: absolutely positioned inputs ──────── */}
         <div
           className="relative"
@@ -64,6 +41,29 @@ const CssGooeyStack = React.forwardRef<HTMLDivElement, CssGooeyStackProps>(
             filter: `url(#${filterId})`,
           }}
         >
+          {/* SVG Goo Filter Definition — inside filtered wrapper so root div stays clean */}
+          <svg
+            style={{ position: "absolute", width: 0, height: 0 }}
+            aria-hidden="true"
+          >
+            <defs>
+              <filter id={filterId}>
+                <feGaussianBlur
+                  in="SourceGraphic"
+                  stdDeviation="10"
+                  result="blur"
+                />
+                <feColorMatrix
+                  in="blur"
+                  mode="matrix"
+                  values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8"
+                  result="goo"
+                />
+                <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+              </filter>
+            </defs>
+          </svg>
+
           {/* Height spacer — preserves container height (absolute children don't) */}
           <div style={{ visibility: "hidden", pointerEvents: "none" }}>
             {items[0]}

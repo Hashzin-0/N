@@ -31,7 +31,7 @@ function saveReferences(refs: ABNTReference[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(refs));
 }
 
-export default function AbntReferenceFormatter() {
+export default function AbntReferenceFormatter({ isConnected }: { isConnected?: boolean }) {
   const { isDark } = useTheme();
   const [references, setReferences] = useState<ABNTReference[]>(() => loadReferences());
   const [selectedType, setSelectedType] = useState<ReferenceType | null>(null);
@@ -121,7 +121,7 @@ export default function AbntReferenceFormatter() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <ReferenceTypeSelector onSelect={setSelectedType} />
+            <ReferenceTypeSelector onSelect={setSelectedType} isConnected={isConnected} />
           </motion.div>
         )}
       </AnimatePresence>

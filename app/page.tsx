@@ -467,10 +467,10 @@ export default function Home() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           nitrogenContent={
-            <div className="h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="px-4 sm:px-6 lg:px-8 py-6">
               <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
         {/* INPUT SECTION — scenarios + inputs in one card */}
-            <div id="form_section" className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-5 transition-colors">
+            <div id="form_section" className="bg-white dark:bg-[#1C201A] p-6 rounded-b-3xl rounded-t-none shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-5 transition-colors">
 
               {/* HEADER */}
               <div className="flex items-center gap-3 border-b pb-4 border-[#F0EDE5] dark:border-[#2C3328]">
@@ -883,9 +883,10 @@ export default function Home() {
             </div>
           }
           productivityContent={
-            <div className="h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="px-4 sm:px-6 lg:px-8 py-6">
               <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
                 <CornYieldCalculator
+                  isConnected
                   onApplyYieldGoal={(scHa) => {
                     setYieldGoal(scHa);
                     setActivePreset('personalizado');
@@ -898,16 +899,16 @@ export default function Home() {
             </div>
           }
           itrContent={
-            <div className="h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="px-4 sm:px-6 lg:px-8 py-6">
               <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
-                <ITRCalculator />
+                <ITRCalculator isConnected />
               </ScrollStack>
             </div>
           }
           abntContent={
-            <div className="h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="px-4 sm:px-6 lg:px-8 py-6">
               <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
-                <AbntReferenceFormatter />
+                <AbntReferenceFormatter isConnected />
                 <BibliografiaAutoDetectCard
                   onReferenceSelected={(ref) => {
                     setBibliographyRef(ref);

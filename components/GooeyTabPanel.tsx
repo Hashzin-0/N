@@ -2,6 +2,8 @@
 
 import React, {
   ReactNode,
+  useCallback,
+  useRef,
   useId,
   useState,
 } from 'react';
@@ -47,6 +49,7 @@ const TAB_INDEX: Record<TabId, number> = {
 };
 
 const TAB_H = 105;
+const CONNECTOR_H = 40;
 
 /* ============================================================
    GOOEY FILTER
@@ -90,19 +93,17 @@ function GooeyFilter({ id }: { id: string }) {
 }
 
 /* ============================================================
-   FORMA GOOEY — SHELL SVG ADAPTADO PARA 4 TABS
+   FORMA GOOEY — TAB + CONECTOR SVG
 ============================================================ */
 
 function GooeyShell({
   activeTab,
   filterId,
-  panelColor,
-  cutoutColor,
+  fillColor,
 }: {
   activeTab: TabId;
   filterId: string;
-  panelColor: string;
-  cutoutColor: string;
+  fillColor: string;
 }) {
   const tabIndex = TAB_INDEX[activeTab];
 
@@ -118,13 +119,14 @@ function GooeyShell({
   return (
     <svg
       className="absolute inset-0 h-full w-full"
-      viewBox={`0 0 ${W} ${TAB_H + 20}`}
+      viewBox={`0 0 ${W} ${TAB_H + CONNECTOR_H}`}
       preserveAspectRatio="none"
       style={{ overflow: 'visible' }}
     >
       <g filter={`url(#${filterId})`}>
+        {/* Tab body */}
         <path
-          fill={panelColor}
+          fill={fillColor}
           d={`
             M ${tabLeft} ${TAB_H}
             L ${tabLeft} ${R}
@@ -135,9 +137,14 @@ function GooeyShell({
             Z
           `}
         />
-        <circle cx={circleX} cy={TAB_H} r="34" fill={panelColor} />
+        {/* Circle at junction — gooey connection */}
+        <circle
+          cx={circleX}
+          cy={TAB_H}
+          r="34"
+          fill={fillColor}
+        />
       </g>
-      <circle cx={circleX} cy={TAB_H} r="38" fill={cutoutColor} />
     </svg>
   );
 }
@@ -178,7 +185,6 @@ export interface GooeyTabPanelProps {
   productivityContent: ReactNode;
   itrContent: ReactNode;
   abntContent: ReactNode;
-  panelHeight?: number;
 }
 
 export default function GooeyTabPanel({
@@ -188,23 +194,40 @@ export default function GooeyTabPanel({
   productivityContent,
   itrContent,
   abntContent,
-  panelHeight = 600,
 }: GooeyTabPanelProps) {
   const [direction, setDirection] = useState(1);
   const { isDark } = useTheme();
   const rawId = useId();
   const filterId = `gooey-tabs-${rawId.replace(/:/g, '')}`;
 
-  const panelColor = isDark ? '#1C201A' : '#F9F8F6';
-  const cutoutColor = isDark ? '#121511' : '#FDFBF7';
+  const fillColor = isDark ? '#1C201A' : '#FDFBF7';
 
-  function changeTab(nextTab: TabId) {
-    if (nextTab === activeTab) return;
-    const currentIndex = TAB_INDEX[activeTab];
-    const nextIndex = TAB_INDEX[nextTab];
-    setDirection(nextIndex > currentIndex ? 1 : -1);
-    onTabChange(nextTab);
-  }
+  const touchStartX = useRef(0);
+  const mouseStartX = useRef(0);
+
+  const changeTab = useCallback(
+    (nextTab: TabId) => {
+      if (nextTab === activeTab) return;
+      const currentIndex = TAB_INDEX[activeTab];
+      const nextIndex = TAB_INDEX[nextTab];
+      setDirection(nextIndex > currentIndex ? 1 : -1);
+      onTabChange(nextTab);
+    },
+    [activeTab, onTabChange],
+  );
+
+  const handleSwipeGesture = useCallback(
+    (deltaX: number) => {
+      const THRESHOLD = 50;
+      const idx = TAB_INDEX[activeTab];
+      if (deltaX < -THRESHOLD && idx < TABS.length - 1) {
+        changeTab(TABS[idx + 1].id);
+      } else if (deltaX > THRESHOLD && idx > 0) {
+        changeTab(TABS[idx - 1].id);
+      }
+    },
+    [activeTab, changeTab],
+  );
 
   const contentMap: Record<TabId, ReactNode> = {
     nitrogen: nitrogenContent,
@@ -214,73 +237,89 @@ export default function GooeyTabPanel({
   };
 
   return (
-    <div className="relative w-full">
+    <div
+      className="relative w-full"
+      onTouchStart={(e) => {
+        touchStartX.current = e.touches[0].clientX;
+      }}
+      onTouchEnd={(e) => {
+        const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+        handleSwipeGesture(deltaX);
+      }}
+      onMouseDown={(e) => {
+        if (e.button !== 0) return;
+        const el = e.target as HTMLElement;
+        if (el.closest('button, a, input, select, textarea, [role="button"]')) return;
+        mouseStartX.current = e.clientX;
+      }}
+      onMouseUp={(e) => {
+        if (mouseStartX.current === 0) return;
+        const deltaX = e.clientX - mouseStartX.current;
+        mouseStartX.current = 0;
+        handleSwipeGesture(deltaX);
+      }}
+    >
       <GooeyFilter id={filterId} />
 
+      {/* Tabs — em fluxo normal, rola com o conteúdo */}
+      <div className="relative z-30 grid w-full grid-cols-4">
+        {TABS.map((tab) => {
+          const active = tab.id === activeTab;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => changeTab(tab.id)}
+              className="relative h-[105px] border-0 bg-transparent px-2 outline-none"
+            >
+              <span
+                className={`
+                  relative z-10
+                  flex h-full items-center justify-center
+                  text-[13px] font-semibold
+                  transition-all duration-300
+                  sm:text-[15px]
+                  ${active ? 'text-[#3D3D3D] dark:text-[#efeee7]' : 'text-[#a6a89f] hover:text-[#d4d3cb]'}
+                `}
+              >
+                {tab.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Conector — área de transição gooey */}
       <div
-        className="relative w-full"
-        style={{ height: panelHeight + TAB_H }}
+        className="relative z-20"
+        style={{ height: CONNECTOR_H, marginTop: '-20px' }}
       >
         <GooeyShell
           activeTab={activeTab}
           filterId={filterId}
-          panelColor={panelColor}
-          cutoutColor={cutoutColor}
+          fillColor={fillColor}
         />
+      </div>
 
-        <div
-          className="absolute left-0 top-0 z-30 grid w-full grid-cols-4"
-          style={{ height: TAB_H }}
+      {/* Conteúdo — em fluxo normal, rola com scroll */}
+      <div className="relative z-10">
+        <AnimatePresence
+          initial={false}
+          custom={direction}
+          mode="sync"
         >
-          {TABS.map((tab) => {
-            const active = tab.id === activeTab;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => changeTab(tab.id)}
-                className="relative h-[105px] border-0 bg-transparent px-2 outline-none"
-              >
-                <span
-                  className={`
-                    relative z-10
-                    flex h-full items-center justify-center
-                    text-[13px] font-semibold
-                    transition-all duration-300
-                    sm:text-[15px]
-                    ${active ? 'text-[#efeee7]' : 'text-[#a6a89f] hover:text-[#d4d3cb]'}
-                  `}
-                >
-                  {tab.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div
-          className="absolute left-0 right-0 top-[105px] z-20 overflow-hidden"
-          style={{ height: panelHeight }}
-        >
-          <AnimatePresence
-            initial={false}
+          <motion.div
+            key={activeTab}
             custom={direction}
-            mode="sync"
+            variants={pageVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={pageTransition}
           >
-            <motion.div
-              key={activeTab}
-              custom={direction}
-              variants={pageVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={pageTransition}
-              className="absolute inset-0 w-full"
-            >
-              {contentMap[activeTab]}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+            {contentMap[activeTab]}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -39,7 +39,7 @@ function lookupAliquot(areaHa: number, gu: number): number {
   return ALIQUOT_TABLE[row].rates[col];
 }
 
-export default function ITRCalculator() {
+export default function ITRCalculator({ isConnected }: { isConnected?: boolean }) {
   const { isDark } = useTheme();
 
   const [vtn, setVtn] = useState<number>(0);
@@ -92,7 +92,7 @@ export default function ITRCalculator() {
 
       {/* Input Form */}
       <div className={cn(
-        'rounded-2xl border p-5 space-y-4 transition-colors',
+        `${isConnected ? 'rounded-b-2xl rounded-t-none' : 'rounded-2xl'} border p-5 space-y-4 transition-colors`,
         inputBg, borderColor
       )}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

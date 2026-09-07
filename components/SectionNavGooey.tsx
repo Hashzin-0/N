@@ -40,13 +40,15 @@ const ABNT_SECTIONS: SectionConfig[] = [
 
 interface SectionNavGooeyProps {
   activeTab: string;
+  activeSectionIds?: string[];
   onNavigate?: (sectionId: string) => void;
 }
 
-export default function SectionNavGooey({ activeTab, onNavigate }: SectionNavGooeyProps) {
+export default function SectionNavGooey({ activeTab, activeSectionIds, onNavigate }: SectionNavGooeyProps) {
   const { isDark } = useTheme();
   const isMobile = useIsMobile();
   const scrollProgress = useScrollProgress();
+
   const sections = useMemo(() => {
     switch (activeTab) {
       case 'nitrogen': return NITROGEN_SECTIONS;
@@ -64,6 +66,11 @@ export default function SectionNavGooey({ activeTab, onNavigate }: SectionNavGoo
     threshold: 0.1,
   });
 
+  const activeSet = useMemo(
+    () => new Set(activeSectionIds ?? (currentSection ? [currentSection] : [])),
+    [activeSectionIds, currentSection],
+  );
+
   const handleClick = useCallback(
     (sectionId: string) => {
       const el = document.getElementById(sectionId);
@@ -79,13 +86,14 @@ export default function SectionNavGooey({ activeTab, onNavigate }: SectionNavGoo
     () =>
       sections.map((config) => {
         const colorHex = isDark ? config.colorDark : config.color;
+        const isActive = activeSet.has(config.id);
         return {
           id: config.id,
           icon: ({ className }: { className?: string }) => (
             <NavSvgIcon
               geometry={config.geometry}
               color={colorHex}
-              isActive={currentSection === config.id}
+              isActive={isActive}
               className={className}
             />
           ),
@@ -94,12 +102,24 @@ export default function SectionNavGooey({ activeTab, onNavigate }: SectionNavGoo
           onClick: () => handleClick(config.id),
         };
       }),
-    [sections, isDark, isMobile, currentSection, handleClick],
+    [sections, isDark, isMobile, activeSet, handleClick],
   );
 
-  const indicatorProgress = useMemo(() => {
-    return scrollProgress;
-  }, [scrollProgress]);
+  const glowColors = isDark
+    ? { primary: '#9CB386', secondary: '#D4A373', tertiary: '#CBB5A1' }
+    : { primary: '#5A5A40', secondary: '#D4A373', tertiary: '#8D6E63' };
+
+  const glowGradient = `linear-gradient(${isMobile ? 'to right' : 'to bottom'}, ${glowColors.primary}, ${glowColors.secondary}, ${glowColors.tertiary})`;
+  const glowColor = isDark ? '#9CB386' : '#5A5A40';
+
+  const insetGradStart = isDark ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.15)';
+  const insetGradEnd = isDark ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.08)';
+  const edgeColor = isDark ? '#9CB386' : '#5A5A40';
+
+  const maskDir = isMobile ? 'to right' : 'to bottom';
+  const glowPct = `${scrollProgress * 100}%`;
+  const maskGradient = `linear-gradient(${maskDir}, transparent, black ${Math.max(0, scrollProgress * 100 - 15)}%, black ${glowPct}, black ${Math.min(100, scrollProgress * 100 + 15)}%, transparent)`;
+  const maskGradientStart = `linear-gradient(${maskDir}, black ${Math.min(100, scrollProgress * 100 + 8)}%, transparent)`;
 
   return (
     <div
@@ -125,14 +145,129 @@ export default function SectionNavGooey({ activeTab, onNavigate }: SectionNavGoo
               values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 12 -5"
             />
           </filter>
+
+          <filter
+            id="section-inset-shadow"
+            x="-20%"
+            y="-20%"
+            width="140%"
+            height="140%"
+            colorInterpolationFilters="sRGB"
+          >
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+            <feColorMatrix
+              in="blur"
+              mode="matrix"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 12 -5"
+            />
+          </filter>
+
+          <filter
+            id="section-glow-blur"
+            x="-40%"
+            y="-40%"
+            width="180%"
+            height="180%"
+            colorInterpolationFilters="sRGB"
+          >
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+            <feColorMatrix
+              in="blur"
+              mode="matrix"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -8"
+            />
+          </filter>
         </defs>
       </svg>
 
-      {/* Nav rail with gooey body effect */}
+      {/* Nav rail with gooey body effect + inset shadow/edge/glow */}
       <div
         className={`relative ${isMobile ? 'px-2' : 'flex-1 py-2 px-1'}`}
         style={{ filter: 'url(#section-nav-body-gooey)' }}
       >
+        {/* SVG inset shadow + edge + glow — follows gooey metaball shape */}
+        <svg
+          className="absolute inset-0 pointer-events-none"
+          style={{ overflow: 'visible', zIndex: 1 }}
+          aria-hidden="true"
+          preserveAspectRatio="none"
+        >
+          {/* SHADOW LAYER — blurred dark gradient, inset top */}
+          <g filter="url(#section-inset-shadow)">
+            <rect
+              x="0" y="0" width="100%" height="100%"
+              rx="16" ry="16"
+              fill={`url(#inset-shadow-grad-${isMobile ? 'h' : 'v'})`}
+            />
+          </g>
+
+          {/* EDGE LAYER — accent-colored inset edge */}
+          <rect
+            x="0" y="0" width="100%" height="100%"
+            rx="16" ry="16"
+            fill={`${edgeColor}55`}
+            style={{
+              transform: isMobile ? 'translateY(0.5px)' : 'translateX(0.5px)',
+            }}
+          />
+
+          {/* GLOW LAYER — scroll progress light on edge, masked by progress */}
+          <g
+            style={{
+              WebkitMaskImage: maskGradientStart,
+              maskImage: maskGradientStart,
+            }}
+          >
+            <g filter="url(#section-glow-blur)">
+              <rect
+                x="0" y="0" width="100%" height="100%"
+                rx="16" ry="16"
+                fill={glowGradient}
+                opacity={0.5}
+              />
+            </g>
+          </g>
+
+          {/* GLOW DOT — bright accent at scroll position */}
+          {isMobile ? (
+            <circle
+              cx={`${scrollProgress * 100}%`}
+              cy="50%"
+              r="5"
+              fill={glowColor}
+              opacity={0.9}
+              style={{ transition: 'cx 0.15s ease-out' }}
+            />
+          ) : (
+            <circle
+              cx="50%"
+              cy={`${scrollProgress * 100}%`}
+              r="5"
+              fill={glowColor}
+              opacity={0.9}
+              style={{ transition: 'cy 0.15s ease-out' }}
+            />
+          )}
+
+          {/* Gradient definitions */}
+          <defs>
+            <linearGradient
+              id="inset-shadow-grad-v"
+              x1="0" y1="0" x2="0" y2="1"
+            >
+              <stop offset="0%" stopColor={insetGradStart} />
+              <stop offset="100%" stopColor={insetGradEnd} />
+            </linearGradient>
+            <linearGradient
+              id="inset-shadow-grad-h"
+              x1="0" y1="0" x2="1" y2="0"
+            >
+              <stop offset="0%" stopColor={insetGradStart} />
+              <stop offset="100%" stopColor={insetGradEnd} />
+            </linearGradient>
+          </defs>
+        </svg>
+
         <MultiButton
           gooey
           variant="ghost"
@@ -141,60 +276,6 @@ export default function SectionNavGooey({ activeTab, onNavigate }: SectionNavGoo
           highlightColor={isDark ? '#9CB386' : '#5A5A40'}
           disableBlur
           className={isMobile ? 'w-full justify-center gap-2' : 'flex-col !rounded-2xl h-full items-stretch justify-center gap-3'}
-        />
-      </div>
-
-      {/* Scroll progress indicator */}
-      <div
-        className={`absolute ${
-          isMobile
-            ? 'bottom-0 left-2 right-2 h-1'
-            : 'left-[28px] top-2 bottom-2 w-1'
-        } bg-[#E5E2D9] dark:bg-[#2C3328] rounded-full overflow-hidden`}
-      >
-        <div
-          className="absolute rounded-full"
-          style={{
-            background: isDark
-              ? 'linear-gradient(to right, #9CB386, #D4A373, #CBB5A1)'
-              : 'linear-gradient(to right, #5A5A40, #D4A373, #8D6E63)',
-            ...(isMobile
-              ? {
-                  top: 0,
-                  left: 0,
-                  height: '100%',
-                  width: `${indicatorProgress * 100}%`,
-                  transition: 'width 0.15s ease-out',
-                }
-              : {
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: `${indicatorProgress * 100}%`,
-                  transition: 'height 0.15s ease-out',
-                }),
-          }}
-        />
-        <div
-          className="absolute rounded-full bg-white shadow-lg"
-          style={{
-            width: 8,
-            height: 8,
-            boxShadow: `0 0 8px ${isDark ? '#9CB386' : '#5A5A40'}`,
-            ...(isMobile
-              ? {
-                  top: '50%',
-                  left: `calc(${indicatorProgress * 100}% - 4px)`,
-                  transform: 'translateY(-50%)',
-                  transition: 'left 0.15s ease-out',
-                }
-              : {
-                  left: '50%',
-                  top: `calc(${indicatorProgress * 100}% - 4px)`,
-                  transform: 'translateX(-50%)',
-                  transition: 'top 0.15s ease-out',
-                }),
-          }}
         />
       </div>
     </div>

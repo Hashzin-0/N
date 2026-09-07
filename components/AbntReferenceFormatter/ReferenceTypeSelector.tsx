@@ -29,14 +29,15 @@ const ICONS: Record<string, React.ReactNode> = {
 
 interface ReferenceTypeSelectorProps {
   onSelect: (type: ReferenceType) => void;
+  isConnected?: boolean;
 }
 
-export default function ReferenceTypeSelector({ onSelect }: ReferenceTypeSelectorProps) {
+export default function ReferenceTypeSelector({ onSelect, isConnected }: ReferenceTypeSelectorProps) {
   const { isDark } = useTheme();
 
   return (
     <div className={cn(
-      'rounded-2xl border p-5 transition-colors',
+      `${isConnected ? 'rounded-b-2xl rounded-t-none' : 'rounded-2xl'} border p-5 transition-colors`,
       isDark ? 'bg-[#1A1E18] border-[#2C3328]' : 'bg-[#FDFBF7] border-[#E5E2D9]'
     )}>
       <h3 className="text-sm font-bold text-[#5A5A40] dark:text-[#E8E6DF] uppercase tracking-wider mb-4">

@@ -25,6 +25,7 @@ import type { AgronomicValidationIssue } from '@/lib/types';
 
 interface CornYieldCalculatorProps {
   onApplyYieldGoal?: (scHa: number) => void;
+  isConnected?: boolean;
 }
 
 interface YieldPreset {
@@ -79,7 +80,7 @@ const YIELD_PRESETS: YieldPreset[] = [
   },
 ];
 
-export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalculatorProps) {
+export default function CornYieldCalculator({ onApplyYieldGoal, isConnected }: CornYieldCalculatorProps) {
   const { isDark } = useTheme();
 
   const [plantasPorMetro, setPlantasPorMetro] = useState<number>(0);
@@ -304,7 +305,7 @@ export default function CornYieldCalculator({ onApplyYieldGoal }: CornYieldCalcu
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className={`p-6 sm:p-7 rounded-3xl border shadow-sm transition-colors ${
+        className={`p-6 sm:p-7 ${isConnected ? 'rounded-b-3xl rounded-t-none' : 'rounded-3xl'} border shadow-sm transition-colors ${
           isDark ? 'bg-[#1C1E19] border-[#2E3326]' : 'bg-white border-[#E5E2D9]'
         }`}
       >
