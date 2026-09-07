@@ -210,7 +210,7 @@ export default function ParcelamentoSection({ animKey,
       <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-4 flex justify-between items-center">
         <div>
           <h3 className="text-sm font-bold text-[#5A5A40] dark:text-[#E8E6DF] uppercase tracking-wider flex items-center gap-2">
-            <ElasticText className="text-[10px] font-bold tracking-widest" mode="auto">
+            <ElasticText className="text-[10px] font-bold tracking-widest" mode="auto" startOnView>
               <Scale className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> Cronograma de Parcelamento
             </ElasticText>
           </h3>
@@ -233,7 +233,7 @@ export default function ParcelamentoSection({ animKey,
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#D4A373] dark:border-[#A27B5C]">
             <div>
               <span className="bg-[#D4A373] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
-                <ElasticText className="text-[9px]" mode="auto">
+                <ElasticText className="text-[9px]" mode="auto" startOnView>
                   1ª Aplicação: Base
                 </ElasticText>
               </span>
@@ -288,7 +288,7 @@ export default function ParcelamentoSection({ animKey,
           <div className="flex justify-between items-start">
             <div>
               <span className="bg-[#5A5A40] dark:bg-[#3D4D35] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
-                <ElasticText className="text-[9px]" mode="auto">
+                <ElasticText className="text-[9px]" mode="auto" startOnView>
                   2ª Aplicação: V4-V6
                 </ElasticText>
               </span>
@@ -468,7 +468,7 @@ export default function ParcelamentoSection({ animKey,
           <div className="flex justify-between items-start">
             <div>
               <span className="bg-[#8D6E63] dark:bg-[#6D544C] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
-                <ElasticText className="text-[9px]" mode="auto">
+                <ElasticText className="text-[9px]" mode="auto" startOnView>
                   3ª Aplicação: V8-V10
                 </ElasticText>
               </span>
@@ -624,7 +624,7 @@ export default function ParcelamentoSection({ animKey,
             <div className="flex items-center gap-2">
               <ArrowRightLeft className="h-4 w-4 text-[#8C897E] dark:text-[#9EA399]" />
               <div>
-                <ElasticText className="text-xs font-bold text-[#3D3D3D] dark:text-[#E8E6DF]" mode="auto">
+                <ElasticText className="text-xs font-bold text-[#3D3D3D] dark:text-[#E8E6DF]" mode="auto" startOnView>
                   Diferença entre as duas doses principais
                 </ElasticText>
                 <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399]">Módulo da diferença: | V4-V6 - V8-V10 |</p>

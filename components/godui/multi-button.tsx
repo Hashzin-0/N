@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/immutability, react-hooks/set-state-in-effect, jsx-a11y/role-supports-aria-props */
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -230,6 +229,8 @@ function useOutsidePointerDown(
 ) {
   React.useEffect(() => {
     if (!active) return;
+    // The rail may be portaled into a preview iframe, whose document is
+    // different from the page document running this component.
     const ownerDocument = containerRef.current?.ownerDocument ?? document;
     const handlePointerDown = (event: PointerEvent) => {
       if (!containerRef.current?.contains(event.target as Node)) onOutside();
@@ -500,16 +501,17 @@ function useMultiButtonLayout({
       effectiveLabelWidth,
     ),
   );
-  let blobX = 0;
-  const blobGeometries = items.map((item, index) => {
-    const geometry = {
-      item,
-      width: itemWidths[index] ?? cfg.cell,
-      x: blobX,
-    };
-    blobX += geometry.width + (index < items.length - 1 ? 1 : 0);
-    return geometry;
-  });
+  const blobGeometries = React.useMemo(() => {
+    return items.reduce<{ item: MultiButtonItem; width: number; x: number }[]>(
+      (acc, item, index) => {
+        const width = itemWidths[index] ?? cfg.cell;
+        const prevX = index > 0 ? acc[index - 1].x + acc[index - 1].width + 1 : 0;
+        acc.push({ item, width, x: prevX });
+        return acc;
+      },
+      [],
+    );
+  }, [items, itemWidths, cfg.cell]);
 
   return {
     blobGeometries,
@@ -1047,6 +1049,7 @@ function MultiButtonRailContent({
         reduceMotion={reduceMotion}
         restAriaLabel={restAriaLabel}
         restIcon={restIcon}
+        reserveItems={reserveItems}
         selectedId={selectedId}
         size={size}
         variant={variant}
@@ -1082,20 +1085,23 @@ function MultiButtonRail({
   ...contentProps
 }: MultiButtonRailProps) {
   const cfg = SIZE_CONFIG[size];
-
-  const mergeRef = React.useCallback(
+  const forwardedRefInternal = React.useRef(forwardedRef);
+  React.useEffect(() => {
+    forwardedRefInternal.current = forwardedRef;
+  });
+  const setMergedRef = React.useCallback(
     (node: HTMLDivElement | null) => {
       containerRef.current = node;
-      if (typeof forwardedRef === "function") forwardedRef(node);
-      else if (forwardedRef)
-        forwardedRef.current = node;
+      const ref = forwardedRefInternal.current;
+      if (typeof ref === "function") ref(node);
+      else if (ref) ref.current = node;
     },
-    [containerRef, forwardedRef],
+    [containerRef],
   );
 
   return (
     <motion.div
-      ref={mergeRef}
+      ref={setMergedRef}
       data-slot={slot}
       role="group"
       aria-expanded={compact ? expanded : undefined}
@@ -1299,7 +1305,6 @@ const CompactMultiButton = React.forwardRef<
     const [touchExpanded, setTouchExpanded] = React.useState(false);
     const [focusExpanded, setFocusExpanded] = React.useState(false);
     const [compactRailReady, setCompactRailReady] = React.useState(false);
-    const focusRestoreFrameRef = React.useRef<number | null>(null);
     const suppressFocusExpansionRef = React.useRef(false);
     const selectedItem =
       items.find((item) => item.id === selectedId) ?? items[0];
@@ -1330,18 +1335,7 @@ const CompactMultiButton = React.forwardRef<
 
     React.useLayoutEffect(() => {
       expansionStateRef.current = { expanded: isExpanded, expandedWidth };
-      if (!isExpanded) {
-        setCompactRailReady(false);
-        return;
-      }
-
-      if (reduceMotion) {
-        setCompactRailReady(true);
-        return;
-      }
-
-      setCompactRailReady(expandedWidth === cfg.cell);
-    }, [cfg.cell, expandedWidth, isExpanded, reduceMotion]);
+    }, [expandedWidth, isExpanded]);
 
     React.useEffect(
       () => () => {

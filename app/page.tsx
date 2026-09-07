@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import VoiceAssistantHUD from '@/components/VoiceAssistantHUD';
 import DarkMode3DToggle from '@/components/DarkMode3DToggle';
-import SectionNav3D from '@/components/SectionNav3D';
+import SectionNavGooey from '@/components/SectionNavGooey';
 import LoadingSkeleton3D from '@/components/LoadingSkeleton3D';
 import CornYieldCalculator from '@/components/CornYieldCalculator';
 import Input3D from '@/components/Input3D';
@@ -451,21 +451,21 @@ export default function Home() {
       >
         {/* Mobile: horizontal nav inside sticky header */}
         <div className="lg:hidden px-4 sm:px-6 py-2">
-          <SectionNav3D activeTab={activeTab} />
+          <SectionNavGooey activeTab={activeTab} />
         </div>
       </header>
 
       {/* Desktop: fixed sidebar nav */}
       <aside className="hidden lg:block fixed top-0 left-0 h-screen w-[180px] bg-[#5A5A40] dark:bg-[#1E241B] shadow-lg border-r border-[#4A4A30] dark:border-[#2D3528] p-2 z-40">
-        <SectionNav3D activeTab={activeTab} />
+        <SectionNavGooey activeTab={activeTab} />
       </aside>
 
       {/* Main content area - offset for desktop sidebar */}
       <div className="lg:ml-[180px] px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
         {/* TOP NAVIGATION / MODE SWITCHER — GOOEY NAV */}
-        <div id="app_mode_nav" className="sticky top-0 z-50">
-          <div className="bg-white dark:bg-[#1C201A] px-1 py-1 transition-colors">
+        <div id="app_mode_nav">
+          <div className="bg-white dark:bg-[#1C201A] px-1 py-1 transition-colors rounded-2xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328]">
             <GooeyNav
               items={gooeyNavItems}
               initialActiveIndex={tabToIndex[activeTab] ?? 0}
@@ -540,35 +540,33 @@ export default function Home() {
         {/* MAIN NITROGEN CALCULATOR VIEW */}
         <div className={activeTab === 'calculadora' ? 'block' : 'hidden'}>
           <ScrollStack baseScale={0.92} peek={12} blur pinTop="12vh">
-          {/* PERSISTENT SCENARIO SELECTOR — compact chips */}
-          <section id="preset_selector" className="bg-white dark:bg-[#1C201A] px-5 py-3 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] transition-colors">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase tracking-wider flex items-center gap-1.5">
-                <Layers className="h-3 w-3" /> Cenários:
-              </span>
-              {/* eslint-disable-next-line react-hooks/refs -- false positive: PRESETS is a plain const, not a ref */}
-              {PRESETS.map((p) => (
-                <Button3D
-                  key={p.id}
-                  id={`preset_btn_${p.id}`}
-                  variant={activePreset === p.id ? 'secondary' : 'ghost'}
-                  size="sm"
-                  active={activePreset === p.id}
-                  isDark={isDark}
-                  onClick={withLock(() => handleLoadPreset(p))}
-                >
-                  {p.name.split(' ')[0]}
-                </Button3D>
-              ))}
-            </div>
-          </section>
+        {/* INPUT SECTION — scenarios + inputs in one card */}
+            <div id="form_section" className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-5 transition-colors">
 
-        {/* INPUT SECTION — standalone ScrollStack card */}
-            <div id="form_section" className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-6 transition-colors">
-              
+              {/* Scenario chips */}
+              <div id="preset_selector" className="flex items-center gap-3 flex-wrap pb-4 border-b border-[#F0EDE5] dark:border-[#2C3328]">
+                <span className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers className="h-3 w-3" /> Cenários:
+                </span>
+                {/* eslint-disable-next-line react-hooks/refs -- false positive: PRESETS is a plain const, not a ref */}
+                {PRESETS.map((p) => (
+                  <Button3D
+                    key={p.id}
+                    id={`preset_btn_${p.id}`}
+                    variant={activePreset === p.id ? 'secondary' : 'ghost'}
+                    size="sm"
+                    active={activePreset === p.id}
+                    isDark={isDark}
+                    onClick={withLock(() => handleLoadPreset(p))}
+                  >
+                    {p.name.split(' ')[0]}
+                  </Button3D>
+                ))}
+              </div>
+
               <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-4">
                 <h2 className="text-lg font-bold text-[#5A5A40] dark:text-[#E8E6DF] flex items-center gap-2">
-                  <Calculator className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> <ElasticText className="text-lg font-bold" mode="auto">Entrada de Dados</ElasticText>
+                  <Calculator className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> <ElasticText className="text-lg font-bold" mode="auto" startOnView>Entrada de Dados</ElasticText>
                 </h2>
                 <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-1">Ajuste os dados de produtividade e histórico do solo</p>
               </div>

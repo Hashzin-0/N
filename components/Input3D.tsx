@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, useMotionValue, useTransform, useSpring } from 'motion/react';
 import MorphText from '@/components/MorphText';
+import { NumberTicker } from '@/components/godui/number-ticker';
+import { ElasticText } from '@/components/godui/elastic-text';
 
 interface Input3DProps {
   id?: string;
@@ -54,6 +56,7 @@ export default function Input3D({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
+  const [labelKey, setLabelKey] = useState(0);
 
   const prevValueRef = useRef(value);
   const [animDirection, setAnimDirection] = useState<'up' | 'down'>('up');
@@ -161,12 +164,14 @@ export default function Input3D({
                 darkAccentColor={isDark ? '#9CB386' : '#5A5A40'}
               />
             ) : (
-              label
+              <ElasticText key={labelKey} className="text-[11px] font-bold uppercase tracking-wider" mode="auto" startOnView>
+                {label}
+              </ElasticText>
             )}
           </label>
           {unit && (
             <span className="text-xs font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A]">
-              {value === 0 ? '' : value} {unit}
+              {value === 0 ? '' : <NumberTicker value={value} decimalPlaces={getDecimalPlaces(step)} className="text-xs font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A]" />} {unit}
             </span>
           )}
         </div>
@@ -300,7 +305,7 @@ export default function Input3D({
                 const val = parseFloat(e.target.value);
                 if (!isNaN(val)) onChange(val);
               }}
-              onFocus={() => setIsFocused(true)}
+              onFocus={() => { setIsFocused(true); setLabelKey((k) => k + 1); }}
               onBlur={(e) => {
                 setIsFocused(false);
                 const val = parseFloat(e.target.value);

@@ -42,7 +42,7 @@ const NumberTicker = React.forwardRef<HTMLSpanElement, NumberTickerProps>(
       direction === 'down' ? value : startValue,
     );
     const springValue = useSpring(motionValue, { damping, stiffness });
-    const isInView = useInView(ref, { once: true, margin: '0px' });
+    const isInView = useInView(ref, { once: false, margin: '0px' });
 
     React.useImperativeHandle(
       forwardedRef,
