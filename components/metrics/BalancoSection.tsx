@@ -21,7 +21,7 @@ export default function BalancoSection({ calculations, animKey }: Props) {
       <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-3 flex justify-between items-center">
         <div>
           <h3 className="text-sm font-bold text-[#5A5A40] dark:text-[#E8E6DF] uppercase tracking-wider flex items-center gap-2">
-            <ElasticText className="text-[10px] font-bold tracking-widest" mode="auto" startOnView>
+            <ElasticText className="text-[10px] font-bold tracking-widest" mode="auto" startOnView loop={false}>
               <CheckCircle2 className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> Validação e Fechamento de Balanço
             </ElasticText>
           </h3>

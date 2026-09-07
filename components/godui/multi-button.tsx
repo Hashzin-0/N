@@ -1049,7 +1049,6 @@ function MultiButtonRailContent({
         reduceMotion={reduceMotion}
         restAriaLabel={restAriaLabel}
         restIcon={restIcon}
-        reserveItems={reserveItems}
         selectedId={selectedId}
         size={size}
         variant={variant}
@@ -1305,6 +1304,7 @@ const CompactMultiButton = React.forwardRef<
     const [touchExpanded, setTouchExpanded] = React.useState(false);
     const [focusExpanded, setFocusExpanded] = React.useState(false);
     const [compactRailReady, setCompactRailReady] = React.useState(false);
+    const focusRestoreFrameRef = React.useRef<number | null>(null);
     const suppressFocusExpansionRef = React.useRef(false);
     const selectedItem =
       items.find((item) => item.id === selectedId) ?? items[0];

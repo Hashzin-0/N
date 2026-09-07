@@ -61,7 +61,7 @@ export default function CornYieldResultCard({
 
       <div className="border-b pb-3 border-[#F0EDE5] dark:border-[#2F3329] flex justify-between items-center">
         <span className="text-xs font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#A6A395]">
-          <ElasticText className="text-xs font-bold uppercase tracking-wider" mode="auto" startOnView>
+          <ElasticText className="text-xs font-bold uppercase tracking-wider" mode="auto" startOnView loop={false}>
             Resultado Final da Estimativa
           </ElasticText>
         </span>
@@ -79,7 +79,7 @@ export default function CornYieldResultCard({
       >
         <div className="flex justify-between items-start">
           <span className="text-[11px] font-bold uppercase tracking-wider text-white/80">
-            <ElasticText className="text-[11px] font-bold uppercase tracking-wider" mode="auto" startOnView>
+            <ElasticText className="text-[11px] font-bold uppercase tracking-wider" mode="auto" startOnView loop={false}>
               Produtividade Líquida (Após Quebra)
             </ElasticText>
           </span>
@@ -115,7 +115,7 @@ export default function CornYieldResultCard({
           isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
         }`}>
           <span className="text-[10px] uppercase font-bold text-[#8C897E] dark:text-[#A6A395] block">
-            <ElasticText className="text-[10px] uppercase font-bold" mode="auto" startOnView>
+            <ElasticText className="text-[10px] uppercase font-bold" mode="auto" startOnView loop={false}>
               Produtividade Bruta
             </ElasticText>
           </span>
@@ -128,7 +128,7 @@ export default function CornYieldResultCard({
           isDark ? 'bg-[#242720] border-[#393E32]' : 'bg-[#FAF9F5] border-[#E5E2D9]'
         }`}>
           <span className="text-[10px] uppercase font-bold text-[#D4A373] block">
-            <ElasticText className="text-[10px] uppercase font-bold" mode="auto" startOnView>
+            <ElasticText className="text-[10px] uppercase font-bold" mode="auto" startOnView loop={false}>
               Quebra / Perda ({quebraDecimal * 100}%)
             </ElasticText>
           </span>

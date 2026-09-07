@@ -31,7 +31,7 @@ export default function SecondaryCreditsCard({ totalExtraction, mosNContribution
         isDark={isDark}
       />
       <div className="relative border-r border-[#F0EDE5] dark:border-[#2C3328] pr-2">
-        <ElasticText className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block" mode="auto" startOnView>
+        <ElasticText className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block" mode="auto" startOnView loop={false}>
           N Proveniente da MOS
         </ElasticText>
         <div className="mt-1.5 text-2xl font-bold text-[#5A5A40] dark:text-[#9CB386]">
@@ -57,7 +57,7 @@ export default function SecondaryCreditsCard({ totalExtraction, mosNContribution
         </CalculationMemoryPanel>
       </div>
       <div className="relative pl-2">
-        <ElasticText className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block" mode="auto" startOnView>
+        <ElasticText className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block" mode="auto" startOnView loop={false}>
           Crédito da Soja
         </ElasticText>
         <div className="mt-1.5 text-2xl font-bold text-[#5A5A40] dark:text-[#9CB386]">

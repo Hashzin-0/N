@@ -136,7 +136,7 @@ const ScrollStack = React.forwardRef<HTMLDivElement, ScrollStackProps>(
       );
     }
 
-    const trackClass = selfScroll ? "h-full" : "h-screen";
+    const trackClass = selfScroll ? "h-full" : "min-h-[50vh]";
 
     return (
       <div

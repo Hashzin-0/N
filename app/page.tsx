@@ -464,8 +464,8 @@ export default function Home() {
       <div className="lg:ml-[180px] px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
         {/* TOP NAVIGATION / MODE SWITCHER — GOOEY NAV */}
-        <div id="app_mode_nav">
-          <div className="bg-white dark:bg-[#1C201A] px-1 py-1 transition-colors rounded-2xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328]">
+        <div id="app_mode_nav" className="py-2">
+          <div className="bg-white/60 dark:bg-[#1A1E18]/70 backdrop-blur-md rounded-2xl border border-[#E5E2D9]/60 dark:border-[#2C3328]/60 shadow-sm px-1 py-1 transition-colors">
             <GooeyNav
               items={gooeyNavItems}
               initialActiveIndex={tabToIndex[activeTab] ?? 0}
@@ -503,7 +503,7 @@ export default function Home() {
 
         {/* CORN YIELD ESTIMATION CALCULATOR (ALWAYS READY OR SWITCHABLE) */}
         <div id="corn_yield_calculator_section" className={activeTab === 'estimativa_milho' ? 'block' : 'hidden'}>
-          <ScrollStack baseScale={0.92} peek={12} blur pinTop="12vh">
+          <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
             <CornYieldCalculator
               onApplyYieldGoal={(scHa) => {
                 setYieldGoal(scHa);
@@ -518,14 +518,14 @@ export default function Home() {
 
         {/* ITR CALCULATOR TAB */}
         <div id="itr_section" className={activeTab === 'itr' ? 'block' : 'hidden'}>
-          <ScrollStack baseScale={0.92} peek={12} blur pinTop="12vh">
+          <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
             <ITRCalculator />
           </ScrollStack>
         </div>
 
         {/* ABNT REFERENCE FORMATTER TAB */}
         <div id="abnt_section" className={activeTab === 'abnt' ? 'block' : 'hidden'}>
-          <ScrollStack baseScale={0.92} peek={12} blur pinTop="12vh">
+          <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
             <AbntReferenceFormatter />
             <BibliografiaAutoDetectCard
               onReferenceSelected={(ref) => {
@@ -539,7 +539,7 @@ export default function Home() {
 
         {/* MAIN NITROGEN CALCULATOR VIEW */}
         <div className={activeTab === 'calculadora' ? 'block' : 'hidden'}>
-          <ScrollStack baseScale={0.92} peek={12} blur pinTop="12vh">
+          <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
         {/* INPUT SECTION — scenarios + inputs in one card */}
             <div id="form_section" className="bg-white dark:bg-[#1C201A] p-6 rounded-3xl shadow-sm border border-[#E5E2D9] dark:border-[#2C3328] space-y-5 transition-colors">
 
@@ -566,7 +566,7 @@ export default function Home() {
 
               <div className="border-b border-[#F0EDE5] dark:border-[#2C3328] pb-4">
                 <h2 className="text-lg font-bold text-[#5A5A40] dark:text-[#E8E6DF] flex items-center gap-2">
-                  <Calculator className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> <ElasticText className="text-lg font-bold" mode="auto" startOnView>Entrada de Dados</ElasticText>
+                  <Calculator className="h-5 w-5 text-[#5A5A40] dark:text-[#9CB386]" /> <ElasticText className="text-lg font-bold" mode="auto" startOnView loop={false}>Entrada de Dados</ElasticText>
                 </h2>
                 <p className="text-xs text-[#8C897E] dark:text-[#9EA399] mt-1">Ajuste os dados de produtividade e histórico do solo</p>
               </div>

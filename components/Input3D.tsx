@@ -164,14 +164,14 @@ export default function Input3D({
                 darkAccentColor={isDark ? '#9CB386' : '#5A5A40'}
               />
             ) : (
-              <ElasticText key={labelKey} className="text-[11px] font-bold uppercase tracking-wider" mode="auto" startOnView>
+              <ElasticText key={labelKey} className="text-[11px] font-bold uppercase tracking-wider" mode="auto">
                 {label}
               </ElasticText>
             )}
           </label>
           {unit && (
             <span className="text-xs font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A]">
-              {value === 0 ? '' : <NumberTicker value={value} decimalPlaces={getDecimalPlaces(step)} className="text-xs font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A]" />} {unit}
+              <NumberTicker value={value} decimalPlaces={getDecimalPlaces(step)} className="text-xs font-mono font-bold text-[#5A5A40] dark:text-[#A3B18A]" /> {unit}
             </span>
           )}
         </div>

@@ -91,6 +91,7 @@ export default function Select3D({
                   className="relative text-left px-3 py-2.5 rounded-lg font-bold text-xs transition-colors overflow-hidden"
                   style={{ transformStyle: 'preserve-3d' }}
                   animate={{
+                    y: isActive ? -3 : 0,
                     rotateX: isActive ? 0 : isHovered ? 2 : 0,
                     rotateY: isActive ? 0 : isHovered ? -1 : 0,
                     scale: isActive ? 1.02 : isHovered ? 1.01 : 1,
@@ -102,23 +103,37 @@ export default function Select3D({
                     damping: 25,
                   }}
                 >
-                  {isActive && (
-                    <motion.div
-                      className="absolute inset-0 rounded-lg"
-                      layoutId={`select-bg-${id}`}
-                      style={{
-                        backgroundColor: accentColor,
-                        backgroundImage:
-                          'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.1) 100%)',
-                        boxShadow: `0 4px 12px -2px ${accentColor}66, inset 0 1px 0 rgba(255,255,255,0.2)`,
-                      }}
-                      transition={{
-                        type: 'spring',
-                        stiffness: 500,
-                        damping: 35,
-                      }}
-                    />
-                  )}
+                  {/* ELEVATION SHADOW — blurred accent glow beneath the button */}
+                  <motion.div
+                    className="absolute inset-0 rounded-lg pointer-events-none"
+                    initial={false}
+                    animate={{
+                      y: isActive ? 3 : 6,
+                      opacity: isActive ? 0.7 : 0,
+                    }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 400,
+                      damping: 25,
+                    }}
+                    style={{
+                      backgroundColor: `${accentColor}40`,
+                      filter: 'blur(12px)',
+                    }}
+                    aria-hidden="true"
+                  />
+
+                  {/* ELEVATION EDGE — colored border glow when active */}
+                  <motion.div
+                    className="absolute inset-0 rounded-lg pointer-events-none"
+                    initial={false}
+                    animate={{ opacity: isActive ? 1 : 0 }}
+                    transition={{ duration: 0.25 }}
+                    style={{
+                      backgroundImage: `linear-gradient(135deg, ${accentColor}cc 0%, ${accentColor}99 50%, ${accentColor}bb 100%)`,
+                    }}
+                    aria-hidden="true"
+                  />
 
                   <div className="relative z-10 flex items-center gap-2">
                     {opt.icon && (

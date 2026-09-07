@@ -45,7 +45,7 @@ export default function MetricCard({
         <div>
           {isHero ? (
             <div className="flex justify-between items-start">
-              <ElasticText className="text-[10px] font-bold uppercase tracking-widest opacity-85 block" mode="auto" startOnView>
+              <ElasticText className="text-[10px] font-bold uppercase tracking-widest opacity-85 block" mode="auto" startOnView loop={false}>
                 {label}
               </ElasticText>
               {saveAction && (
@@ -61,7 +61,7 @@ export default function MetricCard({
               )}
             </div>
           ) : (
-            <ElasticText className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block" mode="auto" startOnView>
+            <ElasticText className="text-[10px] font-bold text-[#8C897E] dark:text-[#9EA399] uppercase block" mode="auto" startOnView loop={false}>
               {label}
             </ElasticText>
           )}

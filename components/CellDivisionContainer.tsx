@@ -79,257 +79,233 @@ export default function CellDivisionContainer({
   const firstChild = childrenArray[0];
   const secondChild = childrenArray[1];
 
-  // --- Derived animation values ---
-  // Bridge width: 0 when idle/growing, 60px when sliding, shrinks to 0 at split
-  const bridgeWidth = isSliding ? 60 : isSplit ? 0 : isMerging ? 50 : 0;
+  const filterId = 'gooey-cell';
+  const gooBg = isDark ? '#242720' : '#FAF9F5';
+  const gooBorder = accentColor + '40';
 
-  // Border radius on inner edges
-  // During merged look: 0 (flat). After split: 12px (rounded).
-  const innerRadius = isSplit ? 12 : 0;
-
-  // Bridge opacity
-  const bridgeOpacity = isSliding ? 1 : isMerging ? 0.8 : 0;
-
-  // Bridge glow intensity
-  const bridgeGlow = isSliding ? 1 : isMerging ? 0.5 : 0;
-
-  // Second input opacity
-  const input2Opacity = isIdle ? 0 : 1;
-
-  // Is in split state (final separated state)
-  const isSplitState = isSplit || isMerging || isGrowing;
+  const showSecond = !isIdle;
 
   return (
-    <div className="relative w-full" style={{ perspective: '800px' }}>
-      <div
-        className="relative"
-        style={{ minHeight: '72px' }}
-      >
-        {/* ===================== INPUT 2 (emerges from center) ===================== */}
-        <motion.div
-          className="absolute top-0 bottom-0 left-0 overflow-hidden"
-          style={{
-            zIndex: 2,
-            transformStyle: 'preserve-3d',
-          }}
-          animate={{
-            width: isIdle ? '0%' : '48%',
-            opacity: input2Opacity,
-            scale: isGrowing ? 0.5 : isSliding ? 1 : isSplit ? 1 : isMerging ? 0.5 : 0,
-            scaleX: isSliding ? 1.02 : 1,
-            scaleY: isSliding ? 0.98 : 1,
-            borderTopRightRadius: innerRadius,
-            borderBottomRightRadius: innerRadius,
-            rotateX: isGrowing ? 0 : isSliding ? -1 : isMerging ? 0.5 : 0,
-            clipPath: isGrowing 
-              ? 'inset(0 50% 0 50%)' 
-              : isSliding || isSplit || isMerging 
-                ? 'inset(0 0 0 0)' 
-                : 'inset(0 50% 0 50%)',
-          }}
-          transition={{
-            width: {
-              type: 'spring',
-              stiffness: isSliding ? 180 : 250,
-              damping: isSliding ? 20 : 22,
-              mass: 0.6,
-            },
-            opacity: { duration: isSliding ? 0.3 : 0.25, ease: 'easeOut' },
-            scale: { 
-              type: 'spring', 
-              stiffness: isGrowing ? 300 : 200, 
-              damping: isGrowing ? 20 : 25,
-              delay: isGrowing ? 0 : 0.1
-            },
-            scaleX: { duration: 0.3 },
-            scaleY: { duration: 0.3 },
-            borderTopRightRadius: { duration: 0.25, ease: 'easeOut' },
-            borderBottomRightRadius: { duration: 0.25, ease: 'easeOut' },
-            rotateX: { duration: 0.35 },
-            clipPath: { duration: 0.4, ease: [0.32, 0.72, 0, 1] },
-          }}
-        >
-          {/* Blob glow on right edge during slide-out */}
-          {isSliding && (
-            <motion.div
-              className="absolute top-0 right-0 bottom-0 w-8 pointer-events-none"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 0.6, 0.2] }}
-              transition={{ duration: 0.7, ease: 'easeOut' }}
-              style={{
-                background: `linear-gradient(90deg, transparent 0%, ${accentColor}25 60%, ${accentColor}10 100%)`,
-                borderRadius: `0 ${innerRadius}px ${innerRadius}px 0`,
-              }}
+    <div className="relative w-full" style={{ minHeight: '72px' }}>
+      {/* === SVG GOO FILTER (godui.design metaball technique) === */}
+      <svg aria-hidden="true" className="pointer-events-none absolute size-0">
+        <defs>
+          <filter
+            id={filterId}
+            x="-50%"
+            y="-50%"
+            width="200%"
+            height="200%"
+            colorInterpolationFilters="sRGB"
+          >
+            <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+            <feColorMatrix
+              in="blur"
+              mode="matrix"
+              values="18 0 0 0 0
+                      0 18 0 0 0
+                      0 0 18 0 0
+                      0 0 0 18 -7"
+              result="goo"
             />
-          )}
+            <feFlood style={{ floodColor: gooBg }} result="cardColor" />
+            <feComposite in="cardColor" in2="goo" operator="in" result="fillLayer" />
+            <feGaussianBlur in="goo" stdDeviation="1.1" result="edge" />
+            <feColorMatrix
+              in="edge"
+              mode="matrix"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 50 -41"
+              result="eroded"
+            />
+            <feComposite in="goo" in2="eroded" operator="out" result="ring" />
+            <feFlood style={{ floodColor: gooBorder }} result="borderColor" />
+            <feComposite in="borderColor" in2="ring" operator="in" result="borderLayer" />
+            <feMerge result="surface">
+              <feMergeNode in="fillLayer" />
+              <feMergeNode in="borderLayer" />
+            </feMerge>
+            <feGaussianBlur in="surface" stdDeviation="0.4" />
+          </filter>
+        </defs>
+      </svg>
 
-          {/* Invisible placeholder when width is 0 — keeps DOM node for smooth animation */}
-          <div style={{ opacity: isIdle ? 0 : 1, pointerEvents: isIdle ? 'none' : 'auto' }}>
-            {secondChild}
-          </div>
-        </motion.div>
-
-        {/* ===================== BRIDGE / CHANNEL ===================== */}
-        <motion.div
-          className="absolute top-0 bottom-0 overflow-hidden"
-          style={{ 
-            zIndex: 1,
-            left: '48%',
-          }}
-          animate={{
-            width: bridgeWidth,
-            opacity: bridgeOpacity,
-          }}
-          transition={{
-            width: {
-              type: 'spring',
-              stiffness: isSliding ? 180 : 250,
-              damping: isSliding ? 20 : 22,
-              mass: 0.6,
-            },
-            opacity: { duration: 0.25 },
-          }}
-        >
-          {/* Channel body — same background as inputs to create merged look */}
-          <div
-            className="w-full h-full"
+      {/* === GOO BACKGROUND LAYER (filtered — organic merge) === */}
+      <div
+        className="absolute inset-0 overflow-visible pointer-events-none"
+        style={{ filter: `url(#${filterId})` }}
+      >
+        <div className="relative w-full h-full">
+          {/* Left silhouette — clips from center, then slides left */}
+          <motion.div
+            className="absolute top-0 left-0 h-full rounded-xl"
             style={{
-              backgroundColor: isDark ? '#242720' : 'white',
-              backgroundImage: isDark
-                ? 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.1) 100%)'
-                : 'linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(0,0,0,0.02) 100%)',
+              width: '100%',
+              background: gooBg,
+            }}
+            animate={{
+              clipPath: isIdle
+                ? 'inset(0 0% 0 0%)'
+                : isGrowing
+                  ? 'inset(0 50% 0 50%)'
+                  : 'inset(0 0% 0 0%)',
+              x: isSliding || isSplit ? '-2%' : '0%',
+              scaleX: isGrowing ? 1 : isSliding ? 0.96 : 1,
+            }}
+            transition={{
+              clipPath: {
+                type: 'spring',
+                stiffness: isGrowing ? 200 : 250,
+                damping: isGrowing ? 22 : 24,
+                mass: 0.8,
+              },
+              x: {
+                type: 'spring',
+                stiffness: 180,
+                damping: 20,
+                mass: 0.6,
+              },
+              scaleX: { duration: 0.3 },
             }}
           />
 
-          {/* Glow at connection points */}
-          {isSliding && (
-            <>
+          {/* Right silhouette — emerges from center, slides right */}
+          <AnimatePresence>
+            {showSecond && (
               <motion.div
-                className="absolute top-0 left-0 bottom-0 w-3 pointer-events-none"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: bridgeGlow * 0.5 }}
-                transition={{ duration: 0.4 }}
+                className="absolute top-0 right-0 h-full rounded-xl"
                 style={{
-                  background: `linear-gradient(90deg, ${accentColor}40, transparent)`,
+                  width: '100%',
+                  background: gooBg,
+                }}
+                initial={{ opacity: 0, clipPath: 'inset(0 50% 0 50%)' }}
+                animate={{
+                  opacity: 1,
+                  clipPath: 'inset(0 0% 0 0%)',
+                  x: isSliding || isSplit ? '2%' : '0%',
+                  scaleX: isGrowing ? 1 : isSliding ? 0.96 : 1,
+                }}
+                exit={{ opacity: 0, clipPath: 'inset(0 50% 0 50%)' }}
+                transition={{
+                  clipPath: {
+                    type: 'spring',
+                    stiffness: isGrowing ? 200 : 250,
+                    damping: isGrowing ? 22 : 24,
+                    mass: 0.8,
+                  },
+                  x: {
+                    type: 'spring',
+                    stiffness: 180,
+                    damping: 20,
+                    mass: 0.6,
+                  },
+                  opacity: { duration: 0.25 },
+                  scaleX: { duration: 0.3 },
                 }}
               />
-              <motion.div
-                className="absolute top-0 right-0 bottom-0 w-3 pointer-events-none"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: bridgeGlow * 0.5 }}
-                transition={{ duration: 0.4 }}
-                style={{
-                  background: `linear-gradient(270deg, ${accentColor}40, transparent)`,
-                }}
-              />
-            </>
-          )}
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
 
-          {/* Thin center line that snaps */}
-          {isSliding && (
+      {/* === SNAP FLASH EFFECT === */}
+      <AnimatePresence>
+        {snapFlash && (
+          <>
             <motion.div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none rounded-full"
-              initial={{ width: 0, height: 0, opacity: 0 }}
-              animate={{
-                width: [0, 4, 2, 0],
-                height: ['40%', '70%', '50%', '0%'],
-                opacity: [0, 0.8, 0.5, 0],
+              className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 pointer-events-none rounded-full"
+              style={{
+                width: 6,
+                height: 6,
+                border: `2px solid ${accentColor}`,
+                zIndex: 10,
               }}
-              transition={{ duration: 0.7, ease: 'easeInOut' }}
-              style={{ backgroundColor: `${accentColor}60` }}
+              initial={{ scale: 0, opacity: 1 }}
+              animate={{ scale: 12, opacity: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
             />
-          )}
-        </motion.div>
-
-        {/* ===================== SNAP FLASH EFFECT ===================== */}
-        <AnimatePresence>
-          {snapFlash && (
-            <>
-              {/* Expanding ring at snap point — positioned at left edge of Input1 */}
+            {PARTICLES.map((p, i) => (
               <motion.div
-                className="absolute top-1/2 -translate-y-1/2 pointer-events-none rounded-full"
+                key={i}
+                className="absolute top-1/2 left-1/2 rounded-full pointer-events-none"
                 style={{
-                  right: 'calc(48% + 60px)',
-                  width: 6,
-                  height: 6,
-                  marginRight: -3,
-                  border: `2px solid ${accentColor}`,
-                  zIndex: 10,
+                  width: p.size,
+                  height: p.size,
+                  backgroundColor: accentColor,
+                  zIndex: 11,
+                  marginLeft: -p.size / 2,
+                  marginTop: -p.size / 2,
                 }}
-                initial={{ scale: 0, opacity: 1 }}
-                animate={{ scale: 12, opacity: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4, ease: 'easeOut' }}
+                initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                animate={{
+                  x: Math.cos(p.angle) * p.dist,
+                  y: Math.sin(p.angle) * p.dist,
+                  opacity: 0,
+                  scale: 0,
+                }}
+                transition={{ duration: 0.35, ease: 'easeOut', delay: i * 0.015 }}
               />
-              {/* Particle burst */}
-              {PARTICLES.map((p, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute top-1/2 left-1/2 rounded-full pointer-events-none"
-                  style={{
-                    width: p.size,
-                    height: p.size,
-                    backgroundColor: accentColor,
-                    zIndex: 11,
-                    marginLeft: -p.size / 2,
-                    marginTop: -p.size / 2,
-                  }}
-                  initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-                  animate={{
-                    x: Math.cos(p.angle) * p.dist,
-                    y: Math.sin(p.angle) * p.dist,
-                    opacity: 0,
-                    scale: 0,
-                  }}
-                  transition={{ duration: 0.35, ease: 'easeOut', delay: i * 0.015 }}
-                />
-              ))}
-            </>
-          )}
-        </AnimatePresence>
+            ))}
+          </>
+        )}
+      </AnimatePresence>
 
-        {/* ===================== INPUT 1 (shrinks to right) ===================== */}
+      {/* === CONTENT LAYER (NOT filtered — crisp text) === */}
+      <div className="relative z-10 flex gap-2">
+        {/* Input 1 — always visible, slides right during split */}
         <motion.div
-          className="absolute top-0 bottom-0 right-0 overflow-hidden"
-          style={{
-            zIndex: 2,
-            transformStyle: 'preserve-3d',
-          }}
+          className="relative overflow-hidden flex-1 min-w-0"
+          style={{ zIndex: 2 }}
           animate={{
-            width: isIdle ? '100%' : '48%',
-            scale: isGrowing ? 1.03 : isSplit ? 1 : isMerging ? 1.03 : 1,
-            scaleX: isSliding ? 1.02 : 1,
-            scaleY: isSliding ? 0.98 : 1,
-            borderTopLeftRadius: innerRadius,
-            borderBottomLeftRadius: innerRadius,
-            rotateX: isGrowing ? 0 : isSliding ? 1 : isMerging ? -0.5 : 0,
+            x: isSliding || isSplit ? '2%' : '0%',
+            scaleX: isGrowing ? 1.01 : isSliding ? 0.98 : 1,
           }}
           transition={{
-            width: { type: 'spring', stiffness: 220, damping: 24, mass: 0.8 },
-            scale: { type: 'spring', stiffness: 400, damping: 25 },
+            x: {
+              type: 'spring',
+              stiffness: 180,
+              damping: 20,
+              mass: 0.6,
+            },
             scaleX: { duration: 0.3 },
-            scaleY: { duration: 0.3 },
-            borderTopLeftRadius: { duration: 0.25, ease: 'easeOut' },
-            borderBottomLeftRadius: { duration: 0.25, ease: 'easeOut' },
-            rotateX: { duration: 0.35 },
           }}
         >
-          {/* Blob glow on left edge during slide-out */}
-          {isSliding && (
-            <motion.div
-              className="absolute top-0 left-0 bottom-0 w-8 pointer-events-none"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 0.7, 0.3] }}
-              transition={{ duration: 0.7, ease: 'easeOut' }}
-              style={{
-                background: `linear-gradient(270deg, transparent 0%, ${accentColor}30 60%, ${accentColor}15 100%)`,
-                borderRadius: `${innerRadius}px 0 0 ${innerRadius}px`,
-              }}
-            />
-          )}
-
           {firstChild}
         </motion.div>
+
+        {/* Input 2 — emerges from center, slides left */}
+        <AnimatePresence>
+          {showSecond && (
+            <motion.div
+              className="relative overflow-hidden flex-1 min-w-0"
+              style={{ zIndex: 2 }}
+              initial={{ opacity: 0, scaleX: 0 }}
+              animate={{
+                opacity: 1,
+                scaleX: isGrowing ? 0.5 : isSliding ? 1 : 1,
+                x: isSliding || isSplit ? '-2%' : '0%',
+              }}
+              exit={{ opacity: 0, scaleX: 0 }}
+              transition={{
+                opacity: { duration: 0.25 },
+                scaleX: {
+                  type: 'spring',
+                  stiffness: isGrowing ? 300 : 200,
+                  damping: isGrowing ? 20 : 25,
+                  delay: isGrowing ? 0 : 0.1,
+                },
+                x: {
+                  type: 'spring',
+                  stiffness: 180,
+                  damping: 20,
+                  mass: 0.6,
+                },
+              }}
+            >
+              {secondChild}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
