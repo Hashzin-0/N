@@ -78,6 +78,12 @@ const GooeyStack = React.forwardRef<HTMLDivElement, GooeyStackProps>(
     const expandedTotal =
       widths.reduce((s, w) => s + w, 0) + Math.max(0, n - 1) * expandedGap;
 
+    const nearness = clamp(
+      (expandedGap - g) / Math.max(1, expandedGap - collapsedGap),
+      0,
+      1,
+    );
+
     const merge = clamp(-g / -Math.min(collapsedGap, -1), 0, 1);
 
     const stateOf = (i: number) => {
@@ -101,19 +107,19 @@ const GooeyStack = React.forwardRef<HTMLDivElement, GooeyStackProps>(
       widthsToRight(i) + cardsToRight(i) * expandedGap;
     const transition = reduce ? { duration: 0 } : SPRING;
 
+    const gooOpacity = reduce ? 0 : nearness;
+    const nativeOpacity = reduce ? 1 : 1 - nearness;
+
     return (
       <div
         ref={forwardedRef}
         data-slot="gooey-stack"
         data-collapsed={g < expandedGap ? "true" : undefined}
         className={`relative flex items-center ${className ?? ""}`}
-        style={{
-          height: expandedTotal || undefined,
-          ...style,
-        }}
+        style={{ height: expandedTotal || undefined, ...style }}
         {...props}
       >
-        {/* Goo filter */}
+        {/* ── SVG goo filter ─────────────────────────────────────── */}
         <svg aria-hidden="true" className="pointer-events-none absolute size-0">
           <defs>
             <filter
@@ -172,8 +178,41 @@ const GooeyStack = React.forwardRef<HTMLDivElement, GooeyStackProps>(
           </defs>
         </svg>
 
-        {/* Reduced-motion fallback */}
-        <div className="absolute inset-0" style={{ opacity: reduce ? 1 : 0 }}>
+        {/* ── Merge surface: HTML divs + SVG goo filter ──────────── */}
+        <div
+          className="absolute inset-0 overflow-visible pointer-events-none"
+          style={{
+            opacity: gooOpacity,
+            filter: reduce ? "none" : `url(#${filterId})`,
+          }}
+        >
+          <div className="relative w-full h-full">
+            {items.map((_, i) => {
+              const s = stateOf(i);
+              return (
+                <motion.div
+                  key={i}
+                  className="absolute inset-y-0 bg-card"
+                  style={{
+                    right: rightOf(i),
+                    width: widths[i] || undefined,
+                    borderRadius: radius,
+                    zIndex: i,
+                  }}
+                  initial={false}
+                  animate={{ x: s.x }}
+                  transition={transition}
+                />
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Native surface: real DOM cards with CSS borders ────── */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ opacity: nativeOpacity }}
+        >
           {items.map((_, i) => {
             const s = stateOf(i);
             return (
@@ -194,39 +233,7 @@ const GooeyStack = React.forwardRef<HTMLDivElement, GooeyStackProps>(
           })}
         </div>
 
-        {/* SVG goo surface — horizontal rects */}
-        <motion.svg
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 overflow-visible [transform:translateZ(0)]"
-          width="100%"
-          height="100%"
-          style={{ opacity: reduce ? 0 : 1 }}
-        >
-          <g filter={reduce ? undefined : `url(#${filterId})`}>
-            {items.map((_, i) => {
-              const s = stateOf(i);
-              const rightPos = rightOf(i);
-              const totalW = expandedTotal || 0;
-              const leftPos = totalW - rightPos - (widths[i] ?? 0);
-              return (
-                <motion.rect
-                  key={i}
-                  x={leftPos}
-                  y={0}
-                  width={widths[i] || 0}
-                  height="100%"
-                  rx={radius}
-                  fill="#000"
-                  initial={false}
-                  animate={{ x: s.x, opacity: s.silOpacity }}
-                  transition={transition}
-                />
-              );
-            })}
-          </g>
-        </motion.svg>
-
-        {/* Content layer */}
+        {/* ── Content: children, never filtered ──────────────────── */}
         <div className="absolute inset-0 flex items-center">
           {items.map((child, i) => {
             const s = stateOf(i);

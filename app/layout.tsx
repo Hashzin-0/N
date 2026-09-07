@@ -1,7 +1,13 @@
 import type {Metadata} from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css'; // Global styles
 import { ThemeProvider } from '@/components/ThemeProvider';
 import DarkMode3DTransition from '@/components/DarkMode3DTransition';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: 'Calculadora de Nitrogênio para Milho',
@@ -20,7 +26,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning className={inter.variable}>
       <head>
         <script
           dangerouslySetInnerHTML={{

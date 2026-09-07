@@ -156,7 +156,7 @@ export default function Input3D({
     >
       {label && (
         <div className="flex justify-between items-center mb-1.5">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#A6A395]">
+          <label className="text-[11px] uppercase tracking-wider text-[#8C897E] dark:text-[#A6A395]">
             {labelMorph ? (
               <MorphText
                 text={label}
@@ -164,9 +164,15 @@ export default function Input3D({
                 darkAccentColor={isDark ? '#9CB386' : '#5A5A40'}
               />
             ) : (
-              <ElasticText key={labelKey} className="text-[11px] font-bold uppercase tracking-wider" mode="auto" startOnView={false}>
-                {label}
-              </ElasticText>
+              isFocused ? (
+                <ElasticText key={labelKey} className="text-[11px] font-normal uppercase tracking-wider" mode="auto" startOnView={false}>
+                  {label}
+                </ElasticText>
+              ) : (
+                <span className="text-[11px] font-normal uppercase tracking-wider">
+                  {label}
+                </span>
+              )
             )}
           </label>
           {unit && (

@@ -88,7 +88,7 @@ export default function Select3D({
                   onClick={withLock(() => onChange(opt.value))}
                   onMouseEnter={() => setHoveredIdx(idx)}
                   onMouseLeave={() => setHoveredIdx(null)}
-                  className="relative text-left px-3 py-2.5 rounded-lg font-bold text-xs transition-colors"
+                  className="relative text-left px-3 py-2.5 rounded-lg font-bold text-xs transition-colors overflow-visible"
                   style={{ transformStyle: 'preserve-3d' }}
                   animate={{
                     y: isActive ? -3 : 0,
@@ -104,33 +104,23 @@ export default function Select3D({
                   }}
                 >
                   {/* ELEVATION SHADOW — blurred accent glow beneath the button */}
-                  <motion.div
-                    className="absolute inset-0 rounded-lg pointer-events-none"
-                    initial={false}
-                    animate={{
-                      y: isActive ? 3 : 6,
-                      opacity: isActive ? 0.7 : 0,
-                    }}
-                    transition={{
-                      type: 'spring',
-                      stiffness: 400,
-                      damping: 25,
-                    }}
+                  <span
+                    className="absolute inset-0 rounded-lg pointer-events-none transition-all duration-300 ease-out"
                     style={{
                       backgroundColor: `${accentColor}40`,
                       filter: 'blur(12px)',
+                      transform: isActive ? 'translateY(3px)' : 'translateY(6px)',
+                      opacity: isActive ? 0.7 : 0,
                     }}
                     aria-hidden="true"
                   />
 
                   {/* ELEVATION EDGE — colored border glow when active */}
-                  <motion.div
-                    className="absolute inset-0 rounded-lg pointer-events-none"
-                    initial={false}
-                    animate={{ opacity: isActive ? 1 : 0 }}
-                    transition={{ duration: 0.25 }}
+                  <span
+                    className="absolute inset-0 rounded-lg pointer-events-none transition-opacity duration-200 ease-out"
                     style={{
                       backgroundImage: `linear-gradient(135deg, ${accentColor}cc 0%, ${accentColor}99 50%, ${accentColor}bb 100%)`,
+                      opacity: isActive ? 1 : 0,
                     }}
                     aria-hidden="true"
                   />

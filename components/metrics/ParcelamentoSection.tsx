@@ -22,6 +22,15 @@ interface SwapToggle3DProps {
   title: string;
 }
 
+const SQUASH_CLASSES =
+  'origin-bottom [will-change:transform] [-webkit-tap-highlight-color:transparent] ' +
+  '[transition:scale_300ms_cubic-bezier(0.3,0.7,0.4,1.5)] ' +
+  'hover:[scale:1.04] ' +
+  'focus:outline-none focus-visible:outline-none ' +
+  'active:[scale:var(--jelly-press)] active:[transition:scale_120ms_cubic-bezier(0.3,0.7,0.4,1)] ' +
+  'data-[pressed=true]:[scale:var(--jelly-press)] data-[pressed=true]:[transition:scale_120ms_cubic-bezier(0.3,0.7,0.4,1)] ' +
+  'motion-reduce:[transition:none] motion-reduce:hover:[scale:1] motion-reduce:active:[scale:1]';
+
 function SwapToggle3D({
   isActive,
   defaultLabel,
@@ -33,141 +42,124 @@ function SwapToggle3D({
   title,
 }: SwapToggle3DProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
 
   const activeColor = isDark ? darkAccentColor : accentColor;
 
-  const animFrame = useRef<number | null>(null);
-  const targetTilt = useRef({ x: 0, y: 0 });
-  const tiltRef = useRef({ x: 0, y: 0 });
-
-  const startTiltLoop = useCallback(() => {
-    const loop = () => {
-      const tx = targetTilt.current.x;
-      const ty = targetTilt.current.y;
-      tiltRef.current = {
-        x: tiltRef.current.x + (tx - tiltRef.current.x) * 0.15,
-        y: tiltRef.current.y + (ty - tiltRef.current.y) * 0.15,
-      };
-      setTilt({ ...tiltRef.current });
-      animFrame.current = requestAnimationFrame(loop);
-    };
-    animFrame.current = requestAnimationFrame(loop);
+  const handleMouseMove = useCallback(() => {
+    setIsHovered(true);
   }, []);
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-      targetTilt.current = { x: y * 12, y: x * -12 };
-      if (!isHovered) {
-        setIsHovered(true);
-        startTiltLoop();
-      }
-    },
-    [isHovered, startTiltLoop],
-  );
 
   const handleMouseLeave = useCallback(() => {
     setIsHovered(false);
-    targetTilt.current = { x: 0, y: 0 };
-    if (animFrame.current) cancelAnimationFrame(animFrame.current);
-    const decay = () => {
-      tiltRef.current = {
-        x: tiltRef.current.x * 0.82,
-        y: tiltRef.current.y * 0.82,
-      };
-      if (Math.abs(tiltRef.current.x) < 0.1 && Math.abs(tiltRef.current.y) < 0.1) {
-        tiltRef.current = { x: 0, y: 0 };
-        setTilt({ x: 0, y: 0 });
-        return;
-      }
-      setTilt({ ...tiltRef.current });
-      requestAnimationFrame(decay);
-    };
-    requestAnimationFrame(decay);
   }, []);
 
   return (
-    <motion.button
+    <button
       ref={buttonRef}
       type="button"
       onClick={onClick}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="absolute -top-1 -right-1 z-20 group"
-      whileTap={{ scale: 0.88, rotateZ: -8 }}
+      className={`absolute -top-1 -right-1 z-20 group cursor-pointer select-none ${SQUASH_CLASSES}`}
+      style={{ '--jelly-press': '1.132 0.868' } as React.CSSProperties}
       title={title}
-      style={{ perspective: '600px' }}
     >
-      <motion.div
-        className="relative flex items-center justify-center h-8 rounded-bl-2xl px-2.5 gap-1.5 overflow-hidden"
-        style={{
-          backgroundColor: activeColor,
-          transformStyle: 'preserve-3d',
-          rotateX: tilt.x,
-          rotateY: tilt.y,
-          boxShadow: isActive
-            ? `0 0 14px ${activeColor}88, 0 4px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15)`
-            : `0 2px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.1)`,
-          transition: 'box-shadow 0.3s ease',
-        }}
-        whileHover={{
-          boxShadow: `0 0 18px ${activeColor}AA, 0 6px 16px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)`,
-        }}
-      >
-        {/* Shimmer overlay on hover */}
-        <motion.div
-          className="absolute inset-0 pointer-events-none"
-          animate={{
-            background: isHovered
-              ? `linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%)`
-              : 'none',
+      <div className="relative" style={{ transformStyle: 'preserve-3d' }}>
+        {/* SHADOW LAYER — MagicButton inspired */}
+        <div
+          className={`absolute inset-0 rounded-bl-2xl pointer-events-none ${isActive ? 'translate-y-[1px]' : isHovered ? 'translate-y-[4px]' : 'translate-y-[2px]'} ${
+            isActive ? 'animate-magic-rainbow' : ''
+          }`}
+          style={{
+            background: isActive
+              ? 'linear-gradient(90deg, var(--rainbow-1), var(--rainbow-5), var(--rainbow-3), var(--rainbow-4), var(--rainbow-2))'
+              : isDark
+              ? 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.25) 100%)'
+              : 'linear-gradient(135deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.12) 100%)',
+            backgroundSize: isActive ? '200% 100%' : undefined,
+            filter: isActive ? 'blur(10px)' : 'blur(6px)',
+            opacity: isActive ? 0.6 : 1,
+            transition: 'translate 300ms cubic-bezier(0.3,0.7,0.4,1), filter 300ms, opacity 300ms',
           }}
-          transition={{ duration: 0.4 }}
+          aria-hidden="true"
         />
 
-        <AnimatePresence mode="wait">
-          <motion.span
-            key={isActive ? 'active' : 'default'}
-            initial={{ rotateX: -90, opacity: 0 }}
-            animate={{ rotateX: 0, opacity: 1 }}
-            exit={{ rotateX: 90, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="text-white text-[10px] font-bold whitespace-nowrap relative z-10"
-            style={{ transformOrigin: 'center' }}
-          >
-            {isActive ? activeLabel : defaultLabel}
-          </motion.span>
-        </AnimatePresence>
+        {/* EDGE LAYER — MagicButton inspired, shows accent color depth */}
+        <div
+          className={`absolute inset-0 rounded-bl-2xl pointer-events-none ${isActive ? 'translate-y-[0px]' : isHovered ? 'translate-y-[2px]' : 'translate-y-[1px]'} ${
+            isActive ? 'animate-magic-rainbow' : ''
+          }`}
+          style={{
+            background: isActive
+              ? 'linear-gradient(90deg, var(--rainbow-1), var(--rainbow-5), var(--rainbow-3), var(--rainbow-4), var(--rainbow-2))'
+              : `linear-gradient(135deg, ${activeColor}dd 0%, ${activeColor}99 50%, ${activeColor}bb 100%)`,
+            backgroundSize: isActive ? '200% 100%' : undefined,
+            transition: 'translate 300ms cubic-bezier(0.3,0.7,0.4,1)',
+          }}
+          aria-hidden="true"
+        />
 
-        <motion.div
-          animate={{ rotate: isActive ? 180 : 0 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 18 }}
-          className="relative z-10"
+        {/* FRONT FACE — the actual toggle content */}
+        <div
+          className="relative flex items-center justify-center h-8 rounded-bl-2xl px-2.5 gap-1.5 pointer-events-auto"
+          style={{
+            backgroundColor: activeColor,
+            boxShadow: isActive
+              ? `inset 0 1px 0 rgba(255,255,255,0.15), 0 0 14px ${activeColor}88, 0 4px 12px rgba(0,0,0,0.2)`
+              : `inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 8px rgba(0,0,0,0.15)`,
+            transition: 'box-shadow 0.3s ease',
+          }}
         >
-          <ArrowLeftRight className="w-3 h-3 text-white/80" />
-        </motion.div>
-
-        {isActive && (
-          <motion.span
-            className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#D4A373] border border-white z-10"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+          {/* Shimmer overlay on hover */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            animate={{
+              background: isHovered
+                ? `linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%)`
+                : 'none',
+            }}
+            transition={{ duration: 0.4 }}
           />
-        )}
-      </motion.div>
-    </motion.button>
+
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={isActive ? 'active' : 'default'}
+              initial={{ rotateX: -90, opacity: 0 }}
+              animate={{ rotateX: 0, opacity: 1 }}
+              exit={{ rotateX: 90, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="text-white text-[10px] font-bold whitespace-nowrap relative z-10 pointer-events-none"
+              style={{ transformOrigin: 'center' }}
+            >
+              {isActive ? activeLabel : defaultLabel}
+            </motion.span>
+          </AnimatePresence>
+
+          <motion.div
+            animate={{ rotate: isActive ? 180 : 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+            className="relative z-10 pointer-events-none"
+          >
+            <ArrowLeftRight className="w-3 h-3 text-white/80" />
+          </motion.div>
+
+          {isActive && (
+            <motion.span
+              className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#D4A373] border border-white z-10 pointer-events-none"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+            />
+          )}
+        </div>
+      </div>
+    </button>
   );
-}
 
 interface Props {
   calculations: Calculations;
   splitBase: 'dose_perdas' | 'necessidade_liquida';
-  v4v6Percent: number;
   v4v6Percent2: number;
   v8v10Percent: number;
   v8v10Percent2: number;
@@ -269,8 +261,12 @@ export default function ParcelamentoSection({ animKey,
             isDark={isDark}
           />
           <div
-            className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#5A5A40] dark:border-[#4B5E40] space-y-3 relative"
+            className="relative"
             style={{ perspective: '800px' }}
+          >
+          <motion.div
+            whileTap={{ scale: 0.88, originY: 1 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
           {/* Toggle button for agronomic default — hidden when baseDoseMode is single */}
           {baseDoseMode !== 'single' && v4v6UserDiffersFromDefault && (
@@ -284,8 +280,6 @@ export default function ParcelamentoSection({ animKey,
               onClick={withLock(() => setShowAgronomicV4V6(!showAgronomicV4V6))}
               title={showAgronomicV4V6 ? 'Voltar para seus valores' : 'Ver padrão agronômico (50-60%)'}
             />
-          )}
-
           <div className="flex justify-between items-start">
             <div>
               <span className="bg-[#5A5A40] dark:bg-[#3D4D35] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
@@ -298,8 +292,8 @@ export default function ParcelamentoSection({ animKey,
                   <>Modo único: <strong>{v4v6Percent}%</strong> da meta ({baseLabel})</>
                 ) : (
                   <>Padrão agronômico: <strong>50% a 60%</strong> da meta ({baseLabel})</>
-                )}
-              </p>
+})
+        </motion.div>              </p>
             </div>
           </div>
 
@@ -408,8 +402,8 @@ export default function ParcelamentoSection({ animKey,
                   </span>
                 </div>
               </motion.div>
-            )}
-          </AnimatePresence>
+})
+        </motion.div>          </AnimatePresence>
           </div>
           <CalculationMemoryPanel isVisible={showCalcV4V6} isDark={isDark}>
             <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
@@ -434,8 +428,8 @@ export default function ParcelamentoSection({ animKey,
                   <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Fórmula:</span> {v4v6Percent}% × {calculations.targetSplitTotal.toFixed(2)}</div>
                   <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Resultado:</span> {calculations.v4v6_1_kg.toFixed(2)} kg N/ha</div>
                 </>
-              )}
-            </div>
+})
+        </motion.div>            </div>
           </CalculationMemoryPanel>
         </div>
 
@@ -449,8 +443,12 @@ export default function ParcelamentoSection({ animKey,
             isDark={isDark}
           />
           <div
-            className="p-4 bg-[#F9F8F6] dark:bg-[#151813] rounded-2xl border border-dashed border-[#8D6E63] dark:border-[#6D544C] space-y-3 relative"
+            className="relative"
             style={{ perspective: '800px' }}
+          >
+          <motion.div
+            whileTap={{ scale: 0.88, originY: 1 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
           {/* Toggle button for agronomic default — hidden when baseDoseMode is single */}
           {baseDoseMode !== 'single' && v8v10UserDiffersFromDefault && (
@@ -464,8 +462,8 @@ export default function ParcelamentoSection({ animKey,
               onClick={withLock(() => setShowAgronomicV8V10(!showAgronomicV8V10))}
               title={showAgronomicV8V10 ? 'Voltar para seus valores' : 'Ver padrão agronômico (20-30%)'}
             />
-          )}
-
+})
+        </motion.div>
           <div className="flex justify-between items-start">
             <div>
               <span className="bg-[#8D6E63] dark:bg-[#6D544C] text-white text-[9px] px-3 py-1 rounded-full uppercase font-bold inline-block mb-1.5">
@@ -478,8 +476,8 @@ export default function ParcelamentoSection({ animKey,
                   <>Auto-calculado: <strong>{calculations.v8v10_1_auto}%</strong> da meta ({baseLabel})</>
                 ) : (
                   <>Padrão agronômico: <strong>20% a 30%</strong> da meta ({baseLabel})</>
-                )}
-              </p>
+})
+        </motion.div>              </p>
             </div>
           </div>
 
@@ -588,8 +586,8 @@ export default function ParcelamentoSection({ animKey,
                   </span>
                 </div>
               </motion.div>
-            )}
-          </AnimatePresence>
+})
+        </motion.div>          </AnimatePresence>
           </div>
           <CalculationMemoryPanel isVisible={showCalcV8V10} isDark={isDark}>
             <div className={`p-3 rounded-lg border text-[11px] leading-relaxed space-y-1.5 ${
@@ -614,8 +612,8 @@ export default function ParcelamentoSection({ animKey,
                   <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Fórmula:</span> {calculations.v8v10_1_final}% × {calculations.targetSplitTotal.toFixed(2)}</div>
                   <div><span className={`font-semibold ${isDark ? 'text-[#9EA399]' : 'text-[#8C897E]'}`}>Resultado:</span> {calculations.v8v10_1_kg.toFixed(2)} kg N/ha</div>
                 </>
-              )}
-            </div>
+})
+        </motion.div>            </div>
           </CalculationMemoryPanel>
         </div>
 

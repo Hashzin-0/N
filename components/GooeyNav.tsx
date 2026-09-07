@@ -66,6 +66,10 @@ const GooeyNav = ({
   const blobRef = useRef<HTMLSpanElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const [activeIndex, setActiveIndex] = useState(initialActiveIndex);
+
+  useEffect(() => {
+    setActiveIndex(initialActiveIndex);
+  }, [initialActiveIndex]);
   const { isDark } = useTheme();
   const uid = useId().replace(/:/g, '');
   const filterId = `gooey-nav-${uid}`;

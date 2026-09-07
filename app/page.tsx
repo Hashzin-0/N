@@ -24,7 +24,7 @@ import CornYieldCalculator from '@/components/CornYieldCalculator';
 import Input3D from '@/components/Input3D';
 import Button3D from '@/components/Button3D';
 import Select3D from '@/components/Select3D';
-import { GooeyStack } from '@/components/godui/gooey-stack';
+import { CssGooeyStack } from '@/components/godui/css-gooey-stack';
 import { useGeminiLiveAgent } from '@/hooks/useGeminiLiveAgent';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAnimationLock } from '@/lib/useAnimationLock';
@@ -709,7 +709,7 @@ export default function Home() {
                     />
                   </div>
 
-                  <GooeyStack collapsed={baseDoseMode === 'single'}>
+                  <CssGooeyStack collapsed={baseDoseMode === 'single'}>
                     <Input3D
                       label={baseDoseMode === 'range' ? 'Min (kg N/ha)' : 'Valor (kg N/ha)'}
                       labelMorph
@@ -739,7 +739,7 @@ export default function Home() {
                         filling={fillingFields.has('baseDose2')}
                       />
                     )}
-                  </GooeyStack>
+                  </CssGooeyStack>
 
                   <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-1 leading-relaxed">
                     * Faixa agronômica típica: 30 a 40 kg N/ha.
@@ -767,7 +767,7 @@ export default function Home() {
                     )}
                   </div>
 
-                  <GooeyStack collapsed={baseDoseMode === 'single'}>
+                  <CssGooeyStack collapsed={baseDoseMode === 'single'}>
                     <Input3D
                       label={baseDoseMode === 'single' ? '% do total' : (baseDoseMode === 'range' ? 'Min %' : '% do total')}
                       labelMorph
@@ -798,7 +798,7 @@ export default function Home() {
                         filling={fillingFields.has('v4v6Percent2')}
                       />
                     )}
-                  </GooeyStack>
+                  </CssGooeyStack>
 
                   <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] leading-relaxed">
                     * Faixa agronômica padrão: 50% a 60% do total.
@@ -843,7 +843,7 @@ export default function Home() {
                       </div>
                     </>
                   ) : (
-                    <GooeyStack collapsed={false}>
+                    <CssGooeyStack collapsed={false}>
                       <Input3D
                         label={baseDoseMode === 'range' ? 'Min %' : '% do total'}
                         labelMorph
@@ -878,7 +878,7 @@ export default function Home() {
                           filling={fillingFields.has('v8v10Percent2')}
                         />
                       )}
-                    </GooeyStack>
+                    </CssGooeyStack>
                   )}
 
                   <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] leading-relaxed">
