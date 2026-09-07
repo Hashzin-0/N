@@ -25,6 +25,19 @@ const CssGooeyStack = React.forwardRef<HTMLDivElement, CssGooeyStackProps>(
     const filterId = `gooey-stack-${id}`;
     const items = React.Children.toArray(children);
 
+    const mergeStyles = (
+      child: React.ReactNode,
+      overrides: React.CSSProperties,
+    ): React.ReactNode => {
+      if (!React.isValidElement(child)) return child;
+      const existing = (child.props as Record<string, unknown>).style as
+        | React.CSSProperties
+        | undefined;
+      return React.cloneElement(child, {
+        style: { ...existing, ...overrides },
+      } as never);
+    };
+
     return (
       <div
         ref={forwardedRef}
@@ -34,14 +47,14 @@ const CssGooeyStack = React.forwardRef<HTMLDivElement, CssGooeyStackProps>(
         style={style}
         {...props}
       >
-        {/* ── Goo-filtered layer: absolutely positioned inputs ──────── */}
+        {/* ── Goo-filtered container: both inputs as direct children ── */}
         <div
           className="relative"
           style={{
             filter: `url(#${filterId})`,
           }}
         >
-          {/* SVG Goo Filter Definition — inside filtered wrapper so root div stays clean */}
+          {/* SVG Goo Filter Definition */}
           <svg
             style={{ position: "absolute", width: 0, height: 0 }}
             aria-hidden="true"
@@ -64,27 +77,22 @@ const CssGooeyStack = React.forwardRef<HTMLDivElement, CssGooeyStackProps>(
             </defs>
           </svg>
 
-          {/* Height spacer — preserves container height (absolute children don't) */}
+          {/* Height ghost — single hidden element for container height */}
           <div style={{ visibility: "hidden", pointerEvents: "none" }}>
             {items[0]}
           </div>
 
-          {/* First input — always on the left */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              zIndex: 2,
-            }}
-          >
-            {items[0]}
-          </div>
+          {/* Input 1 — always on the left, direct child */}
+          {mergeStyles(items[0], {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            zIndex: 2,
+          })}
 
-          {/* Second input — emerges from left, slides to right when expanded */}
-          {items.length > 1 && (
-            <div
-              style={{
+          {/* Input 2 — emerges from left, slides to right when expanded */}
+          {items.length > 1
+            ? mergeStyles(items[1], {
                 position: "absolute",
                 top: 0,
                 left: collapsed ? 0 : undefined,
@@ -92,12 +100,10 @@ const CssGooeyStack = React.forwardRef<HTMLDivElement, CssGooeyStackProps>(
                 zIndex: 1,
                 opacity: collapsed ? 0 : 1,
                 transform: collapsed ? "scale(0.95)" : "scale(1)",
-                transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-              }}
-            >
-              {items[1]}
-            </div>
-          )}
+                transition:
+                  "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+              })
+            : null}
         </div>
       </div>
     );

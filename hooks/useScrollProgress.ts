@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { useMotionValue } from 'motion/react';
 
 /**
- * Returns a 0–1 value representing how far the user has scrolled through the page.
+ * Returns a MotionValue<number> (0–1) representing scroll progress.
+ * Updates on scroll via requestAnimationFrame — no React re-renders.
  * 0 = top of page, 1 = bottom of page.
- * Updates on scroll via requestAnimationFrame for smooth performance.
  */
-export function useScrollProgress(): number {
-  const [progress, setProgress] = useState(0);
+export function useScrollProgress() {
+  const progress = useMotionValue(0);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -16,7 +17,7 @@ export function useScrollProgress(): number {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (docHeight > 0) {
-        setProgress(Math.min(Math.max(scrollTop / docHeight, 0), 1));
+        progress.set(Math.min(Math.max(scrollTop / docHeight, 0), 1));
       }
       rafRef.current = null;
     };
@@ -34,7 +35,7 @@ export function useScrollProgress(): number {
       window.removeEventListener('scroll', onScroll);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, []);
+  }, [progress]);
 
   return progress;
 }

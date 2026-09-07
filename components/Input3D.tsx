@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, useMotionValue, useTransform, useSpring } from 'motion/react';
 import MorphText from '@/components/MorphText';
 import { NumberTicker } from '@/components/godui/number-ticker';
@@ -21,6 +21,7 @@ interface Input3DProps {
   isDark?: boolean;
   accentColor?: string;
   className?: string;
+  style?: React.CSSProperties;
   readOnly?: boolean;
   derived?: boolean;
   warning?: boolean;
@@ -29,7 +30,7 @@ interface Input3DProps {
   filling?: boolean;
 }
 
-export default function Input3D({
+export default React.memo(function Input3D({
   id,
   value,
   onChange,
@@ -44,6 +45,7 @@ export default function Input3D({
   isDark = false,
   accentColor = '#5A5A40',
   className = '',
+  style,
   readOnly = false,
   derived = false,
   warning = false,
@@ -72,13 +74,14 @@ export default function Input3D({
     return 0;
   };
 
-  const formatNumber = (num: number): string => {
-    const decimals = getDecimalPlaces(step);
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(num);
-  };
+  const decimalPlaces = useMemo(() => getDecimalPlaces(step), [step]);
+
+  const numberFormatter = useMemo(() => new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: decimalPlaces,
+    maximumFractionDigits: decimalPlaces,
+  }), [decimalPlaces]);
+
+  const formatNumber = (num: number): string => numberFormatter.format(num);
 
   useEffect(() => {
     const prevValue = prevValueRef.current;
@@ -161,7 +164,7 @@ export default function Input3D({
     <motion.div
       ref={containerRef}
       className={`relative group ${className}`}
-      style={{ perspective: 600 }}
+      style={{ perspective: 600, ...style }}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={handleMouseLeave}
@@ -382,4 +385,4 @@ export default function Input3D({
       )}
     </motion.div>
   );
-}
+});

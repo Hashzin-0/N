@@ -14,7 +14,7 @@ interface Props {
   animKey?: string | number;
 }
 
-export default function SecondaryCreditsCard({ totalExtraction, mosNContribution, soyNContribution, animKey }: Props) {
+export default React.memo(function SecondaryCreditsCard({ totalExtraction, mosNContribution, soyNContribution, animKey }: Props) {
   const { isDark } = useTheme();
   const [showCreditsCalc, setShowCreditsCalc] = React.useState(false);
 
@@ -84,4 +84,4 @@ export default function SecondaryCreditsCard({ totalExtraction, mosNContribution
       </div>
     </div>
   );
-}
+});

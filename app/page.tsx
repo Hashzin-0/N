@@ -1,28 +1,19 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, startTransition } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Calculator, 
-  HelpCircle, 
-  RotateCcw, 
-  CheckCircle2, 
-  ChevronRight, 
-  Percent, 
-  Printer, 
-  TrendingUp, 
-  Sprout, 
-  Layers, 
+import dynamic from 'next/dynamic';
+import {
+  Calculator,
+  RotateCcw,
+  CheckCircle2,
+  Percent,
+  Printer,
+  Sprout,
   Mic,
-  BookOpen
 } from 'lucide-react';
-import VoiceAssistantHUD from '@/components/VoiceAssistantHUD';
-import DarkMode3DToggle from '@/components/DarkMode3DToggle';
-import SectionNavGooey from '@/components/SectionNavGooey';
 import LoadingSkeleton3D from '@/components/LoadingSkeleton3D';
-import CornYieldCalculator from '@/components/CornYieldCalculator';
 import Input3D from '@/components/Input3D';
-import Button3D from '@/components/Button3D';
 import Select3D from '@/components/Select3D';
 import { CssGooeyStack } from '@/components/godui/css-gooey-stack';
 import { useGeminiLiveAgent } from '@/hooks/useGeminiLiveAgent';
@@ -33,18 +24,23 @@ import ExtracaoTotalCard from '@/components/metrics/ExtracaoTotalCard';
 import NecessidadeLiquidaCard from '@/components/metrics/NecessidadeLiquidaCard';
 import DoseRecomendadaCard from '@/components/metrics/DoseRecomendadaCard';
 import SecondaryCreditsCard from '@/components/metrics/SecondaryCreditsCard';
-
 import ParcelamentoSection from '@/components/metrics/ParcelamentoSection';
 import BalancoSection from '@/components/metrics/BalancoSection';
 import DetailedMathPanel from '@/components/metrics/DetailedMathPanel';
-import ITRCalculator from '@/components/ITRCalculator';
-import AbntReferenceFormatter from '@/components/AbntReferenceFormatter';
 import { ABNTReference } from '@/lib/abnt/types';
 import BibliografiaAutoDetectCard from '@/components/metrics/BibliografiaAutoDetectCard';
 import GooeyTabPanel, { type TabId } from '@/components/GooeyTabPanel';
 import { ScrollStack } from '@/components/godui/scroll-stack';
 import { ElasticText } from '@/components/godui/elastic-text';
 import PresetMultiButton from '@/components/godui/preset-multi-button';
+
+// Lazy-loaded heavy components (Three.js, complex calculators)
+const VoiceAssistantHUD = dynamic(() => import('@/components/VoiceAssistantHUD'), { ssr: false });
+const DarkMode3DToggle = dynamic(() => import('@/components/DarkMode3DToggle'), { ssr: false });
+const SectionNavGooey = dynamic(() => import('@/components/SectionNavGooey'), { ssr: false });
+const CornYieldCalculator = dynamic(() => import('@/components/CornYieldCalculator'), { ssr: false });
+const ITRCalculator = dynamic(() => import('@/components/ITRCalculator'), { ssr: false });
+const AbntReferenceFormatter = dynamic(() => import('@/components/AbntReferenceFormatter'), { ssr: false });
 
 
 // Interfaces for structured data
@@ -138,21 +134,16 @@ export default function Home() {
   
   // Toggle for 1 vs 2 values per application
   const [baseDoseMode, setBaseDoseMode] = useState<'single' | 'range'>('single');
-  const [v4v6Mode, setV4v6Mode] = useState<'single' | 'range'>('single');
-  const [v8v10Mode, setV8v10Mode] = useState<'single' | 'range'>('single');
   
   // Split base configuration: dose with losses (Dose de N a aplicar) or net requirement (Necessidade Líquida)
   const [splitBase, setSplitBase] = useState<'dose_perdas' | 'necessidade_liquida'>('dose_perdas');
-
-  // Active Tooltips / Modal for explaining formulas
-  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   // Active scenario preset
   const [activePreset, setActivePreset] = useState<string>('personalizado');
   
   // Animation state for filling fields when loading presets
   const [fillingFields, setFillingFields] = useState<Set<string>>(new Set());
-  const fillingTimersRef = useRef<NodeJS.Timeout[]>([]);
+  const fillingTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Tab state
   const [activeTab, setActiveTab] = useState<TabId>('nitrogen');
@@ -160,52 +151,38 @@ export default function Home() {
   const [bibliographyRef, setBibliographyRef] = useState<ABNTReference | null>(null);
 
 
-  // Handle preset loading with 3D staggered animation
+  // Handle preset loading — batch state updates with startTransition
   const handleLoadPreset = useCallback((preset: Preset) => {
-    // Clear any existing timers
     fillingTimersRef.current.forEach(clearTimeout);
     fillingTimersRef.current = [];
-    
-    // Define the fields to fill with their delays (staggered animation)
-    const fieldsToFill = [
-      { name: 'yieldGoal', value: preset.yieldGoal, delay: 0 },
-      { name: 'nRequirementPerBag', value: preset.nRequirementPerBag, delay: 80 },
-      { name: 'mosNContribution', value: preset.mosNContribution, delay: 160 },
-      { name: 'soyNContribution', value: preset.soyNContribution, delay: 240 },
-      { name: 'efficiency', value: preset.efficiency * 100, delay: 320 },
-      { name: 'baseDose', value: preset.baseDose, delay: 400 },
-      { name: 'baseDose2', value: preset.baseDose2, delay: 450 },
-      { name: 'v4v6Percent', value: preset.v4v6Percent, delay: 500 },
-      { name: 'v4v6Percent2', value: preset.v4v6Percent2, delay: 550 },
-      { name: 'v8v10Percent', value: preset.v8v10Percent, delay: 600 },
-      { name: 'v8v10Percent2', value: preset.v8v10Percent2, delay: 650 },
-    ];
 
-    // Set the active preset immediately
     setActivePreset(preset.id);
 
-    // Animate each field with staggered delay
-    fieldsToFill.forEach(({ name, value, delay }) => {
+    // Batch all value updates in a single transition (1 render instead of ~23)
+    startTransition(() => {
+      setYieldGoal(preset.yieldGoal);
+      setNRequirementPerBag(preset.nRequirementPerBag);
+      setMosNContribution(preset.mosNContribution);
+      setSoyNContribution(preset.soyNContribution);
+      setEfficiency(preset.efficiency * 100);
+      setBaseDose(preset.baseDose);
+      setBaseDose2(preset.baseDose2);
+      setV4v6Percent(preset.v4v6Percent);
+      setV4v6Percent2(preset.v4v6Percent2);
+      setV8v10Percent(preset.v8v10Percent);
+      setV8v10Percent2(preset.v8v10Percent2);
+      setBaseDoseMode(preset.baseDose2 > 0 ? 'range' : 'single');
+    });
+
+    // Staggered filling animation via requestAnimationFrame (visual only, no state thrashing)
+    const fieldNames = [
+      'yieldGoal', 'nRequirementPerBag', 'mosNContribution', 'soyNContribution',
+      'efficiency', 'baseDose', 'baseDose2', 'v4v6Percent', 'v4v6Percent2',
+      'v8v10Percent', 'v8v10Percent2',
+    ];
+    fieldNames.forEach((name, i) => {
       const timer = setTimeout(() => {
-        // Add field to filling state
         setFillingFields(prev => new Set([...prev, name]));
-        
-        // Set the actual value
-        switch (name) {
-          case 'yieldGoal': setYieldGoal(value); break;
-          case 'nRequirementPerBag': setNRequirementPerBag(value); break;
-          case 'mosNContribution': setMosNContribution(value); break;
-          case 'soyNContribution': setSoyNContribution(value); break;
-          case 'efficiency': setEfficiency(value); break;
-          case 'baseDose': setBaseDose(value); break;
-          case 'baseDose2': setBaseDose2(value); break;
-          case 'v4v6Percent': setV4v6Percent(value); break;
-          case 'v4v6Percent2': setV4v6Percent2(value); break;
-          case 'v8v10Percent': setV8v10Percent(value); break;
-          case 'v8v10Percent2': setV8v10Percent2(value); break;
-        }
-        
-        // Remove from filling state after animation completes
         setTimeout(() => {
           setFillingFields(prev => {
             const next = new Set(prev);
@@ -213,28 +190,46 @@ export default function Home() {
             return next;
           });
         }, 300);
-      }, delay);
-      
+      }, i * 60);
       fillingTimersRef.current.push(timer);
     });
-
-    // Set modes based on preset values
-    const modeTimer = setTimeout(() => {
-      setBaseDoseMode(preset.baseDose2 > 0 ? 'range' : 'single');
-      setV4v6Mode(preset.v4v6Percent2 > 0 ? 'range' : 'single');
-      setV8v10Mode(preset.v8v10Percent2 > 0 ? 'range' : 'single');
-    }, 100);
-    fillingTimersRef.current.push(modeTimer);
   }, []);
 
   // Mark custom if any state changes
-  const handleCustomInputChange = (updater: () => void) => {
+  const handleCustomInputChange = useCallback((updater: () => void) => {
     updater();
     setActivePreset('personalizado');
-  };
+  }, []);
 
-  // Calculations
-  const calculations = computeCalculations({
+  // Memoized input change handlers — stable references for React.memo
+  const setYieldGoalValue = useCallback((v: number) => handleCustomInputChange(() => setYieldGoal(v)), [handleCustomInputChange]);
+  const setNRequirementPerBagValue = useCallback((v: number) => handleCustomInputChange(() => setNRequirementPerBag(Math.max(0, v))), [handleCustomInputChange]);
+  const setMosNContributionValue = useCallback((v: number) => handleCustomInputChange(() => setMosNContribution(Math.max(0, v))), [handleCustomInputChange]);
+  const setSoyNContributionValue = useCallback((v: number) => handleCustomInputChange(() => setSoyNContribution(Math.max(0, v))), [handleCustomInputChange]);
+  const setEfficiencyValue = useCallback((v: number) => handleCustomInputChange(() => setEfficiency(v)), [handleCustomInputChange]);
+  const setEfficiencyBlur = useCallback((v: number) => handleCustomInputChange(() => setEfficiency(Math.min(100, Math.max(10, v)))), [handleCustomInputChange]);
+  const setBaseDoseValue = useCallback((v: number) => handleCustomInputChange(() => setBaseDose(v)), [handleCustomInputChange]);
+  const setBaseDose2Value = useCallback((v: number) => handleCustomInputChange(() => setBaseDose2(v)), [handleCustomInputChange]);
+  const setV4v6PercentValue = useCallback((v: number) => handleCustomInputChange(() => setV4v6Percent(v)), [handleCustomInputChange]);
+  const setV4v6Percent2Value = useCallback((v: number) => handleCustomInputChange(() => setV4v6Percent2(v)), [handleCustomInputChange]);
+  const setV8v10PercentValue = useCallback((v: number) => handleCustomInputChange(() => setV8v10Percent(v)), [handleCustomInputChange]);
+  const setV8v10Percent2Value = useCallback((v: number) => handleCustomInputChange(() => setV8v10Percent2(v)), [handleCustomInputChange]);
+  const setSplitBaseValue = useCallback((v: string) => handleCustomInputChange(() => setSplitBase(v as 'dose_perdas' | 'necessidade_liquida')), [handleCustomInputChange]);
+
+  const handleBaseDoseModeChange = useCallback((v: string) => {
+    handleCustomInputChange(() => {
+      const newMode = v as 'single' | 'range';
+      setBaseDoseMode(newMode);
+      if (newMode === 'single') {
+        setBaseDose2(0);
+        setV4v6Percent2(0);
+        setV8v10Percent2(0);
+      }
+    });
+  }, [handleCustomInputChange]);
+
+  // Calculations — memoized to avoid recomputing on unrelated state changes
+  const calculations = useMemo(() => computeCalculations({
     yieldGoal,
     nRequirementPerBag,
     mosNContribution,
@@ -248,14 +243,88 @@ export default function Home() {
     v8v10Percent,
     v8v10Percent2,
     splitBase,
-  });
+  }), [yieldGoal, nRequirementPerBag, mosNContribution, soyNContribution, efficiency, baseDose, baseDose2, baseDoseMode, v4v6Percent, v4v6Percent2, v8v10Percent, v8v10Percent2, splitBase]);
 
   // Handle dynamic layout print
-  const handlePrint = () => {
+  const handlePrint = useCallback(() => {
     window.print();
-  };
+  }, []);
 
-  // Gemini Live Voice Assistant (Puck voice + interactive UI automation)
+  const handleReset = useCallback(() => {
+    startTransition(() => {
+      setYieldGoal(0);
+      setNRequirementPerBag(0);
+      setMosNContribution(0);
+      setSoyNContribution(0);
+      setEfficiency(0);
+      setBaseDose(0);
+      setBaseDose2(0);
+      setBaseDoseMode('single');
+      setV4v6Percent(0);
+      setV4v6Percent2(0);
+      setV8v10Percent(0);
+      setV8v10Percent2(0);
+      setActivePreset('personalizado');
+    });
+  }, []);
+
+  const handleTabChange = useCallback((tab: TabId) => {
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const handleToastDismiss = useCallback(() => setSaveToast(null), []);
+
+  // Gemini Live Voice Agent callbacks — memoized for stable references
+  const onSetYieldGoal = useCallback((val: number) => {
+    setYieldGoal(val);
+    setActivePreset('personalizado');
+  }, []);
+
+  const onSetSoilParameters = useCallback(({ mos, soy, efficiency: eff }: { mos?: number; soy?: number; efficiency?: number }) => {
+    if (mos !== undefined) setMosNContribution(mos);
+    if (soy !== undefined) setSoyNContribution(soy);
+    if (eff !== undefined) setEfficiency(eff);
+    setActivePreset('personalizado');
+  }, []);
+
+  const onSetParceling = useCallback(({ baseDose: b, v4v6Percent: p1, v8v10Percent: p2 }: { baseDose?: number; v4v6Percent?: number; v8v10Percent?: number }) => {
+    if (b !== undefined) setBaseDose(b);
+    if (p1 !== undefined) setV4v6Percent(p1);
+    if (p2 !== undefined) setV8v10Percent(p2);
+    setActivePreset('personalizado');
+  }, []);
+
+  const onLoadPreset = useCallback((presetId: string) => {
+    const p = PRESETS.find((pr) => pr.id === presetId);
+    if (p) handleLoadPreset(p);
+  }, [handleLoadPreset]);
+
+  const onSetITRParameters = useCallback((params: Record<string, unknown>) => {
+    setActivePreset('personalizado');
+    setActiveTab('itr');
+    const el = document.getElementById('itr_section');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    console.log('ITR parameters received:', params);
+  }, []);
+
+  const onSetABNTReference = useCallback((ref: Record<string, unknown>) => {
+    setActivePreset('personalizado');
+    setActiveTab('abnt');
+    const el = document.getElementById('abnt_section');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    console.log('ABNT reference received:', ref);
+  }, []);
+
+  const onSetBibliographyReference = useCallback((ref: ABNTReference) => {
+    setBibliographyRef(ref);
+    setActivePreset('personalizado');
+    setActiveTab('abnt');
+    const el = document.getElementById('abnt_section');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    console.log('Bibliography reference received:', ref);
+  }, []);
+
   const voiceAgent = useGeminiLiveAgent({
     yieldGoal,
     nRequirementPerBag,
@@ -272,69 +341,20 @@ export default function Home() {
     selectedV4V6Val: calculations.v4v6_1_kg,
     selectedV8V10Val: calculations.v8v10_1_kg,
     sumOfSplits: calculations.sumOfSplits,
-    onSetYieldGoal: (val) => {
-      setYieldGoal(val);
-      setActivePreset('personalizado');
-    },
-    onSetSoilParameters: ({ mos, soy, efficiency: eff }) => {
-      if (mos !== undefined) setMosNContribution(mos);
-      if (soy !== undefined) setSoyNContribution(soy);
-      if (eff !== undefined) setEfficiency(eff);
-      setActivePreset('personalizado');
-    },
-    onSetParceling: ({ baseDose: b, v4v6Percent: p1, v8v10Percent: p2 }) => {
-      if (b !== undefined) setBaseDose(b);
-      if (p1 !== undefined) setV4v6Percent(p1);
-      if (p2 !== undefined) setV8v10Percent(p2);
-      setActivePreset('personalizado');
-    },
-    onLoadPreset: (presetId) => {
-      const p = PRESETS.find((pr) => pr.id === presetId);
-      if (p) handleLoadPreset(p);
-    },
-
-
-
-    onSetITRParameters: (params) => {
-      const { vtn, areaTotal, areaTributavel, areaAproveitavel, areaUtilizada } = params;
-      // Update ITR calculator state via refs or state management
-      // For now, we'll update the active preset and scroll to ITR section
-      setActivePreset('personalizado');
-      setActiveTab('itr');
-      const el = document.getElementById('itr_section');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-      // TODO: Integrate with ITRCalculator component state when available
-      console.log('ITR parameters received:', params);
-    },
-
-    onSetABNTReference: (ref) => {
-      const { type, author, title, year, editor, url } = ref;
-      // Update ABNT reference formatter state
-      setActivePreset('personalizado');
-      setActiveTab('abnt');
-      const el = document.getElementById('abnt_section');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-      // TODO: Integrate with ABNT reference formatter when available
-      console.log('ABNT reference received:', ref);
-    },
-
-    onSetBibliographyReference: (ref) => {
-      setBibliographyRef(ref);
-      setActivePreset('personalizado');
-      setActiveTab('abnt');
-      const el = document.getElementById('abnt_section');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-      console.log('Bibliography reference received:', ref);
-    },
-
-
+    onSetYieldGoal,
+    onSetSoilParameters,
+    onSetParceling,
+    onLoadPreset,
+    onSetITRParameters,
+    onSetABNTReference,
+    onSetBibliographyReference,
   });
 
   return (
     <>
       <LoadingSkeleton3D
         onComplete={() => setIsLoading(false)}
-        duration={4500}
+        duration={2500}
       />
 
       <main
@@ -396,23 +416,7 @@ export default function Home() {
               </button>
               <button
                 id="btn_reset"
-                onClick={() => {
-                  setYieldGoal(0);
-                  setNRequirementPerBag(0);
-                  setMosNContribution(0);
-                  setSoyNContribution(0);
-                  setEfficiency(0);
-                  setBaseDose(0);
-                  setBaseDose2(0);
-                  setBaseDoseMode('single');
-                  setV4v6Percent(0);
-                  setV4v6Percent2(0);
-                  setV4v6Mode('single');
-                  setV8v10Percent(0);
-                  setV8v10Percent2(0);
-                  setV8v10Mode('single');
-                  setActivePreset('personalizado');
-                }}
+                onClick={handleReset}
                 className="flex items-center justify-center p-2.5 bg-white/10 dark:bg-white/5 hover:bg-white/20 text-white rounded-xl border border-white/20 dark:border-white/10 transition-all active:scale-95"
                 title="Resetar para valores padrão"
               >
@@ -462,10 +466,7 @@ export default function Home() {
         {/* TAB PANEL — GOOEY TABS WITH ANIMATED TRANSITIONS */}
         <GooeyTabPanel
           activeTab={activeTab}
-          onTabChange={(tab) => {
-            setActiveTab(tab);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          onTabChange={handleTabChange}
           nitrogenContent={
             <div className="px-4 sm:px-6 lg:px-8 py-6">
               <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
@@ -510,7 +511,7 @@ export default function Home() {
                   label="Produtividade Alvo"
                   unit="sc/ha"
                   value={yieldGoal}
-                  onChange={(v) => handleCustomInputChange(() => setYieldGoal(v))}
+                  onChange={setYieldGoalValue}
                   step={5}
                   min={50}
                   max={250}
@@ -526,7 +527,7 @@ export default function Home() {
                   label="N necessário por saca produzida"
                   unit="kg N/sc"
                   value={nRequirementPerBag}
-                  onChange={(v) => handleCustomInputChange(() => setNRequirementPerBag(Math.max(0, v)))}
+                  onChange={setNRequirementPerBagValue}
                   step={0.05}
                   min={0.5}
                   max={2.5}
@@ -543,7 +544,7 @@ export default function Home() {
                   label="N fornecido pela M.O. (MOS)"
                   unit="kg N/ha"
                   value={mosNContribution}
-                  onChange={(v) => handleCustomInputChange(() => setMosNContribution(Math.max(0, v)))}
+                  onChange={setMosNContributionValue}
                   step={1}
                   min={0}
                   max={150}
@@ -559,7 +560,7 @@ export default function Home() {
                   label="Crédito de N pela Soja (cultura anterior)"
                   unit="kg N/ha"
                   value={soyNContribution}
-                  onChange={(v) => handleCustomInputChange(() => setSoyNContribution(Math.max(0, v)))}
+                  onChange={setSoyNContributionValue}
                   step={1}
                   min={0}
                   max={100}
@@ -576,8 +577,8 @@ export default function Home() {
                   label="Eficiência de Aplicação (%)"
                   unit="%"
                   value={efficiency}
-                  onChange={(v) => handleCustomInputChange(() => setEfficiency(v))}
-                  onBlurCustom={(v) => handleCustomInputChange(() => setEfficiency(Math.min(100, Math.max(10, v))))}
+                  onChange={setEfficiencyValue}
+                  onBlurCustom={setEfficiencyBlur}
                   step={1}
                   min={10}
                   max={100}
@@ -606,7 +607,7 @@ export default function Home() {
                 <Select3D
                   label="Base para cálculo do parcelamento:"
                   value={splitBase}
-                  onChange={(v) => handleCustomInputChange(() => setSplitBase(v as 'dose_perdas' | 'necessidade_liquida'))}
+                  onChange={setSplitBaseValue}
                   isDark={isDark}
                   accentColor="#D4A373"
                   options={[
@@ -631,17 +632,7 @@ export default function Home() {
                     </span>
                     <Select3D
                       value={baseDoseMode}
-                      onChange={(v) => handleCustomInputChange(() => {
-                        const newMode = v as 'single' | 'range';
-                        setBaseDoseMode(newMode);
-                        if (newMode === 'single') {
-                          setBaseDose2(0);
-                          setV4v6Mode('single');
-                          setV4v6Percent2(0);
-                          setV8v10Mode('single');
-                          setV8v10Percent2(0);
-                        }
-                      })}
+                      onChange={handleBaseDoseModeChange}
                       isDark={isDark}
                       accentColor="#D4A373"
                       options={[
@@ -658,7 +649,7 @@ export default function Home() {
                       labelMorph
                       unit="kg N/ha"
                       value={baseDose}
-                      onChange={(v) => handleCustomInputChange(() => setBaseDose(v))}
+                      onChange={setBaseDoseValue}
                       step={1}
                       min={0}
                       max={100}
@@ -671,7 +662,7 @@ export default function Home() {
                       label="Max (kg N/ha)"
                       unit="kg N/ha"
                       value={baseDose2}
-                      onChange={(v) => handleCustomInputChange(() => setBaseDose2(v))}
+                      onChange={setBaseDose2Value}
                       step={1}
                       min={0}
                       max={100}
@@ -714,7 +705,7 @@ export default function Home() {
                       labelMorph
                       unit="%"
                       value={v4v6Percent}
-                      onChange={(v) => handleCustomInputChange(() => setV4v6Percent(v))}
+                      onChange={setV4v6PercentValue}
                       step={1}
                       min={0}
                       max={100}
@@ -728,7 +719,7 @@ export default function Home() {
                       labelMorph
                       unit="%"
                       value={v4v6Percent2}
-                      onChange={(v) => handleCustomInputChange(() => setV4v6Percent2(v))}
+                      onChange={setV4v6Percent2Value}
                       step={1}
                       min={0}
                       max={100}
@@ -788,7 +779,7 @@ export default function Home() {
                         labelMorph
                         unit="%"
                         value={v8v10Percent}
-                        onChange={(v) => handleCustomInputChange(() => setV8v10Percent(v))}
+                        onChange={setV8v10PercentValue}
                         step={1}
                         min={0}
                         max={100}
@@ -804,7 +795,7 @@ export default function Home() {
                         labelMorph
                         unit="%"
                         value={v8v10Percent2}
-                        onChange={(v) => handleCustomInputChange(() => setV8v10Percent2(v))}
+                        onChange={setV8v10Percent2Value}
                         step={1}
                         min={0}
                         max={100}

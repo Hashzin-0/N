@@ -3,7 +3,6 @@
 import React from 'react';
 import MetricCard from './MetricCard';
 import { useTheme } from '@/components/ThemeProvider';
-import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
 
 interface Props {
   recommendedDose: number;
@@ -13,7 +12,7 @@ interface Props {
   animKey?: string | number;
 }
 
-export default function DoseRecomendadaCard({ recommendedDose, liquidNeed, efficiency, onSaveClick, animKey }: Props) {
+export default React.memo(function DoseRecomendadaCard({ recommendedDose, liquidNeed, efficiency, onSaveClick, animKey }: Props) {
   const { isDark } = useTheme();
 
   return (
@@ -39,4 +38,4 @@ export default function DoseRecomendadaCard({ recommendedDose, liquidNeed, effic
       </div>
     </MetricCard>
   );
-}
+});

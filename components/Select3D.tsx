@@ -22,7 +22,7 @@ interface Select3DProps {
   className?: string;
 }
 
-export default function Select3D({
+export default React.memo(function Select3D({
   id,
   value,
   options,
@@ -180,4 +180,4 @@ export default function Select3D({
       </div>
     </div>
   );
-}
+});

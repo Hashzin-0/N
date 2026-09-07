@@ -3,7 +3,6 @@
 import React from 'react';
 import MetricCard from './MetricCard';
 import { useTheme } from '@/components/ThemeProvider';
-import CalculationMemoryPanel from '@/components/CalculationMemoryPanel';
 
 interface Props {
   liquidNeed: number;
@@ -13,7 +12,7 @@ interface Props {
   animKey?: string | number;
 }
 
-export default function NecessidadeLiquidaCard({ liquidNeed, totalExtraction, mosNContribution, soyNContribution, animKey }: Props) {
+export default React.memo(function NecessidadeLiquidaCard({ liquidNeed, totalExtraction, mosNContribution, soyNContribution, animKey }: Props) {
   const { isDark } = useTheme();
 
   return (
@@ -39,4 +38,4 @@ export default function NecessidadeLiquidaCard({ liquidNeed, totalExtraction, mo
       </div>
     </MetricCard>
   );
-}
+});
