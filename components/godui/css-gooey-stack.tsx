@@ -21,6 +21,8 @@ const CssGooeyStack = React.forwardRef<HTMLDivElement, CssGooeyStackProps>(
     },
     forwardedRef,
   ) => {
+    const id = React.useId();
+    const filterId = `gooey-stack-${id}`;
     const items = React.Children.toArray(children);
 
     return (
@@ -32,55 +34,71 @@ const CssGooeyStack = React.forwardRef<HTMLDivElement, CssGooeyStackProps>(
         style={style}
         {...props}
       >
-        {/* ── CSS Gooey filter layer ─────────────────────────────── */}
+        {/* ── SVG Goo Filter Definition ──────────────────────────────── */}
+        <svg
+          style={{ position: "absolute", width: 0, height: 0 }}
+          aria-hidden="true"
+        >
+          <defs>
+            <filter id={filterId}>
+              <feGaussianBlur
+                in="SourceGraphic"
+                stdDeviation="10"
+                result="blur"
+              />
+              <feColorMatrix
+                in="blur"
+                mode="matrix"
+                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8"
+                result="goo"
+              />
+              <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+            </filter>
+          </defs>
+        </svg>
+
+        {/* ── Goo-filtered layer: absolutely positioned inputs ──────── */}
         <div
-          className="absolute inset-0 overflow-hidden pointer-events-none"
+          className="relative"
           style={{
-            filter: collapsed ? "blur(10px) contrast(30)" : "none",
-            transition: "filter 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+            filter: `url(#${filterId})`,
           }}
         >
-          {/* Background matching card color for seamless effect */}
-          <div
-            className="absolute inset-0 bg-card"
-            style={{
-              opacity: collapsed ? 1 : 0,
-              transition: "opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-            }}
-          />
-          {/* Blob elements that merge when collapsed */}
-          {items.map((_, i) => (
-            <div
-              key={i}
-              className="absolute inset-y-0 bg-card rounded-2xl border border-border"
-              style={{
-                right: collapsed ? `${i * 2}px` : `${i * 12}px`,
-                width: "100%",
-                opacity: collapsed ? Math.max(0, 1 - i * 0.5) : 1,
-                transform: collapsed ? `scale(${1 - i * 0.05})` : "scale(1)",
-                transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-              }}
-            />
-          ))}
-        </div>
+          {/* Height spacer — preserves container height (absolute children don't) */}
+          <div style={{ visibility: "hidden", pointerEvents: "none" }}>
+            {items[0]}
+          </div>
 
-        {/* ── Content layer: children, never filtered ────────────── */}
-        <div className="relative flex items-center">
-          {items.map((child, i) => (
+          {/* First input — centered when collapsed, left when expanded */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: collapsed ? "50%" : "0",
+              transform: collapsed ? "translateX(-50%)" : "none",
+              zIndex: 2,
+              transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+            }}
+          >
+            {items[0]}
+          </div>
+
+          {/* Second input — hidden when collapsed, right when expanded */}
+          {items.length > 1 && (
             <div
-              key={i}
-              className="relative"
               style={{
-                marginRight: collapsed && i < items.length - 1 ? "-48px" : "0px",
-                zIndex: items.length - i,
-                opacity: collapsed && i > 0 ? 0 : 1,
-                transform: collapsed && i > 0 ? "scale(0.95)" : "scale(1)",
+                position: "absolute",
+                top: 0,
+                right: "0",
+                zIndex: 1,
+                opacity: collapsed ? 0 : 1,
+                transform: collapsed ? "scale(0.95) translateX(20px)" : "scale(1)",
                 transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
-              {child}
+              {items[1]}
             </div>
-          ))}
+          )}
         </div>
       </div>
     );

@@ -88,8 +88,15 @@ export default function Select3D({
                   onClick={withLock(() => onChange(opt.value))}
                   onMouseEnter={() => setHoveredIdx(idx)}
                   onMouseLeave={() => setHoveredIdx(null)}
-                  className="relative text-left px-3 py-2.5 rounded-lg font-bold text-xs transition-colors overflow-visible"
-                  style={{ transformStyle: 'preserve-3d' }}
+                  className="relative text-left px-3 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 overflow-visible"
+                  style={{
+                    transformStyle: 'preserve-3d',
+                    boxShadow: isActive
+                      ? `0 4px 14px ${accentColor}88, 0 0 16px ${accentColor}40, inset 0 1px 0 rgba(255,255,255,0.18)`
+                      : isHovered
+                      ? `0 2px 8px rgba(0,0,0,0.10)`
+                      : 'none',
+                  }}
                   animate={{
                     y: isActive ? -3 : 0,
                     rotateX: isActive ? 0 : isHovered ? 2 : 0,
@@ -103,28 +110,6 @@ export default function Select3D({
                     damping: 25,
                   }}
                 >
-                  {/* ELEVATION SHADOW — blurred accent glow beneath the button */}
-                  <span
-                    className="absolute inset-0 rounded-lg pointer-events-none transition-all duration-300 ease-out"
-                    style={{
-                      backgroundColor: `${accentColor}40`,
-                      filter: 'blur(12px)',
-                      transform: isActive ? 'translateY(3px)' : 'translateY(6px)',
-                      opacity: isActive ? 0.7 : 0,
-                    }}
-                    aria-hidden="true"
-                  />
-
-                  {/* ELEVATION EDGE — colored border glow when active */}
-                  <span
-                    className="absolute inset-0 rounded-lg pointer-events-none transition-opacity duration-200 ease-out"
-                    style={{
-                      backgroundImage: `linear-gradient(135deg, ${accentColor}cc 0%, ${accentColor}99 50%, ${accentColor}bb 100%)`,
-                      opacity: isActive ? 1 : 0,
-                    }}
-                    aria-hidden="true"
-                  />
-
                   <div className="relative z-10 flex items-center gap-2 overflow-hidden rounded-lg">
                     {opt.icon && (
                       <motion.span

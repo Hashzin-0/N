@@ -739,21 +739,19 @@ export default function Home() {
                       accentColor="#D4A373"
                       filling={fillingFields.has('baseDose')}
                     />
-                    {baseDoseMode === 'range' && (
-                      <Input3D
-                        label="Max (kg N/ha)"
-                        unit="kg N/ha"
-                        value={baseDose2}
-                        onChange={(v) => handleCustomInputChange(() => setBaseDose2(v))}
-                        step={1}
-                        min={0}
-                        max={100}
-                        placeholder="0"
-                        isDark={isDark}
-                        accentColor="#D4A373"
-                        filling={fillingFields.has('baseDose2')}
-                      />
-                    )}
+                    <Input3D
+                      label="Max (kg N/ha)"
+                      unit="kg N/ha"
+                      value={baseDose2}
+                      onChange={(v) => handleCustomInputChange(() => setBaseDose2(v))}
+                      step={1}
+                      min={0}
+                      max={100}
+                      placeholder="0"
+                      isDark={isDark}
+                      accentColor="#D4A373"
+                      filling={fillingFields.has('baseDose2')}
+                    />
                   </CssGooeyStack>
 
                   <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] mt-1 leading-relaxed">
@@ -797,22 +795,20 @@ export default function Home() {
                       accentColor="#5A5A40"
                       filling={fillingFields.has('v4v6Percent')}
                     />
-                    {baseDoseMode !== 'single' && (
-                      <Input3D
-                        label="Max %"
-                        labelMorph
-                        unit="%"
-                        value={v4v6Percent2}
-                        onChange={(v) => handleCustomInputChange(() => setV4v6Percent2(v))}
-                        step={1}
-                        min={0}
-                        max={100}
-                        placeholder="0"
-                        isDark={isDark}
-                        accentColor="#5A5A40"
-                        filling={fillingFields.has('v4v6Percent2')}
-                      />
-                    )}
+                    <Input3D
+                      label="Max %"
+                      labelMorph
+                      unit="%"
+                      value={v4v6Percent2}
+                      onChange={(v) => handleCustomInputChange(() => setV4v6Percent2(v))}
+                      step={1}
+                      min={0}
+                      max={100}
+                      placeholder="0"
+                      isDark={isDark}
+                      accentColor="#5A5A40"
+                      filling={fillingFields.has('v4v6Percent2')}
+                    />
                   </CssGooeyStack>
 
                   <p className="text-[10px] text-[#8C897E] dark:text-[#9EA399] leading-relaxed">
@@ -875,24 +871,22 @@ export default function Home() {
                         hint={v8v10Percent === 0 ? `Auto-calculado: ${calculations.v8v10_1_auto}%` : undefined}
                         filling={fillingFields.has('v8v10Percent')}
                       />
-                      {baseDoseMode === 'range' && (
-                        <Input3D
-                          label="Max %"
-                          labelMorph
-                          unit="%"
-                          value={v8v10Percent2}
-                          onChange={(v) => handleCustomInputChange(() => setV8v10Percent2(v))}
-                          step={1}
-                          min={0}
-                          max={100}
-                          placeholder="0"
-                          isDark={isDark}
-                          accentColor="#8D6E63"
-                          derived={v8v10Percent2 === 0 && v4v6Percent2 > 0}
-                          hint={v8v10Percent2 === 0 && v4v6Percent2 > 0 ? `Auto-calculado: ${calculations.v8v10_2_auto}%` : undefined}
-                          filling={fillingFields.has('v8v10Percent2')}
-                        />
-                      )}
+                      <Input3D
+                        label="Max %"
+                        labelMorph
+                        unit="%"
+                        value={v8v10Percent2}
+                        onChange={(v) => handleCustomInputChange(() => setV8v10Percent2(v))}
+                        step={1}
+                        min={0}
+                        max={100}
+                        placeholder="0"
+                        isDark={isDark}
+                        accentColor="#8D6E63"
+                        derived={v8v10Percent2 === 0 && v4v6Percent2 > 0}
+                        hint={v8v10Percent2 === 0 && v4v6Percent2 > 0 ? `Auto-calculado: ${calculations.v8v10_2_auto}%` : undefined}
+                        filling={fillingFields.has('v8v10Percent2')}
+                      />
                     </CssGooeyStack>
                   )}
 

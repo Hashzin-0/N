@@ -22,7 +22,7 @@ export default function DetailedMathPanel({ calculations, mosNContribution, soyN
         <h4 className="font-bold text-[#5A5A40] dark:text-[#9CB386] flex items-center gap-1.5 text-sm">
           <Info className="h-4 w-4 text-[#5A5A40] dark:text-[#9CB386]" /> <ElasticText className="text-sm font-bold" mode="auto" startOnView loop={false}>Resumo de Respostas e Conferência (Pronto para Copiar)</ElasticText>
         </h4>
-        <div className="flex flex-wrap items-center justify-center gap-4 py-3 my-1 rounded-xl bg-[#F5F3ED] dark:bg-[#1A1D17] border border-[#E5E2D9] dark:border-[#2C3328]">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 py-3 my-1">
           <div className="text-center">
             <div className="text-[9px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#9EA399] mb-1">Extração</div>
             <SplitFlapValue value={calculations.totalExtraction} size="sm" unit="kg N/ha" />
@@ -35,21 +35,33 @@ export default function DetailedMathPanel({ calculations, mosNContribution, soyN
             <div className="text-[9px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#9EA399] mb-1">Dose Final</div>
             <SplitFlapValue value={calculations.recommendedDose} size="sm" unit="kg N/ha" />
           </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans pt-2">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1">• <strong>Necessidade total de N (Extração):</strong> <SplitFlapValue value={calculations.totalExtraction} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
-            <div className="flex items-center gap-1">• <strong>N proveniente da MOS:</strong> <SplitFlapValue value={mosNContribution} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
-            <div className="flex items-center gap-1">• <strong>Crédito da Soja:</strong> <SplitFlapValue value={soyNContribution} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
-            <div className="flex items-center gap-1">• <strong>Necessidade líquida de N:</strong> <SplitFlapValue value={calculations.liquidNeed} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
-            <div className="flex items-center gap-1">• <strong>Dose de N a aplicar (com perdas):</strong> <SplitFlapValue value={calculations.recommendedDose} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
+          <div className="text-center">
+            <div className="text-[9px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#9EA399] mb-1">MOS</div>
+            <SplitFlapValue value={mosNContribution} size="sm" unit="kg N/ha" />
           </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1">• <strong>Dose aplicada na Base:</strong> <SplitFlapValue value={calculations.base1_kg} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
-            <div className="flex items-center gap-1">• <strong>Faixa V4-V6 (50% a 60%):</strong> <SplitFlapValue value={calculations.v4v6_50} decimalPlaces={2} size="sm" /> a <SplitFlapValue value={calculations.v4v6_60} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
-            <div className="flex items-center gap-1">• <strong>Faixa V8-V10 (20% a 30%):</strong> <SplitFlapValue value={calculations.v8v10_20} decimalPlaces={2} size="sm" /> a <SplitFlapValue value={calculations.v8v10_30} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
-            <div className="flex items-center gap-1">• <strong>Diferença de dose (V4-V6 vs V8-V10):</strong> <SplitFlapValue value={calculations.splitDifference} decimalPlaces={2} size="sm" unit="kg N/ha" /></div>
-            <div className="flex items-center gap-1">• <strong>Soma das parcelas aplicadas:</strong> <SplitFlapValue value={calculations.sumOfSplits} decimalPlaces={2} size="sm" /> kg N/ha (Meta: <SplitFlapValue value={calculations.targetSplitTotal} decimalPlaces={2} size="sm" unit="kg N/ha" />)</div>
+          <div className="text-center">
+            <div className="text-[9px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#9EA399] mb-1">Soja</div>
+            <SplitFlapValue value={soyNContribution} size="sm" unit="kg N/ha" />
+          </div>
+          <div className="text-center">
+            <div className="text-[9px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#9EA399] mb-1">Base</div>
+            <SplitFlapValue value={calculations.base1_kg} size="sm" unit="kg N/ha" />
+          </div>
+          <div className="text-center">
+            <div className="text-[9px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#9EA399] mb-1">V4-V6 (50-60%)</div>
+            <SplitFlapValue value={calculations.v4v6_50} size="sm" /> a <SplitFlapValue value={calculations.v4v6_60} size="sm" unit="kg N/ha" />
+          </div>
+          <div className="text-center">
+            <div className="text-[9px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#9EA399] mb-1">V8-V10 (20-30%)</div>
+            <SplitFlapValue value={calculations.v8v10_20} size="sm" /> a <SplitFlapValue value={calculations.v8v10_30} size="sm" unit="kg N/ha" />
+          </div>
+          <div className="text-center">
+            <div className="text-[9px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#9EA399] mb-1">Diferença</div>
+            <SplitFlapValue value={calculations.splitDifference} size="sm" unit="kg N/ha" />
+          </div>
+          <div className="text-center">
+            <div className="text-[9px] font-bold uppercase tracking-wider text-[#8C897E] dark:text-[#9EA399] mb-1">Soma Parcelas</div>
+            <SplitFlapValue value={calculations.sumOfSplits} size="sm" unit="kg N/ha" />
           </div>
         </div>
       </div>

@@ -44,6 +44,8 @@ type MultiButtonSharedProps = MultiButtonRootProps & {
   size?: MultiButtonSize;
   /** Disable the blur animation on labels and icons during enter/exit transitions. */
   disableBlur?: boolean;
+  /** When provided, distribute items equally across this pixel width instead of computing natural expanded width. */
+  fillWidth?: number;
 };
 
 export type MultiButtonProps = MultiButtonSharedProps;
@@ -477,32 +479,37 @@ function useMultiButtonLayout({
   reserveLabelSpace = true,
   size,
   syncWidthTo,
+  fillWidth,
 }: {
   activeId: string | null;
   items: MultiButtonItem[];
   reserveLabelSpace?: boolean;
   size: MultiButtonSize;
   syncWidthTo?: MultiButtonItem[];
+  fillWidth?: number;
 }) {
   const cfg = SIZE_CONFIG[size];
   const { labelWidths, reservedLabelWidth, measurementRef, reserveItems } =
     useLabelWidths(items, syncWidthTo, size);
   const effectiveLabelWidth = reserveLabelSpace ? reservedLabelWidth : 0;
   const dividerWidth = Math.max(0, items.length - 1);
-  const expandedWidth =
+  const naturalWidth =
     items.length > 0
       ? items.length * cfg.cell + effectiveLabelWidth + dividerWidth
       : cfg.cell;
-  const itemWidths = items.map((item) =>
-    actionWidth(
-      item,
-      activeId,
-      items.length,
-      cfg.cell,
-      labelWidths,
-      effectiveLabelWidth,
-    ),
-  );
+  const expandedWidth = fillWidth && fillWidth > 0 ? fillWidth : naturalWidth;
+  const itemWidths = fillWidth && fillWidth > 0
+    ? items.map(() => fillWidth / items.length)
+    : items.map((item) =>
+        actionWidth(
+          item,
+          activeId,
+          items.length,
+          cfg.cell,
+          labelWidths,
+          effectiveLabelWidth,
+        ),
+      );
   const blobGeometries = React.useMemo(() => {
     return items.reduce<{ item: MultiButtonItem; width: number; x: number }[]>(
       (acc, item, index) => {
@@ -1203,6 +1210,7 @@ const MultiButton = React.forwardRef<HTMLDivElement, MultiButtonProps>(
       className,
       style,
       disableBlur,
+      fillWidth,
       ...props
     },
     ref,
@@ -1224,7 +1232,7 @@ const MultiButton = React.forwardRef<HTMLDivElement, MultiButtonProps>(
       itemWidths,
       measurementRef,
       reserveItems,
-    } = useMultiButtonLayout({ activeId, items, size, syncWidthTo });
+    } = useMultiButtonLayout({ activeId, items, size, syncWidthTo, fillWidth });
 
     const collapseTouchAction = React.useCallback(
       () => setTouchExpandedId(null),

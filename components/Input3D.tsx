@@ -199,7 +199,7 @@ export default function Input3D({
             damping: 22,
           }}
           style={{
-            background: isFocused
+            backgroundImage: isFocused
               ? 'linear-gradient(90deg, var(--rainbow-1), var(--rainbow-5), var(--rainbow-3), var(--rainbow-4), var(--rainbow-2))'
               : isDark
               ? 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.25) 100%)'
@@ -227,7 +227,7 @@ export default function Input3D({
             damping: 22,
           }}
           style={{
-            background: isFocused
+            backgroundImage: isFocused
               ? 'linear-gradient(90deg, var(--rainbow-1), var(--rainbow-5), var(--rainbow-3), var(--rainbow-4), var(--rainbow-2))'
               : `linear-gradient(135deg, ${edgeColor}dd 0%, ${edgeColor}99 50%, ${edgeColor}bb 100%)`,
             backgroundSize: isFocused ? '200% 100%' : undefined,
@@ -257,7 +257,7 @@ export default function Input3D({
               <div
                 className="absolute inset-0 rounded-xl pointer-events-none z-10"
                 style={{
-                  background: filling
+                  backgroundImage: filling
                     ? `linear-gradient(90deg, transparent, rgba(34,197,94,0.3), transparent)`
                     : `linear-gradient(90deg, transparent, ${accentColor}33, transparent)`,
                   backgroundSize: '200% 100%',
