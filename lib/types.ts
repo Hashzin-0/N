@@ -1,3 +1,20 @@
+export interface Preset {
+  id: string;
+  name: string;
+  description: string;
+  yieldGoal: number; // sc/ha
+  nRequirementPerBag: number; // kg N/sc
+  mosNContribution: number; // kg N/ha
+  soyNContribution: number; // kg N/ha
+  efficiency: number; // 0.80 standard
+  baseDose: number; // kg N/ha in base (typically 30-40)
+  baseDose2: number; // 2nd value for range (0 = single value)
+  v4v6Percent: number; // default 50 or 60
+  v4v6Percent2: number; // 2nd % value for range (0 = single value)
+  v8v10Percent: number; // default 20 or 30
+  v8v10Percent2: number; // 2nd % value for range (0 = single value)
+}
+
 export interface Calculations {
   totalExtraction: number;
   liquidNeed: number;

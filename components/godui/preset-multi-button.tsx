@@ -4,9 +4,11 @@ import React, { useMemo } from 'react';
 import { Layers, TrendingUp, Minus, TrendingDown } from 'lucide-react';
 import { MultiButton, type MultiButtonItem } from './multi-button';
 
+import type { Preset } from '@/lib/types';
+
 const PRESET_ICONS = [TrendingUp, Minus, TrendingDown];
 
-interface PresetMultiButtonProps<T extends { id: string; name: string }> {
+export interface PresetMultiButtonProps<T extends { id: string; name: string } = Preset> {
   presets: T[];
   activePreset: string;
   onPresetClick: (preset: T) => void;
@@ -14,7 +16,7 @@ interface PresetMultiButtonProps<T extends { id: string; name: string }> {
   id?: string;
 }
 
-export default React.memo(function PresetMultiButton<T extends { id: string; name: string }>({
+function PresetMultiButtonComponent<T extends { id: string; name: string } = Preset>({
   presets,
   activePreset,
   onPresetClick,
@@ -58,5 +60,13 @@ export default React.memo(function PresetMultiButton<T extends { id: string; nam
       </div>
     </div>
   );
-});
+}
+
+const PresetMultiButton = React.memo(PresetMultiButtonComponent) as <
+  T extends { id: string; name: string } = Preset
+>(
+  props: PresetMultiButtonProps<T>
+) => React.ReactElement | null;
+
+export default PresetMultiButton;
 

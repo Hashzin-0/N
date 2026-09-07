@@ -135,6 +135,7 @@ export default function GooeyTabPanel({
   const { isDark } = useTheme();
   const rawId = useId();
   const gooeyFilterId = `unlumen-gooey-${rawId.replace(/:/g, '')}`;
+  const activeTabIdx = TAB_INDEX[activeTab] ?? 0;
 
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);

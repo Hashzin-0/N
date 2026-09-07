@@ -28,6 +28,7 @@ import ParcelamentoSection from '@/components/metrics/ParcelamentoSection';
 import BalancoSection from '@/components/metrics/BalancoSection';
 import DetailedMathPanel from '@/components/metrics/DetailedMathPanel';
 import { ABNTReference } from '@/lib/abnt/types';
+import { type Preset } from '@/lib/types';
 import BibliografiaAutoDetectCard from '@/components/metrics/BibliografiaAutoDetectCard';
 import GooeyTabPanel, { type TabId } from '@/components/GooeyTabPanel';
 import { ScrollStack } from '@/components/godui/scroll-stack';
@@ -41,25 +42,6 @@ const SectionNavGooey = dynamic(() => import('@/components/SectionNavGooey'), { 
 const CornYieldCalculator = dynamic(() => import('@/components/CornYieldCalculator'), { ssr: false });
 const ITRCalculator = dynamic(() => import('@/components/ITRCalculator'), { ssr: false });
 const AbntReferenceFormatter = dynamic(() => import('@/components/AbntReferenceFormatter'), { ssr: false });
-
-
-// Interfaces for structured data
-interface Preset {
-  id: string;
-  name: string;
-  description: string;
-  yieldGoal: number; // sc/ha
-  nRequirementPerBag: number; // kg N/sc
-  mosNContribution: number; // kg N/ha
-  soyNContribution: number; // kg N/ha
-  efficiency: number; // 0.80 standard
-  baseDose: number; // kg N/ha in base (typically 30-40)
-  baseDose2: number; // 2nd value for range (0 = single value)
-  v4v6Percent: number; // default 50 or 60
-  v4v6Percent2: number; // 2nd % value for range (0 = single value)
-  v8v10Percent: number; // default 20 or 30
-  v8v10Percent2: number; // 2nd % value for range (0 = single value)
-}
 
 const PRESETS: Preset[] = [
   {
@@ -527,7 +509,7 @@ export default function Home() {
               </div>
 
               {/* Scenario chips */}
-              <PresetMultiButton
+              <PresetMultiButton<Preset>
                 id="preset_selector"
                 presets={PRESETS}
                 activePreset={activePreset}
