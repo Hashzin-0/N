@@ -143,12 +143,12 @@ export default React.memo(function SectionNavGooey({ activeTab, activeSectionIds
       aria-label="Navegação de seções"
     >
       {/* 
-        GODUI MULTI-BUTTON IN GOOEY MODE (LIQUID SHAPE AS IN SCREENSHOT 2):
-        - Clean floating gooey shape with SVG metaball bridges
-        - Free of continuous outer rectangular box container
-        - Dynamically tracks every single section synchronized with scroll
+        INSET GOOEY CARD CONTAINER:
+        - Preserves the exact fluid capsule / pill contour ("mantendo o formato gooey do card, o formato atual")
+        - Inset well recessed into #app_header surface (darker cavity tone + subtle inner shadow)
+        - Crisp edge highlight and borders reinforcing visual depth
       */}
-      <div className={`relative z-10 flex ${isMobile ? 'justify-center' : 'w-full'}`}>
+      <div className={`relative z-10 flex ${isMobile ? 'justify-center max-w-full overflow-x-auto scrollbar-none px-1 py-1' : 'w-full py-1'}`}>
         <MultiButton
           gooey
           variant="secondary"
@@ -156,9 +156,14 @@ export default React.memo(function SectionNavGooey({ activeTab, activeSectionIds
           items={items}
           selectedId={selectedSectionId}
           highlightColor={accentColor}
+          enable3d
+          inset
+          isDark={isDark}
+          edgeColor={accentColor}
+          cardFill={isDark ? '#151813' : '#F9F8F6'}
           className={
             isMobile
-              ? 'justify-center !gap-0 overflow-visible shadow-md'
+              ? 'justify-center !gap-0 overflow-visible'
               : 'flex-col w-full items-stretch justify-start space-y-1'
           }
         />

@@ -46,6 +46,16 @@ type MultiButtonSharedProps = MultiButtonRootProps & {
   size?: MultiButtonSize;
   /** Optional fill width override in pixels. */
   fillWidth?: number;
+  /** Enable 3D edge and shadow layers matching Input3D */
+  enable3d?: boolean;
+  /** Accent edge color for the 3D extrusion gradient (defaults to highlightColor) */
+  edgeColor?: string;
+  /** Theme state to tune shadow & inset contrast */
+  isDark?: boolean;
+  /** Apply authentic SVG inset inner-shadow directly on the fluid gooey blob */
+  inset?: boolean;
+  /** Custom base fill for the fluid gooey card */
+  cardFill?: string;
 };
 
 export type MultiButtonProps = MultiButtonSharedProps;
@@ -535,6 +545,11 @@ function MultiButtonBlobLayer({
   reduceMotion,
   selectedId,
   variant,
+  enable3d = false,
+  edgeColor,
+  isDark = false,
+  inset = false,
+  cardFill,
 }: {
   activeId: string | null;
   cellWidth: number;
@@ -545,19 +560,146 @@ function MultiButtonBlobLayer({
   reduceMotion: boolean;
   selectedId: string | undefined;
   variant: MultiButtonVariant;
+  enable3d?: boolean;
+  edgeColor?: string;
+  isDark?: boolean;
+  inset?: boolean;
+  cardFill?: string;
 }) {
-  const baseFill = GOOEY_BLOB_FILLS[variant];
+  const baseFill = cardFill ?? GOOEY_BLOB_FILLS[variant];
+  const actualEdgeColor =
+    edgeColor ?? highlightColor ?? (isDark ? "#9CB386" : "#5A5A40");
+
+  const renderBlobRects = (overrideFill?: string) =>
+    geometries.map(({ item, width, x }) => {
+      const selected = item.id === selectedId;
+      const active = item.id === activeId;
+      const fill =
+        overrideFill ??
+        (cardFill
+          ? active && highlightColor
+            ? `color-mix(in oklch, ${cardFill} 86%, ${highlightColor})`
+            : cardFill
+          : active && highlightColor
+            ? `color-mix(in oklch, ${baseFill} 86%, ${highlightColor})`
+            : baseFill);
+
+      return (
+        <motion.rect
+          key={item.id}
+          x={0}
+          y={0}
+          height={cellWidth}
+          rx={cellWidth / 2}
+          fill={fill}
+          style={{
+            transformBox: "fill-box",
+            transformOrigin: "center",
+          }}
+          initial={false}
+          animate={
+            expanded
+              ? { x, width, scale: 1, opacity: 1 }
+              : selected
+                ? { x: 0, width: cellWidth, scale: 1, opacity: 1 }
+                : {
+                    x: 0,
+                    width: cellWidth,
+                    scale: 0.2,
+                    opacity: 0,
+                  }
+          }
+          transition={gooeyMotionTransition(reduceMotion, expanded)}
+        />
+      );
+    });
 
   return (
     <svg
       data-slot="multi-button-blob"
       aria-hidden="true"
-      className="pointer-events-none absolute top-0 left-0 z-base drop-shadow-sm"
+      className={`pointer-events-none absolute top-0 left-0 z-base ${
+        enable3d ? "" : "drop-shadow-sm"
+      }`}
       style={{ overflow: "visible" }}
       width="100%"
       height={cellWidth}
     >
       <defs>
+        {enable3d && (
+          <>
+            {/* SHADOW LAYER GRADIENT — matching Select3D inset shadow */}
+            <linearGradient
+              id={`${filterId}-shadow-grad`}
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
+              <stop
+                offset="0%"
+                stopColor="#000000"
+                stopOpacity={isDark ? "0.35" : "0.15"}
+              />
+              <stop
+                offset="100%"
+                stopColor="#000000"
+                stopOpacity={isDark ? "0.18" : "0.08"}
+              />
+            </linearGradient>
+
+            {/* SHADOW LAYER FILTER — matching Select3D blur(4px) inner shadow */}
+            <filter
+              id={`${filterId}-shadow`}
+              x="-100%"
+              y="-400%"
+              width="300%"
+              height="900%"
+              colorInterpolationFilters="sRGB"
+            >
+              <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+              <feColorMatrix
+                in="blur"
+                mode="matrix"
+                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -10"
+                result="metaballs"
+              />
+              <feGaussianBlur in="metaballs" stdDeviation="4" />
+            </filter>
+
+            {/* EDGE LAYER GRADIENT — matching Select3D inset edge formula */}
+            <linearGradient
+              id={`${filterId}-edge-grad`}
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
+              <stop offset="0%" stopColor={actualEdgeColor} stopOpacity="0.533" />
+              <stop offset="50%" stopColor={actualEdgeColor} stopOpacity="0.333" />
+              <stop offset="100%" stopColor={actualEdgeColor} stopOpacity="0.467" />
+            </linearGradient>
+
+            {/* EDGE LAYER METABALL FILTER */}
+            <filter
+              id={`${filterId}-edge`}
+              x="-100%"
+              y="-400%"
+              width="300%"
+              height="900%"
+              colorInterpolationFilters="sRGB"
+            >
+              <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+              <feColorMatrix
+                in="blur"
+                mode="matrix"
+                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -10"
+              />
+            </filter>
+          </>
+        )}
+
+        {/* FRONT FACE FILTER with authentic SVG INSET inner-shadow and 1px border matching Select3D */}
         <filter
           id={filterId}
           x="-100%"
@@ -571,47 +713,90 @@ function MultiButtonBlobLayer({
             in="blur"
             mode="matrix"
             values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -10"
+            result="gooeyBlob"
           />
+          {inset ? (
+            <>
+              {/* Extract Alpha of fluid blob */}
+              <feColorMatrix
+                in="gooeyBlob"
+                type="matrix"
+                values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
+                result="blobAlpha"
+              />
+
+              {/* 1px Inset Border matching Select3D border-[#2C3328] / border-[#E5E2D9] */}
+              <feMorphology in="blobAlpha" operator="erode" radius="1" result="erodedAlpha" />
+              <feComposite in="blobAlpha" in2="erodedAlpha" operator="out" result="strokeMask" />
+              <feFlood
+                floodColor={isDark ? "#2C3328" : "#E5E2D9"}
+                floodOpacity="0.95"
+                result="strokeFlood"
+              />
+              <feComposite in="strokeFlood" in2="strokeMask" operator="in" result="strokeLayer" />
+
+              {/* Inset Shadow (carved top rim) */}
+              <feOffset in="blobAlpha" dx="0" dy="1.6" result="offsetAlphaDown" />
+              <feComposite in="blobAlpha" in2="offsetAlphaDown" operator="out" result="topInnerRim" />
+              <feGaussianBlur in="topInnerRim" stdDeviation="1.3" result="blurredTopRim" />
+              <feFlood
+                floodColor="#000000"
+                floodOpacity={isDark ? "0.65" : "0.3"}
+                result="shadowColor"
+              />
+              <feComposite in="shadowColor" in2="blurredTopRim" operator="in" result="innerShadow" />
+              <feComposite in="innerShadow" in2="blobAlpha" operator="in" result="clippedInnerShadow" />
+
+              {/* Inset Highlight (crisp bottom edge reflection) */}
+              <feOffset in="blobAlpha" dx="0" dy="-1.0" result="offsetAlphaUp" />
+              <feComposite in="blobAlpha" in2="offsetAlphaUp" operator="out" result="bottomInnerRim" />
+              <feGaussianBlur in="bottomInnerRim" stdDeviation="0.8" result="blurredBottomRim" />
+              <feFlood
+                floodColor="#ffffff"
+                floodOpacity={isDark ? "0.15" : "0.4"}
+                result="highlightColor"
+              />
+              <feComposite in="highlightColor" in2="blurredBottomRim" operator="in" result="innerHighlight" />
+              <feComposite in="innerHighlight" in2="blobAlpha" operator="in" result="clippedInnerHighlight" />
+
+              {/* Composite all together into fluid gooey card */}
+              <feMerge>
+                <feMergeNode in="gooeyBlob" />
+                <feMergeNode in="clippedInnerShadow" />
+                <feMergeNode in="clippedInnerHighlight" />
+                <feMergeNode in="strokeLayer" />
+              </feMerge>
+            </>
+          ) : null}
         </filter>
       </defs>
-      <g filter={reduceMotion ? undefined : `url(#${filterId})`}>
-        {geometries.map(({ item, width, x }) => {
-          const selected = item.id === selectedId;
-          const active = item.id === activeId;
-          const fill =
-            active && highlightColor
-              ? `color-mix(in oklch, ${baseFill} 86%, ${highlightColor})`
-              : baseFill;
 
-          return (
-            <motion.rect
-              key={item.id}
-              x={0}
-              y={0}
-              height={cellWidth}
-              rx={cellWidth / 2}
-              fill={fill}
-              style={{
-                transformBox: "fill-box",
-                transformOrigin: "center",
-              }}
-              initial={false}
-              animate={
-                expanded
-                  ? { x, width, scale: 1, opacity: 1 }
-                  : selected
-                    ? { x: 0, width: cellWidth, scale: 1, opacity: 1 }
-                    : {
-                        x: 0,
-                        width: cellWidth,
-                        scale: 0.2,
-                        opacity: 0,
-                      }
-              }
-              transition={gooeyMotionTransition(reduceMotion, expanded)}
-            />
-          );
-        })}
+      {enable3d && (
+        <>
+          {/* SHADOW LAYER — inset: inner shadow at top (-1px, blur 4px) */}
+          <g
+            transform="translate(0, -1)"
+            filter={reduceMotion ? undefined : `url(#${filterId}-shadow)`}
+          >
+            {renderBlobRects(`url(#${filterId}-shadow-grad)`)}
+          </g>
+
+          {/* EDGE LAYER — inset: subtle top edge (-0.5px, accent gradient) */}
+          <g
+            transform="translate(0, -0.5)"
+            filter={reduceMotion ? undefined : `url(#${filterId}-edge)`}
+          >
+            {renderBlobRects(`url(#${filterId}-edge-grad)`)}
+          </g>
+        </>
+      )}
+
+      {/* FRONT FACE LAYER — pressed into surface (+0.5px) */}
+      <g
+        transform={enable3d ? "translate(0, 0.5)" : undefined}
+        filter={reduceMotion ? undefined : `url(#${filterId})`}
+      >
+        {renderBlobRects()}
       </g>
     </svg>
   );
@@ -1010,6 +1195,11 @@ type MultiButtonRailContentProps = MultiButtonItemsProps & {
   filterId: string;
   measurementRef: React.RefObject<HTMLDivElement | null>;
   reserveItems: MultiButtonItem[];
+  enable3d?: boolean;
+  edgeColor?: string;
+  isDark?: boolean;
+  inset?: boolean;
+  cardFill?: string;
 };
 
 function MultiButtonRailContent({
@@ -1035,6 +1225,11 @@ function MultiButtonRailContent({
   selectedId,
   size,
   variant,
+  enable3d,
+  edgeColor,
+  isDark,
+  inset,
+  cardFill,
 }: MultiButtonRailContentProps) {
   return (
     <>
@@ -1049,6 +1244,11 @@ function MultiButtonRailContent({
           reduceMotion={reduceMotion}
           selectedId={selectedId}
           variant={variant}
+          enable3d={enable3d}
+          edgeColor={edgeColor}
+          isDark={isDark}
+          inset={inset}
+          cardFill={cardFill}
         />
       )}
       <MultiButtonLabelMeasurement
@@ -1198,6 +1398,11 @@ const MultiButton = React.forwardRef<HTMLDivElement, MultiButtonProps>(
       variant = "default",
       size = "md",
       fillWidth,
+      enable3d,
+      edgeColor,
+      isDark,
+      inset,
+      cardFill,
       className,
       style,
       ...props
@@ -1274,6 +1479,11 @@ const MultiButton = React.forwardRef<HTMLDivElement, MultiButtonProps>(
         slot="multi-button"
         style={style}
         variant={variant}
+        enable3d={enable3d}
+        edgeColor={edgeColor}
+        isDark={isDark}
+        inset={inset}
+        cardFill={cardFill}
       />
     );
   },
@@ -1297,6 +1507,11 @@ const CompactMultiButton = React.forwardRef<
       variant = "default",
       size = "md",
       fillWidth,
+      enable3d,
+      edgeColor,
+      isDark,
+      inset,
+      cardFill,
       className,
       style,
       onMouseEnter: onMouseEnterProp,
@@ -1524,6 +1739,11 @@ const CompactMultiButton = React.forwardRef<
         slot="compact-multi-button"
         style={style}
         variant={variant}
+        enable3d={enable3d}
+        edgeColor={edgeColor}
+        isDark={isDark}
+        inset={inset}
+        cardFill={cardFill}
       />
     );
   },
