@@ -1,6 +1,6 @@
 {
   "name": "Calculadora de Nitrogênio para Milho",
-  "description": "Calculadora agronômica de adubação nitrogenada e estimativa de produtividade de milho por estande, grãos, PMG e quebra com tema escuro e visualizador.",
+  "description": "Calculadora agronômica de adubação nitrogenada, estimativa de produtividade de milho, cálculo de ITR e Pesquisador Agro com cruzamento científico e artigos nas normas ABNT.",
   "requestFramePermissions": [
     "microphone"
   ],

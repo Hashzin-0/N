@@ -3,9 +3,9 @@
 import React, { useState, useCallback, useRef, useEffect, useId } from 'react';
 import { motion, AnimatePresence, type Variants } from 'motion/react';
 import { useTheme } from './ThemeProvider';
-import { Sprout, TrendingUp, Landmark, BookOpen } from 'lucide-react';
+import { Sprout, TrendingUp, Landmark, BookOpen, Compass } from 'lucide-react';
 
-export type TabId = 'nitrogen' | 'productivity' | 'itr' | 'abnt';
+export type TabId = 'nitrogen' | 'productivity' | 'itr' | 'abnt' | 'pesquisador';
 
 interface GooeyTabPanelProps {
   activeTab: TabId;
@@ -14,6 +14,7 @@ interface GooeyTabPanelProps {
   productivityContent: React.ReactNode;
   itrContent?: React.ReactNode;
   abntContent?: React.ReactNode;
+  pesquisadorContent?: React.ReactNode;
 }
 
 interface TabItem {
@@ -53,6 +54,13 @@ export const ALL_4_TABS: TabItem[] = [
     icon: BookOpen,
     badge: 'NBR 6023',
   },
+  {
+    id: 'pesquisador',
+    label: 'Pesquisador Agro',
+    shortLabel: 'Pesquisador',
+    icon: Compass,
+    badge: 'Fontes & Artigos',
+  },
 ];
 
 const TAB_INDEX: Record<TabId, number> = {
@@ -60,9 +68,10 @@ const TAB_INDEX: Record<TabId, number> = {
   productivity: 1,
   itr: 2,
   abnt: 3,
+  pesquisador: 4,
 };
 
-const TAB_ORDER: TabId[] = ['nitrogen', 'productivity', 'itr', 'abnt'];
+const TAB_ORDER: TabId[] = ['nitrogen', 'productivity', 'itr', 'abnt', 'pesquisador'];
 
 /* ============================================================
    TRANSIÇÃO FÍSICA 3D ENTRE PÁGINAS:
@@ -130,6 +139,7 @@ export default function GooeyTabPanel({
   productivityContent,
   itrContent,
   abntContent,
+  pesquisadorContent,
 }: GooeyTabPanelProps) {
   const [direction, setDirection] = useState(1);
   const { isDark } = useTheme();
@@ -248,6 +258,8 @@ export default function GooeyTabPanel({
         return itrContent || null;
       case 'abnt':
         return abntContent || null;
+      case 'pesquisador':
+        return pesquisadorContent || null;
       default:
         return nitrogenContent;
     }

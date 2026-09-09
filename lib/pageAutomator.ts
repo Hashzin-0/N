@@ -17,7 +17,8 @@ export type PageSection =
   | 'balanco'
   | 'adubos'
   | 'estimativa_milho'
-  | 'itr';
+  | 'itr'
+  | 'pesquisador';
 
 const SECTION_ELEMENT_MAP: Record<PageSection, string> = {
   topo: 'app_header',
@@ -34,6 +35,7 @@ const SECTION_ELEMENT_MAP: Record<PageSection, string> = {
   adubos: 'fertilizer_equivalent_section',
   estimativa_milho: 'corn_yield_calculator_section',
   itr: 'itr_section',
+  pesquisador: 'pesquisador_fontes',
 };
 
 // Global active highlight tracker

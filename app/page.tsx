@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef, useMemo, startTransition } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, useTransition } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import dynamic from 'next/dynamic';
 import {
@@ -42,6 +42,7 @@ const SectionNavGooey = dynamic(() => import('@/components/SectionNavGooey'), { 
 const CornYieldCalculator = dynamic(() => import('@/components/CornYieldCalculator'), { ssr: false });
 const ITRCalculator = dynamic(() => import('@/components/ITRCalculator'), { ssr: false });
 const AbntReferenceFormatter = dynamic(() => import('@/components/AbntReferenceFormatter'), { ssr: false });
+const PesquisadorAgro = dynamic(() => import('@/components/PesquisadorAgro'), { ssr: false });
 
 const PRESETS: Preset[] = [
   {
@@ -123,9 +124,8 @@ export default function Home() {
   // Active scenario preset
   const [activePreset, setActivePreset] = useState<string>('personalizado');
   
-  // Animation state for filling fields when loading presets (single boolean to prevent re-render thrashing)
-  const [isFillingPreset, setIsFillingPreset] = useState(false);
-  const fillingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Transition state for preset switching — eliminates setTimeout delay and ensures immediate UI responsiveness
+  const [isFillingPreset, startTransition] = useTransition();
 
   // Tab state
   const [activeTab, setActiveTab] = useState<TabId>('nitrogen');
@@ -133,17 +133,11 @@ export default function Home() {
   const [bibliographyRef, setBibliographyRef] = useState<ABNTReference | null>(null);
 
 
-  // Handle preset loading — batch state updates with startTransition (instant, no lag)
+  // Handle preset loading — batch state updates with useTransition (instant, no lag)
   const handleLoadPreset = useCallback((preset: Preset) => {
-    if (fillingTimerRef.current) clearTimeout(fillingTimerRef.current);
-
     setActivePreset(preset.id);
-    setIsFillingPreset(true);
-    fillingTimerRef.current = setTimeout(() => {
-      setIsFillingPreset(false);
-    }, 350);
 
-    // Batch all value updates in a single transition (1 render instead of ~23)
+    // Batch all value updates in a transition for immediate responsiveness and fluid updates
     startTransition(() => {
       setYieldGoal(preset.yieldGoal);
       setNRequirementPerBag(preset.nRequirementPerBag);
@@ -158,7 +152,7 @@ export default function Home() {
       setV8v10Percent2(preset.v8v10Percent2);
       setBaseDoseMode(preset.baseDose2 > 0 ? 'range' : 'single');
     });
-  }, []);
+  }, [startTransition]);
 
   // Mark custom if any state changes
   const handleCustomInputChange = useCallback((updater: () => void) => {
@@ -231,7 +225,7 @@ export default function Home() {
       setV8v10Percent2(0);
       setActivePreset('personalizado');
     });
-  }, []);
+  }, [startTransition]);
 
   const handleTabChange = useCallback((tab: TabId) => {
     setActiveTab(tab);
@@ -368,6 +362,17 @@ export default function Home() {
       </div>
     ),
     [],
+  );
+
+  const pesquisadorContent = useMemo(
+    () => (
+      <div className="w-full">
+        <ScrollStack baseScale={0.92} peek={12} blur pinTop="4vh">
+          <PesquisadorAgro isDark={isDark} />
+        </ScrollStack>
+      </div>
+    ),
+    [isDark],
   );
 
   return (
@@ -896,6 +901,7 @@ export default function Home() {
           productivityContent={productivityContent}
           itrContent={itrContent}
           abntContent={abntContent}
+          pesquisadorContent={pesquisadorContent}
         />
 
         {/* GEMINI LIVE VOICE ASSISTANT HUD WITH 3D ORB */}

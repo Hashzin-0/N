@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { motion, useMotionValue, useTransform, useSpring } from 'motion/react';
 import MorphText from '@/components/MorphText';
 import { NumberTicker } from '@/components/godui/number-ticker';
@@ -80,7 +80,7 @@ export default React.memo(function Input3D({
     maximumFractionDigits: decimalPlaces,
   }), [decimalPlaces]);
 
-  const formatNumber = (num: number): string => numberFormatter.format(num);
+  const formatNumber = useCallback((num: number): string => numberFormatter.format(num), [numberFormatter]);
 
   useEffect(() => {
     const from = prevValueRef.current;
@@ -128,7 +128,7 @@ export default React.memo(function Input3D({
     return () => {
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
-  }, [value, step, decimalPlaces]);
+  }, [value, formatNumber]);
 
   useEffect(() => {
     return () => {
